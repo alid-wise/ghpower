@@ -1,0 +1,195 @@
+#!/usr/bin/perl
+
+#
+#       Copyright (C) 2008-2012 áÌÅËÓÁÎÄÒ äÅ×ÑÔËÉÎ, "úÅÌ£ÎÁÑ ÇÏÒËÁ"
+#
+#       òÁÚÒÅÛÁÅÔÓÑ ĞÏ×ÔÏÒÎÏÅ ÒÁÓĞÒÏÓÔÒÁÎÅÎÉÅ É ÉÓĞÏÌØÚÏ×ÁÎÉÅ ËÁË × ×ÉÄÅ ÉÓÈÏÄÎÏÇÏ
+#       ËÏÄÁ, ÔÁË É × Ä×ÏÉŞÎÏÊ ÆÏÒÍÅ, Ó ÉÚÍÅÎÅÎÉÑÍÉ ÉÌÉ ÂÅÚ, ĞÒÉ ÓÏÂÌÀÄÅÎÉÉ ÓÌÅÄÕÀİÉÈ
+#       ÕÓÌÏ×ÉÊ:
+#
+#       * ğÒÉ ĞÏ×ÔÏÒÎÏÍ ÒÁÓĞÒÏÓÔÒÁÎÅÎÉÉ ÉÓÈÏÄÎÏÇÏ ËÏÄÁ ÄÏÌÖÎÏ ÏÓÔÁ×ÁÔØÓÑ ÕËÁÚÁÎÎÏÅ
+#         ×ÙÛÅ Õ×ÅÄÏÍÌÅÎÉÅ ÏÂ Á×ÔÏÒÓËÏÍ ĞÒÁ×Å, ÜÔÏÔ ÓĞÉÓÏË ÕÓÌÏ×ÉÊ É ĞÏÓÌÅÄÕÀİÉÊ
+#         ÏÔËÁÚ ÏÔ ÇÁÒÁÎÔÉÊ.
+#       * ğÒÉ ĞÏ×ÔÏÒÎÏÍ ÒÁÓĞÒÏÓÔÒÁÎÅÎÉÉ Ä×ÏÉŞÎÏÇÏ ËÏÄÁ ÄÏÌÖÎÁ ÓÏÈÒÁÎÑÔØÓÑ ÕËÁÚÁÎÎÁÑ
+#         ×ÙÛÅ ÉÎÆÏÒÍÁÃÉÑ ÏÂ Á×ÔÏÒÓËÏÍ ĞÒÁ×Å, ÜÔÏÔ ÓĞÉÓÏË ÕÓÌÏ×ÉÊ É ĞÏÓÌÅÄÕÀİÉÊ ÏÔËÁÚ
+#         ÏÔ ÇÁÒÁÎÔÉÊ × ÄÏËÕÍÅÎÔÁÃÉÉ É/ÉÌÉ × ÄÒÕÇÉÈ ÍÁÔÅÒÉÁÌÁÈ, ĞÏÓÔÁ×ÌÑÅÍÙÈ ĞÒÉ
+#         ÒÁÓĞÒÏÓÔÒÁÎÅÎÉÉ.
+#       * îÉ ÎÁÚ×ÁÎÉÅ "úÅÌ£ÎÁÑ ÇÏÒËÁ", ÎÉ ÉÍÅÎÁ ÅÅ ÓÏÔÒÕÄÎÉËÏ× ÎÅ ÍÏÇÕÔ ÂÙÔØ
+#         ÉÓĞÏÌØÚÏ×ÁÎÙ × ËÁŞÅÓÔ×Å ĞÏÄÄÅÒÖËÉ ÉÌÉ ĞÒÏÄ×ÉÖÅÎÉÑ ĞÒÏÄÕËÔÏ×, ÏÓÎÏ×ÁÎÎÙÈ
+#         ÎÁ ÜÔÏÍ ğï ÂÅÚ ĞÒÅÄ×ÁÒÉÔÅÌØÎÏÇÏ ĞÉÓØÍÅÎÎÏÇÏ ÒÁÚÒÅÛÅÎÉÑ.
+#
+#       üôá ğòïçòáííá ğòåäïóôá÷ìåîá ÷ìáäåìøãáíé á÷ôïòóëéè ğòá÷ é/éìé äòõçéíé óôïòïîáíé
+#	"ëáë ïîá åóôø" âåú ëáëïçï-ìéâï ÷éäá çáòáîôéê, ÷ùòáöåîîùè ñ÷îï éìé ğïäòáúõíå÷áåíùè,
+#	÷ëìàşáñ, îï îå ïçòáîéşé÷áñóø éíé, ğïäòáúõíå÷áåíùå çáòáîôéé ëïííåòşåóëïê ãåîîïóôé
+#	é ğòéçïäîïóôé äìñ ëïîëòåôîïê ãåìé. îé ÷ ëïåí óìõşáå, åóìé îå ôòåâõåôóñ
+#	óïïô÷åôóô÷õàıéí úáëïîïí, éìé îå õóôáîï÷ìåîï ÷ õóôîïê æïòíå, îé ïäéî ÷ìáäåìåã
+#	á÷ôïòóëéè ğòá÷ é îé ïäîï äòõçïå ìéãï, ëïôïòïå íïöåô éúíåîñôø é/éìé ğï÷ôïòîï
+#	òáóğòïóôòáîñôø ğòïçòáííõ, ëáë âùìï óëáúáîï ÷ùûå, îå îåó³ô ïô÷åôóô÷åîîïóôé,
+#	÷ëìàşáñ ìàâùå ïâıéå, óìõşáêîùå, óğåãéáìøîùå éìé ğïóìåäï÷á÷ûéå õâùôëé,
+#	÷óìåäóô÷éå éóğïìøúï÷áîéñ éìé îå÷ïúíïöîïóôé éóğïìøúï÷áîéñ ğòïçòáííù (÷ëìàşáñ,
+#	îï îå ïçòáîéşé÷áñóø ğïôåòåê äáîîùè, éìé äáîîùíé, óôá÷ûéíé îåğòá÷éìøîùíé, éìé
+#	ğïôåòñíé ğòéîåóåîîùíé éú-úá ÷áó éìé ôòåôøéè ìéã, éìé ïôëáúïí ğòïçòáííù òáâïôáôø
+#	óï÷íåóôîï ó äòõçéíé ğòïçòáííáíé), äáöå åóìé ôáëïê ÷ìáäåìåã éìé äòõçïå ìéãï âùìé
+#	éú÷åıåîù ï ÷ïúíïöîïóôé ôáëéè õâùôëï÷.
+#
+
+#       Copyright (C) 2008-2012 Aleksandr Deviatkin, "Green Hill"
+#
+#       Redistribution and use in source and binary forms, with or without
+#       modification, are permitted provided that the following conditions are
+#       met:
+#       
+#       * Redistributions of source code must retain the above copyright
+#         notice, this list of conditions and the following disclaimer.
+#       * Redistributions in binary form must reproduce the above
+#         copyright notice, this list of conditions and the following disclaimer
+#         in the documentation and/or other materials provided with the
+#         distribution.
+#       * Neither the name of the Green Hill nor the names of its
+#         contributors may be used to endorse or promote products derived from
+#         this software without specific prior written permission.
+#       
+#       THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+#       "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+#       LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+#       A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+#       OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#       SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+#       LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+#       DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+#       THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#       (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#       OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+
+$|=1;
+use DBI;
+use strict;
+
+#
+# ğÒÏ×ÅÒËÁ ÔÁÒÉÆÎÏÇÏ ÒÁÓĞÉÓÁÎÉÑ
+# 2011-12-21 alid
+#
+
+my (@args, %opts);
+foreach(@ARGV){
+	if(/^\-(\S)(\S*)/) { $opts{$1} = $2; } else {  push @args, $_; }
+}
+my ($database) = (@args);
+die "Usage: $0 database"		unless($database);
+my $quiet = exists $opts{q};	# ĞÏËÁÚÙ×ÁÔØ ÔÏÌØËÏ ÏÛÉÂËÉ
+my $force = exists $opts{f};	# ×ÙÂÉÒÁÔØ ×ÓÅ ÇÒÕĞĞÙ, ÎÅ×ÚÉÒÁÑ ÎÁ ÏÔÓÕÔÓÔ×ÉÅ ÆÌÁÇÁ active
+my $mgid = $opts{g} || 0;	# ÔÏÌØËÏ ÄÌÑ ÜÔÏÊ ÇÒÕĞĞÙ (id)
+my $pgport = 5432;
+
+# ÔÁÒÉÆÎÏÅ ÒÁÓĞÉÓÁÎÉÅ
+my $T1 = '07:00';
+my $T2 = '23:00';
+
+
+my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1});
+my $sth;
+
+# mgroups
+my $Glist;
+if($mgid) {	#
+	$sth = $dbh->prepare("select mgroup.id,mgroup.name as name ,mgroup.memo,mgroup.modtime,mgroup.active,mgroup.rank,iface.id as if_id,iface.name as ifname,iface.dev from mgroup left outer join iface on iface.id=mgroup.if_id where mgroup.id=?");
+	$sth->execute($mgid);
+} else {		#
+	$sth = $dbh->prepare("select mgroup.id,mgroup.name as name ,mgroup.memo,mgroup.modtime,mgroup.active,mgroup.rank,iface.id as if_id,iface.name as ifname,iface.dev from mgroup left outer join iface on iface.id=mgroup.if_id ".($force? "":"where mgroup.active=1")." order by rank");
+	$sth->execute;
+}
+while(my $r = $sth->fetchrow_hashref) {
+	push @$Glist, $r;
+}
+$sth->finish;
+
+$sth = $dbh->prepare("select counters.id,counters.name,counters.addr,counters.passwd,counters.ktrans,counter_type.type,status.id as status_id,status.state,status.pstate,counters.sn,counters.setdate,towers.name as tname,street.name as sname,counters.house from counters left outer join counter_type on model=counter_type.id left outer join status on counters.id=status.cid left outer join towers on towers.id=counters.tower_id left outer join street on street.id=counters.street where counters.mgroup=? and counters.active=1");
+my $se = $dbh->prepare("select date,se1ai,se2ai from monitor where counter=? order by date desc limit 300");
+
+foreach my $mg (@$Glist) {
+	unless($quiet) {
+		print "*****************************************************\n";
+		print $mg->{name}." [".$mg->{id}."] Active: ".$mg->{active}." Iface: ".$mg->{ifname}." [".$mg->{if_id}."] Dev: ".$mg->{dev}."\n";
+		print $mg->{memo}."\n";
+	}
+	# counters
+	$sth->execute($mg->{id});	
+	while(my $r = $sth->fetchrow_hashref) {
+		my ($t1,$t2) = getar($r->{id});
+#		my $str = "id: $r->{id} addr: $r->{addr} type: $r->{type}  sn: $r->{sn}  setdate: $r->{setdate} ktrans: $r->{ktrans} state: $r->{state} pstate: $r->{pstate} tower: $r->{tname} street: $r->{sname} house: $r->{house}";
+		my $str = "id: $r->{id} addr: $r->{addr} type: $r->{type} tower: $r->{tname} street: $r->{sname} house: $r->{house}";
+		unless($t1 & $t2) {
+			print STDERR "NO DATA".($quiet ? " $mg->{name}":"").": $str\n";
+		}
+#		elsif(($t1 eq $T1) && ($t2 eq $T2)) {
+#			print "OK ($t1,$t2): $str\n"	unless $quiet;
+#		}
+		else {
+#			print STDERR "ERROR ($t1,$t2)".($quiet ? " $mg->{name}":"").": $str\n";
+			print "($t1,$t2)".($quiet ? " $mg->{name}":"").": $str\n";
+		}
+
+	}
+	$sth->finish;
+}
+
+$dbh->disconnect;
+
+sub getar {
+	my ($id) = @_;
+	$se->execute($id);
+	my ($t1,$t2);
+	my ($se1,$se2,$ct);
+	while(my $r = $se->fetchrow_hashref) {
+#print $r->{se1ai}." ".$r->{se2ai}."\n";
+
+		unless($se1 && $se2) {	# ÓÁÍÏÅ ÎÁŞÁÌÏ
+			($se1,$se2) = ($r->{se1ai},$r->{se2ai});
+#print "START: [$se1] [$se2]\n";
+
+			next;
+		}
+		unless($ct) {
+			if($se1 == $r->{se1ai}) {
+				$ct = 2;
+
+#print "CT2 [$se1] [$se2]\n";
+				next;
+			}
+			if($se2 == $r->{se2ai}) {
+				$ct = 1;
+#print "CT1 [$se1] [$se2]\n";
+				next;
+			}
+
+		}
+#print join(":",(localtime($r->{date}))[2,1])." $se1 ".$r->{se1ai}." $se2 ".$r->{se2ai}."\n";
+#		if($se1 == $r->{se1ai} && $se2 != $r->{se2ai} && $ct == 1) {	# ĞÅÒÅÈÏÄ ÎÁ ÔÁÒÉÆ 2
+		if($se2 != $r->{se2ai} && $ct == 1) {	# ĞÅÒÅÈÏÄ ÎÁ ÔÁÒÉÆ 2
+			($se1,$se2) = ($r->{se1ai},$r->{se2ai});
+			$t2 = join(":",(localtime($r->{date}))[2,1]);
+			$ct = 2;
+
+#print "T2: [$t1] [$t2]\n";
+			next;
+		}
+#		if($se1 != $r->{se1ai} && $se2 == $r->{se2ai} && $ct == 2) {	# ĞÅÒÅÈÏÄ ÎÁ ÔÁÒÉÆ 1
+		if($se1 != $r->{se1ai} && $ct == 2) {	# ĞÅÒÅÈÏÄ ÎÁ ÔÁÒÉÆ 1
+			($se1,$se2) = ($r->{se1ai},$r->{se2ai});
+			$t1 = join(":",(localtime($r->{date}))[2,1]);
+			$ct = 1;
+#print "T1: [$t1] [$t2]\n";
+			next;
+		}
+		last if($t1 && $t2);
+		($se1,$se2) = ($r->{se1ai},$r->{se2ai});
+
+	}
+	$se->finish;
+#print "($t1,$t2)\n";
+
+	return ($t1,$t2);
+}
+
