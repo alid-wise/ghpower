@@ -1,0 +1,72 @@
+<%method listload>
+<%doc>
+	Список
+</%doc>
+<%args>
+	$dbh
+	$name
+	$nocache => 0
+</%args>
+<%init>
+unless($nocache) {
+	my ($rv, $cached) = $m->cache_self(
+		expire_in => '1 hour',
+		busy_lock => '5sec',
+		ttl => '5minutes',
+		key => "$name",
+		expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
+	);
+	return $rv	if($cached);
+}
+my $ret = undef;
+my $sth = $dbh->prepare("select * from $name");
+$sth->execute();
+while(my $r = $sth->fetchrow_hashref) {
+	$ret->{$r->{id}} = $r;
+}
+$sth->finish;
+$ret = {}	unless $ret;
+return $ret;
+</%init>
+</%method>
+
+
+
+<%method cflistload>
+<%doc>
+	Список счетчиков
+</%doc>
+<%args>
+	$dbh
+	$nocache => 0
+</%args>
+<%init>
+unless($nocache) {
+	my ($rv, $cached) = $m->cache_self(
+		expire_in => '1 hour',
+		busy_lock => '5sec',
+		ttl => '5minutes',
+		key => "c-full-list",
+		expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
+	);
+	return $rv	if($cached);
+}
+my $ret = undef;
+my $sth = $dbh->prepare("select counters.id,counters.name,counters.addr,counters.mgroup,counters.passwd,counters.sn,counters.model,counters.setdate,counters.memo,counters.active,counters.modtime,counters.passwd2,counters.ktrans,counters.tower_id,counters.year,counters.street,counters.house,status.id as status_id,status.state,status.pstate,status.se1,status.se2,status.modtime as status_modtime from counters left outer join status on status.cid=counters.id");
+$sth->execute();
+while(my $r = $sth->fetchrow_hashref) {
+		push @{$ret->{$r->{mgroup}}->{items}}, $r;
+}
+$sth->finish;
+$ret = {}	unless $ret;
+return $ret;
+</%init>
+</%method>
+
+
+
+
+
+
+
+
