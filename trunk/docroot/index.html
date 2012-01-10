@@ -1,0 +1,245 @@
+<%args>
+	$dbh
+	$verb => 0
+	$id => undef
+</%args>
+<%init>
+use Data::Dumper;
+use POSIX;
+use locale;
+setlocale(&LC_COLLATE, 'ru_RU.KOI8-R');
+my $login = $ENV{REMOTE_USER} || '-';
+
+map { $_ =~ s/\D//g; } ( $verb, $id);
+map { $_ = 1 if($_ > 1) } ( $verb);
+map { $_ = 0 if($_ > 1000) } ( $id);
+
+my %Err;
+my $OK=0;
+
+my $sth;
+# Справочники
+
+# Проезды (улицы)
+my $S = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'street', nocache=>0);
+# Столбы
+my $Towers = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'towers', nocache=>0);
+# Типы счетчиков
+my $Ctypes = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'counter_type', nocache=>0);
+
+my ($List, $Usr);
+# Группы
+$sth = $dbh->prepare("select * from mgroup");
+$sth->execute();
+while(my $r = $sth->fetchrow_hashref) {
+	$List->{$r->{id}} = $r;
+}
+$sth->finish;
+
+if($id) {
+	$sth = $dbh->prepare("select * from counters where id=?");
+	$sth->execute($id);
+	while(my $r = $sth->fetchrow_hashref) {
+		$Usr = $r;
+	}
+	$sth->finish;
+}
+
+if($ARGS{submit}) {
+	if($ARGS{delete} && $id) {	# удаление записи
+		$dbh->do("delete from counters where id=$id");
+		undef $id;
+		$OK++;
+	} else {
+		my $active = $ARGS{active}? 1:0;
+		map { $ARGS{$_} =~ s/\D//g; $ARGS{$_} ||= 0 } ('addr','mgroup','sn','model','tower_id','year','street');
+		map { $ARGS{$_} = 0 if($ARGS{$_} > 2000000000) } ('addr','mgroup','sn','model','tower_id','year','street');
+		my ($mday,$mon,$year) = (localtime)[3,4,5];
+		$ARGS{setdate} ||= sprintf("%4d-%02d-%02d",$year+1900,$mon+1,$mday);
+
+		unless(%Err) {
+			if($Usr) {	# Обновление
+				my $chg = ($active ne $Usr->{active})? 1:0;
+				map {$chg++ if($ARGS{$_} ne $Usr->{$_})} ('name','addr','mgroup','sn','model','setdate','memo','tower_id','year','street','house');
+				if($chg) {	# есть изменения
+					my $upd = $dbh->prepare("update counters set name=?,addr=?,mgroup=?,sn=?,model=?,setdate=?,memo=?,active=?,tower_id=?,year=?,street=?,house=?,modtime=now() where id=?");
+					$upd->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{street},$ARGS{house},$id);
+				}
+			} else {	# Новая запись
+
+				my ($passwd1,$passwd2) = ('','');
+				if($Ctypes->{$ARGS{model}}->{type} eq 'M230') { ($passwd1,$passwd2) = ('111111','222222'); }
+				my $ins = $dbh->prepare("insert into counters (name,addr,mgroup,sn,model,setdate,memo,active,tower_id,year,street,house,passwd,passwd2,modtime) values (?,?,?,?,?,?,?,?,?,?,?,?,\'$passwd1\',\'$passwd2\',now())");
+				$ins->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{street},$ARGS{house});
+			}
+			undef $id;
+			undef $ARGS{"add_new"};
+			$OK++;
+#			$m->clear_buffer;
+#			# The next two lines are necessary to stop Apache from re-reading POSTed data.
+#			$r->method('GET');
+#			$r->headers_in->unset('Content-length');
+#			$r->content_type('text/html');
+#			$r->header_out('Location' => 'index.html');
+#			$m->abort(301);
+		}
+	}
+}
+
+if(!$ARGS{"add_new"} && !$id && !$OK) {
+	# Счетчики полный список
+#	$sth = $dbh->prepare("select counters.id,counters.name,counters.addr,counters.mgroup,counters.passwd,counters.sn,counters.model,counters.setdate,counters.memo,counters.active,counters.modtime,counters.passwd2,counters.ktrans,counters.tower_id,counters.year,counters.street,counters.house,status.id as status_id,status.state,status.pstate,status.se1,status.se2,status.modtime as status_modtime from counters left outer join status on status.cid=counters.id");
+#	$sth->execute();
+#	while(my $r = $sth->fetchrow_hashref) {
+#		push @{$List->{$r->{mgroup}}->{items}}, $r;
+#	}
+#	$sth->finish;
+
+	my $L = $m->comp("lib.msn:cflistload", dbh=>$dbh, nocache=>1);
+	foreach(keys %$L) { $List->{$_}->{items} = $L->{$_}->{items}; }
+
+}
+</%init>
+%if($OK) {
+<h3>Запись сохранена</h3>
+<p><a href="index.html">Home</a></p>
+%} elsif($id || $ARGS{"add_new"}) {
+<form method="POST">
+<input type="hidden" name="add_new" value="<%$ARGS{"add_new"}%>">
+<p><a href="index.html">Отменить</a></p>
+<table border="1">
+<tr>
+<td>Используется:</td>
+<td><input type="checkbox" name="active" <% $ARGS{active} || (!$ARGS{submit} ? $Usr->{active} : "") ? "checked":""%>>
+%	if($id) {
+<div align=right><small>modtime: <%$Usr->{modtime} =~ /(.+)\.\d+/%></small></div>
+%	}
+</td>
+</tr>
+<tr>
+<td>Название:</td>
+<td><input type="text" name="name" value="<%$ARGS{name} || (!$ARGS{submit} ? $Usr->{name} : "")%>"></td>
+</tr>
+<tr>
+<td>Сетевой адрес:</td>
+<td><input type="text" name="addr" value="<%$ARGS{addr} || (!$ARGS{submit} ? $Usr->{addr} : "") %>"></td>
+</tr>
+<tr>
+<td>Группа:</td>
+<td><select name="mgroup">
+<option></option>
+%	foreach my $gid (sort {$List->{$a}->{name} cmp $List->{$b}->{name}} keys %$List) {
+<option value="<%$gid%>" <% ((!$ARGS{submit} ? $Usr->{mgroup} : $ARGS{mgroup}) eq $gid)? "selected":"" %>><%$List->{$gid}->{name}%></option>
+%	}
+</select></td>
+</tr>
+<tr>
+<td>Серийный номер:</td>
+<td><input type="text" name="sn" value="<%$ARGS{sn} || (!$ARGS{submit} ? $Usr->{sn} : "") %>"></td>
+</tr>
+<tr>
+<td>Год выпуска:</td>
+<td><input type="text" name="year" value="<%$ARGS{year} || (!$ARGS{submit} ? $Usr->{year} : "")%>"></td>
+</tr>
+<tr>
+<td>Тип:</td>
+<td><select name="model">
+<option></option>
+%	foreach my $cid (sort {$Ctypes->{$a}->{name} cmp $Ctypes->{$b}->{name}} keys %$Ctypes) {
+<option value="<%$cid%>" <% ((!$ARGS{submit} ? $Usr->{model} : $ARGS{model}) eq $cid)? "selected":"" %>><%$Ctypes->{$cid}->{name}%></option>
+%	}
+</select></td>
+</tr>
+<tr>
+<td>Проезд:</td>
+<td><select name="street">
+<option></option>
+%	foreach my $sid (sort {$S->{$a}->{name} cmp $S->{$b}->{name}} keys %$S) {
+<option value="<%$sid%>" <% ((!$ARGS{submit} ? $Usr->{street} : $ARGS{street}) eq $sid)? "selected":"" %>><%$S->{$sid}->{name}%></option>
+%	}
+</select></td>
+</tr>
+<tr>
+<td>Участок:</td>
+<td><input type="text" name="house" value="<%$ARGS{house} || (!$ARGS{submit} ? $Usr->{house} : "")%>"></td>
+</tr>
+<tr>
+<td>Столб:</td>
+<td><select name="tower_id">
+<option></option>
+%	foreach my $sid (sort {$Towers->{$a}->{name} <=> $Towers->{$b}->{name}} keys %$Towers) {
+<option value="<%$sid%>" <% ((!$ARGS{submit} ? $Usr->{"tower_id"} : $ARGS{"tower_id"}) eq $sid)? "selected":"" %>><%$Towers->{$sid}->{name}%></option>
+%	}
+</select></td>
+</tr>
+<tr>
+<td>Дата установки:</td>
+<td><input type="text" name="setdate" value="<%$ARGS{setdate} || (!$ARGS{submit} ? $Usr->{setdate} : "")%>"></td>
+</tr>
+<tr>
+<td>Примечания:</td>
+<td><textarea name="memo" cols="30" rows="2"><%$ARGS{memo} || (!$ARGS{submit} ? $Usr->{memo} : "")%></textarea></td>
+</tr>
+
+%#	modtime timestamp default now(),
+
+
+<tr>
+<td></td>
+<td><input type="submit" name="submit" value="Сохранить">&nbsp;<i>удалить</i><input type="checkbox" name="delete"></td>
+</tr>
+
+
+
+
+</table>
+</form>
+%} else {	# полный список
+%	my ($sec,$min,$hour,$mday,$mon,$year) = (localtime)[0,1,2,3,4,5];
+<p><a href="/">Home</a></p>
+<form method="POST">
+<p><input type="submit" name="add_new" value="Добавить счетчик">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<%sprintf("%4d-%02d-%02d %02d:%02d:%02d",$year+1900,$mon+1,$mday,$hour,$min,$sec)%></p>
+</form>
+<table border="1">
+%foreach my $mgid (sort {$List->{$a}->{rank} <=> $List->{$b}->{rank}} keys %$List) { 
+%	next unless $List->{$mgid}->{items};
+<tr>
+<td><input type="checkbox" name="mgid_<%$mgid%>" <% ($ARGS{"mgid_".$mgid} || $List->{mgid}->{active}) ? "checked":""%>></td>
+<td><b><% $List->{$mgid}->{name}%></b></td>
+<td colspan="5"><% $List->{$mgid}->{memo}%></td>
+</tr>
+%	my $i=1;
+%	foreach my $item (sort { $S->{$a->{street}}->{name} cmp $S->{$b->{street}}->{name} || $a->{house} <=> $b->{house}} @{$List->{$mgid}->{items}}) {
+<tr>
+<td align="center"><%$i%>.</td>
+<td align="right"><a href="?id=<%$item->{id}%>"><%$item->{addr} ? $item->{addr} : "---"%></a></td>
+%	my $parcel;
+%	if($item->{street}) {
+%		$parcel = $item->{street};
+%		$parcel = $S->{$item->{street}}->{name};
+%		$parcel = substr($parcel, 0, 1);
+%		$parcel .= '.-';
+%	} $parcel .= $item->{house};
+<td><% $parcel %></td>
+<td><%$Towers->{$item->{tower_id}}->{name}%></td>
+<td><%$item->{sn}%></td>
+<td><input type="checkbox" name="id_<%$item->{id}%>" <% ($ARGS{"id_".$item->{id}} || $item->{active}) ? "checked":""%>></td>
+<td><a href="energy.html?id=<%$item->{id}%>"><img src="images/<% defined $item->{state} ? ($item->{state} ? "critical.png":"recovery.png") : "warning.png" %>"></a></td>
+
+</tr>
+%	$i++;
+%	}
+%}
+</table>
+
+%}
+
+
+
+
+<pre>
+%#<% Dumper $Usr %>
+%#<% Dumper %ARGS %>
+</pre>
+
+
