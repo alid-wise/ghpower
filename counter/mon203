@@ -1,0 +1,162 @@
+#!/usr/bin/perl -w
+use strict;
+$| = 1;
+
+#
+#       Copyright (C) 2008-2012 áÌÅËÓÁÎÄÒ äÅ×ÑÔËÉÎ, "úÅÌ£ÎÁÑ ÇÏÒËÁ"
+#
+#       òÁÚÒÅÛÁÅÔÓÑ ĞÏ×ÔÏÒÎÏÅ ÒÁÓĞÒÏÓÔÒÁÎÅÎÉÅ É ÉÓĞÏÌØÚÏ×ÁÎÉÅ ËÁË × ×ÉÄÅ ÉÓÈÏÄÎÏÇÏ
+#       ËÏÄÁ, ÔÁË É × Ä×ÏÉŞÎÏÊ ÆÏÒÍÅ, Ó ÉÚÍÅÎÅÎÉÑÍÉ ÉÌÉ ÂÅÚ, ĞÒÉ ÓÏÂÌÀÄÅÎÉÉ ÓÌÅÄÕÀİÉÈ
+#       ÕÓÌÏ×ÉÊ:
+#
+#       * ğÒÉ ĞÏ×ÔÏÒÎÏÍ ÒÁÓĞÒÏÓÔÒÁÎÅÎÉÉ ÉÓÈÏÄÎÏÇÏ ËÏÄÁ ÄÏÌÖÎÏ ÏÓÔÁ×ÁÔØÓÑ ÕËÁÚÁÎÎÏÅ
+#         ×ÙÛÅ Õ×ÅÄÏÍÌÅÎÉÅ ÏÂ Á×ÔÏÒÓËÏÍ ĞÒÁ×Å, ÜÔÏÔ ÓĞÉÓÏË ÕÓÌÏ×ÉÊ É ĞÏÓÌÅÄÕÀİÉÊ
+#         ÏÔËÁÚ ÏÔ ÇÁÒÁÎÔÉÊ.
+#       * ğÒÉ ĞÏ×ÔÏÒÎÏÍ ÒÁÓĞÒÏÓÔÒÁÎÅÎÉÉ Ä×ÏÉŞÎÏÇÏ ËÏÄÁ ÄÏÌÖÎÁ ÓÏÈÒÁÎÑÔØÓÑ ÕËÁÚÁÎÎÁÑ
+#         ×ÙÛÅ ÉÎÆÏÒÍÁÃÉÑ ÏÂ Á×ÔÏÒÓËÏÍ ĞÒÁ×Å, ÜÔÏÔ ÓĞÉÓÏË ÕÓÌÏ×ÉÊ É ĞÏÓÌÅÄÕÀİÉÊ ÏÔËÁÚ
+#         ÏÔ ÇÁÒÁÎÔÉÊ × ÄÏËÕÍÅÎÔÁÃÉÉ É/ÉÌÉ × ÄÒÕÇÉÈ ÍÁÔÅÒÉÁÌÁÈ, ĞÏÓÔÁ×ÌÑÅÍÙÈ ĞÒÉ
+#         ÒÁÓĞÒÏÓÔÒÁÎÅÎÉÉ.
+#       * îÉ ÎÁÚ×ÁÎÉÅ "úÅÌ£ÎÁÑ ÇÏÒËÁ", ÎÉ ÉÍÅÎÁ ÅÅ ÓÏÔÒÕÄÎÉËÏ× ÎÅ ÍÏÇÕÔ ÂÙÔØ
+#         ÉÓĞÏÌØÚÏ×ÁÎÙ × ËÁŞÅÓÔ×Å ĞÏÄÄÅÒÖËÉ ÉÌÉ ĞÒÏÄ×ÉÖÅÎÉÑ ĞÒÏÄÕËÔÏ×, ÏÓÎÏ×ÁÎÎÙÈ
+#         ÎÁ ÜÔÏÍ ğï ÂÅÚ ĞÒÅÄ×ÁÒÉÔÅÌØÎÏÇÏ ĞÉÓØÍÅÎÎÏÇÏ ÒÁÚÒÅÛÅÎÉÑ.
+#
+#       üôá ğòïçòáííá ğòåäïóôá÷ìåîá ÷ìáäåìøãáíé á÷ôïòóëéè ğòá÷ é/éìé äòõçéíé óôïòïîáíé
+#	"ëáë ïîá åóôø" âåú ëáëïçï-ìéâï ÷éäá çáòáîôéê, ÷ùòáöåîîùè ñ÷îï éìé ğïäòáúõíå÷áåíùè,
+#	÷ëìàşáñ, îï îå ïçòáîéşé÷áñóø éíé, ğïäòáúõíå÷áåíùå çáòáîôéé ëïííåòşåóëïê ãåîîïóôé
+#	é ğòéçïäîïóôé äìñ ëïîëòåôîïê ãåìé. îé ÷ ëïåí óìõşáå, åóìé îå ôòåâõåôóñ
+#	óïïô÷åôóô÷õàıéí úáëïîïí, éìé îå õóôáîï÷ìåîï ÷ õóôîïê æïòíå, îé ïäéî ÷ìáäåìåã
+#	á÷ôïòóëéè ğòá÷ é îé ïäîï äòõçïå ìéãï, ëïôïòïå íïöåô éúíåîñôø é/éìé ğï÷ôïòîï
+#	òáóğòïóôòáîñôø ğòïçòáííõ, ëáë âùìï óëáúáîï ÷ùûå, îå îåó³ô ïô÷åôóô÷åîîïóôé,
+#	÷ëìàşáñ ìàâùå ïâıéå, óìõşáêîùå, óğåãéáìøîùå éìé ğïóìåäï÷á÷ûéå õâùôëé,
+#	÷óìåäóô÷éå éóğïìøúï÷áîéñ éìé îå÷ïúíïöîïóôé éóğïìøúï÷áîéñ ğòïçòáííù (÷ëìàşáñ,
+#	îï îå ïçòáîéşé÷áñóø ğïôåòåê äáîîùè, éìé äáîîùíé, óôá÷ûéíé îåğòá÷éìøîùíé, éìé
+#	ğïôåòñíé ğòéîåóåîîùíé éú-úá ÷áó éìé ôòåôøéè ìéã, éìé ïôëáúïí ğòïçòáííù òáâïôáôø
+#	óï÷íåóôîï ó äòõçéíé ğòïçòáííáíé), äáöå åóìé ôáëïê ÷ìáäåìåã éìé äòõçïå ìéãï âùìé
+#	éú÷åıåîù ï ÷ïúíïöîïóôé ôáëéè õâùôëï÷.
+#
+
+#       Copyright (C) 2008-2012 Aleksandr Deviatkin, "Green Hill"
+#
+#       Redistribution and use in source and binary forms, with or without
+#       modification, are permitted provided that the following conditions are
+#       met:
+#       
+#       * Redistributions of source code must retain the above copyright
+#         notice, this list of conditions and the following disclaimer.
+#       * Redistributions in binary form must reproduce the above
+#         copyright notice, this list of conditions and the following disclaimer
+#         in the documentation and/or other materials provided with the
+#         distribution.
+#       * Neither the name of the Green Hill nor the names of its
+#         contributors may be used to endorse or promote products derived from
+#         this software without specific prior written permission.
+#       
+#       THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+#       "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+#       LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+#       A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+#       OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#       SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+#       LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+#       DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+#       THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#       (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#       OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+#
+# ğÏÌÕŞÁÅÍ ÔÅËÕİÉÅ ÄÁÎÎÙÅ ÉÚ ÓŞÅÔŞÉËÁ íÅÒËÕÒÉÊ-203.2ô
+# 2009-03-22 alid
+# 2011-08-02 alid
+#
+
+use lib "$ENV{MY}/counter";
+use Mercury;
+
+my (@args, %opts);
+foreach(@ARGV){
+   if(/^\-(\S)(.*)/){	$opts{$1} = $2;	} else {	push @args, $_;	}
+}
+my $verb = exists $opts{v};
+my $retries = (exists $opts{r}) ? $opts{r} : 10;
+my $showhead = exists $opts{s};	# ğÏËÁÚÁÔØ ÆÏÒÍÁÔ ×ÙÈÏÄÎÙÈ ÄÁÎÎÙÈ
+my ($saddr, $device) = (@args);
+die "Usage: $0 addr serial-dev"	unless(defined $saddr && $device);
+
+my $addr = sprintf("%08x",$saddr);
+$addr =~ s/(\w\w)(\w\w)(\w\w)(\w\w)/$1 $2 $3 $4/;
+print "Addr: [$addr]\n"	if $verb;
+
+my $STALL_DEFAULT=2;	# how many seconds to wait for new input
+my $MAXLENGTH = 255;	# ÎÁÉÂÏÌØÛÁÑ ÄÌÉÎÁ ĞÁËÅÔÁ
+
+my ($status,$cnt,@data);
+my $connect = Mercury->new($device,'M203',$addr,'','',$retries,$verb);
+
+if($verb) {
+	print "Connection testing ... "	if $verb;
+	$status = $connect->tst();
+	print "$status\n"	if $verb;
+	die	"[$addr] Connection failed: [$status]"	unless($status=~/ok/);
+}
+
+my $Data;
+
+#
+# îÁËÏĞÌÅÎÎÁÑ ÜÎÅÒÇÉÑ
+#
+print "Stored energy ########################\n"	if $verb;
+($status,$cnt,@data) = $connect->get('27');
+
+die "[$addr] 27h request failed: [$status]"	unless($status=~/ok/);
+print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
+
+my @a;
+foreach my $i (5,9) {
+	my $num = join("",$data[0+$i],$data[1+$i],$data[2+$i],$data[3+$i]);
+	push @{$Data->{se}}, $num/100;
+}
+print "se [27h]: ".join(' ',@{$Data->{se}})."\n"	if $verb;
+
+#
+# ôÅËÕİÉÅ ĞÁÒÁÍÅÔÒÙ
+#
+print "Monitoring ########################\n"	if $verb;
+# ÍÏİÎÏÓÔØ
+($status,$cnt,@data) = $connect->get('26');
+
+die "[$addr] 26h request failed: [$status]"	unless($status=~/ok/);
+print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
+push @{$Data->{mp}}, join("",$data[5],$data[6])/100;
+print "mp [26h]: ".join(' ',@{$Data->{mp}})."\n"	if $verb;
+
+# ŞÁÓÔÏÔÁ
+($status,$cnt,@data) = $connect->get('81');
+
+die "[$addr] 81h request failed: [$status]"	unless($status=~/ok/);
+print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
+push @{$Data->{mf}}, join("",$data[5],$data[6])/100;
+print "mf [81h]: ".join(' ',@{$Data->{mf}})."\n"	if $verb;
+
+# ÎÁĞÒÑÖÅÎÉÅ, ÔÏË, ÍÏİÎÏÓÔØ (1 ÓÅË)
+($status,$cnt,@data) = $connect->get('63');
+die "[$addr] 63h request failed: [$status]"	unless($status=~/ok/);
+print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
+push @{$Data->{mv}}, join("",$data[5],$data[6])/10;
+print "mv [63h]: ".join(' ',@{$Data->{mv}})."\n"	if $verb;
+push @{$Data->{mc}}, join("",$data[7],$data[8])/10;
+print "mv [63h]: ".join(' ',@{$Data->{mc}})."\n"	if $verb;
+push @{$Data->{ms}}, join("",$data[9],$data[10],$data[11])/10;
+print "ms [63h]: ".join(' ',@{$Data->{ms}})."\n"	if $verb;
+
+###### data output
+print "addr;mv1;mc1;mf;mps;mss;se1ai;se2ai\n"	if($showhead);
+print "$saddr;".$Data->{mv}[0].";".
+	$Data->{mc}[0].";".
+	$Data->{mf}[0].";".
+	$Data->{mp}[0].";".		# íÏİÎÏÓÔØ P
+	$Data->{ms}[0].";".		# íÏİÎÏÓÔØ S
+	join(";",@{$Data->{se}}).
+	"\n";
+
+$connect->quit();

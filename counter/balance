@@ -1,0 +1,204 @@
+#!/usr/bin/perl
+
+#
+#       Copyright (C) 2008-2012 áÌÅËÓÁÎÄÒ äÅ×ÑÔËÉÎ, "úÅÌ£ÎÁÑ ÇÏÒËÁ"
+#
+#       òÁÚÒÅÛÁÅÔÓÑ ĞÏ×ÔÏÒÎÏÅ ÒÁÓĞÒÏÓÔÒÁÎÅÎÉÅ É ÉÓĞÏÌØÚÏ×ÁÎÉÅ ËÁË × ×ÉÄÅ ÉÓÈÏÄÎÏÇÏ
+#       ËÏÄÁ, ÔÁË É × Ä×ÏÉŞÎÏÊ ÆÏÒÍÅ, Ó ÉÚÍÅÎÅÎÉÑÍÉ ÉÌÉ ÂÅÚ, ĞÒÉ ÓÏÂÌÀÄÅÎÉÉ ÓÌÅÄÕÀİÉÈ
+#       ÕÓÌÏ×ÉÊ:
+#
+#       * ğÒÉ ĞÏ×ÔÏÒÎÏÍ ÒÁÓĞÒÏÓÔÒÁÎÅÎÉÉ ÉÓÈÏÄÎÏÇÏ ËÏÄÁ ÄÏÌÖÎÏ ÏÓÔÁ×ÁÔØÓÑ ÕËÁÚÁÎÎÏÅ
+#         ×ÙÛÅ Õ×ÅÄÏÍÌÅÎÉÅ ÏÂ Á×ÔÏÒÓËÏÍ ĞÒÁ×Å, ÜÔÏÔ ÓĞÉÓÏË ÕÓÌÏ×ÉÊ É ĞÏÓÌÅÄÕÀİÉÊ
+#         ÏÔËÁÚ ÏÔ ÇÁÒÁÎÔÉÊ.
+#       * ğÒÉ ĞÏ×ÔÏÒÎÏÍ ÒÁÓĞÒÏÓÔÒÁÎÅÎÉÉ Ä×ÏÉŞÎÏÇÏ ËÏÄÁ ÄÏÌÖÎÁ ÓÏÈÒÁÎÑÔØÓÑ ÕËÁÚÁÎÎÁÑ
+#         ×ÙÛÅ ÉÎÆÏÒÍÁÃÉÑ ÏÂ Á×ÔÏÒÓËÏÍ ĞÒÁ×Å, ÜÔÏÔ ÓĞÉÓÏË ÕÓÌÏ×ÉÊ É ĞÏÓÌÅÄÕÀİÉÊ ÏÔËÁÚ
+#         ÏÔ ÇÁÒÁÎÔÉÊ × ÄÏËÕÍÅÎÔÁÃÉÉ É/ÉÌÉ × ÄÒÕÇÉÈ ÍÁÔÅÒÉÁÌÁÈ, ĞÏÓÔÁ×ÌÑÅÍÙÈ ĞÒÉ
+#         ÒÁÓĞÒÏÓÔÒÁÎÅÎÉÉ.
+#       * îÉ ÎÁÚ×ÁÎÉÅ "úÅÌ£ÎÁÑ ÇÏÒËÁ", ÎÉ ÉÍÅÎÁ ÅÅ ÓÏÔÒÕÄÎÉËÏ× ÎÅ ÍÏÇÕÔ ÂÙÔØ
+#         ÉÓĞÏÌØÚÏ×ÁÎÙ × ËÁŞÅÓÔ×Å ĞÏÄÄÅÒÖËÉ ÉÌÉ ĞÒÏÄ×ÉÖÅÎÉÑ ĞÒÏÄÕËÔÏ×, ÏÓÎÏ×ÁÎÎÙÈ
+#         ÎÁ ÜÔÏÍ ğï ÂÅÚ ĞÒÅÄ×ÁÒÉÔÅÌØÎÏÇÏ ĞÉÓØÍÅÎÎÏÇÏ ÒÁÚÒÅÛÅÎÉÑ.
+#
+#       üôá ğòïçòáííá ğòåäïóôá÷ìåîá ÷ìáäåìøãáíé á÷ôïòóëéè ğòá÷ é/éìé äòõçéíé óôïòïîáíé
+#	"ëáë ïîá åóôø" âåú ëáëïçï-ìéâï ÷éäá çáòáîôéê, ÷ùòáöåîîùè ñ÷îï éìé ğïäòáúõíå÷áåíùè,
+#	÷ëìàşáñ, îï îå ïçòáîéşé÷áñóø éíé, ğïäòáúõíå÷áåíùå çáòáîôéé ëïííåòşåóëïê ãåîîïóôé
+#	é ğòéçïäîïóôé äìñ ëïîëòåôîïê ãåìé. îé ÷ ëïåí óìõşáå, åóìé îå ôòåâõåôóñ
+#	óïïô÷åôóô÷õàıéí úáëïîïí, éìé îå õóôáîï÷ìåîï ÷ õóôîïê æïòíå, îé ïäéî ÷ìáäåìåã
+#	á÷ôïòóëéè ğòá÷ é îé ïäîï äòõçïå ìéãï, ëïôïòïå íïöåô éúíåîñôø é/éìé ğï÷ôïòîï
+#	òáóğòïóôòáîñôø ğòïçòáííõ, ëáë âùìï óëáúáîï ÷ùûå, îå îåó³ô ïô÷åôóô÷åîîïóôé,
+#	÷ëìàşáñ ìàâùå ïâıéå, óìõşáêîùå, óğåãéáìøîùå éìé ğïóìåäï÷á÷ûéå õâùôëé,
+#	÷óìåäóô÷éå éóğïìøúï÷áîéñ éìé îå÷ïúíïöîïóôé éóğïìøúï÷áîéñ ğòïçòáííù (÷ëìàşáñ,
+#	îï îå ïçòáîéşé÷áñóø ğïôåòåê äáîîùè, éìé äáîîùíé, óôá÷ûéíé îåğòá÷éìøîùíé, éìé
+#	ğïôåòñíé ğòéîåóåîîùíé éú-úá ÷áó éìé ôòåôøéè ìéã, éìé ïôëáúïí ğòïçòáííù òáâïôáôø
+#	óï÷íåóôîï ó äòõçéíé ğòïçòáííáíé), äáöå åóìé ôáëïê ÷ìáäåìåã éìé äòõçïå ìéãï âùìé
+#	éú÷åıåîù ï ÷ïúíïöîïóôé ôáëéè õâùôëï÷.
+#
+
+#       Copyright (C) 2008-2012 Aleksandr Deviatkin, "Green Hill"
+#
+#       Redistribution and use in source and binary forms, with or without
+#       modification, are permitted provided that the following conditions are
+#       met:
+#       
+#       * Redistributions of source code must retain the above copyright
+#         notice, this list of conditions and the following disclaimer.
+#       * Redistributions in binary form must reproduce the above
+#         copyright notice, this list of conditions and the following disclaimer
+#         in the documentation and/or other materials provided with the
+#         distribution.
+#       * Neither the name of the Green Hill nor the names of its
+#         contributors may be used to endorse or promote products derived from
+#         this software without specific prior written permission.
+#       
+#       THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+#       "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+#       LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+#       A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+#       OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#       SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+#       LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+#       DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+#       THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#       (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#       OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+
+$|=1;
+use DBI;
+use Time::Local;
+use strict;
+
+#
+# òÁÓŞÅÔ ÂÁÌÁÎÓÁ ÎÁ ÌÕŞÅ
+# 2012-01-02 alid
+#
+
+my (@args, %opts);
+foreach(@ARGV){
+	if(/^\-(\S)(\S*)/) { $opts{$1} = $2; } else {  push @args, $_; }
+}
+my ($database,$cid,$mgid,$sdate,$edate) = (@args);
+die "Usage: $0 database counter_id group_id [start date] [end date]"		unless($database);
+my $pretty = exists $opts{h};	# human readable output
+my $verb = exists $opts{v};
+my $pgport = 5432;
+
+my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1});
+my $sth;
+
+my $mode = 0;
+if($sdate) {	# ÂÁÌÁÎÓ ÚÁ ĞÅÒÉÏÄ
+	$mode++;
+	my ($stm,$etm);
+	if($sdate =~ /(\d{4})-(\d{2})-(\d{2})/) {
+		my ($mday,$mon,$year) = ($3,$2,$1);
+		$stm = timelocal(0,0,0,$mday,$mon-1,$year-1900);
+	} else {
+		die "Invalid date format: $sdate";
+	}
+	$etm = time();
+	if($edate) {
+		if($edate =~ /(\d{4})-(\d{2})-(\d{2})/) {
+			my ($mday,$mon,$year) = ($3,$2,$1);
+			$etm = timelocal(0,0,0,$mday,$mon-1,$year-1900);
+		} else {
+			die "Invalid date format: $edate";
+		}
+	}
+	if($verb) {
+		if($pretty) {
+			print "Balace for period from \"".DTime($stm)."\" to \"".DTime($etm)."\"\n";
+		} else {
+			print "$stm $etm\n";
+		}
+	}
+	$sth = $dbh->prepare("select (select date from monitor where counter=A.id and date<$etm order by date desc limit 1)-(select date from monitor where counter=A.id and date>$stm order by date asc limit 1) as date,(select se1ai from monitor where counter=A.id and date<$etm order by date desc limit 1)-(select se1ai from monitor where counter=A.id and date>$stm order by date asc limit 1) as se1ai,(select se2ai from monitor where counter=A.id and date<$etm order by date desc limit 1)-(select se2ai from monitor where counter=A.id and date>$stm order by date asc limit 1) as se2ai, id, ktrans from counters A where id=?");
+
+} else {	# ÂÁÌÁÎÓ ĞÏ ÔÅËÕİÉÍ ĞÏËÁÚÁÎÉÑÍ
+
+	$sth = $dbh->prepare("select date,ise from monitor where counter=? order by date desc limit 1");
+}
+
+# ÓĞÉÓÏË ÓŞÅÔŞÉËÏ× ÇÒÕĞĞÙ
+my @Glist;
+my $cnt = 0;
+my $lst = $dbh->prepare("select id from counters where mgroup=? and active=1");
+$lst->execute($mgid);
+while(my $r = $lst->fetchrow_arrayref) {
+	push @Glist, $r->[0];
+	$cnt++;
+}
+$lst->finish;
+
+my ($Mise,$Mse1,$Mse2);
+$Mise->{tm} = 0;
+# ìÕŞÅ×ÏÊ ÓŞÅÔŞÉË
+$sth->execute($cid);
+if($mode) {
+	my ($id,$ktrans);
+	($Mise->{date},$Mise->{se1},$Mise->{se2},undef,$ktrans) = $sth->fetchrow_array;
+	$Mise->{ise} = $Mise->{se1} + $Mise->{se2};
+	map {$_ *= $ktrans} $Mise->{se1},$Mise->{se2},$Mise->{ise} if($ktrans);
+	
+} else {
+	($Mise) = $sth->fetchrow_hashref;
+}
+$sth->finish;
+
+my ($Sise,$Sse1,$Sse2);
+foreach my $id (@Glist) {
+	$sth->execute($id);
+	my $data;
+	($data) = $sth->fetchrow_hashref;
+	$sth->finish;
+	if($mode) {
+		if($verb) {
+			if($pretty) {
+				print "$id \"".$data->{date}."\" T1:".sprintf("%0.3f",$data->{se1ai})." T2:".sprintf("%0.3f",$data->{se2ai})." Sum:".sprintf("%0.3f",$data->{se1ai}+$data->{se2ai})."\n";
+			} else {
+				print "$id \"".$data->{date}."\" ".sprintf("%0.3f",$data->{se1ai})." ".sprintf("%0.3f",$data->{se2ai})." ".sprintf("%0.3f",$data->{se1ai}+$data->{se2ai})."\n";
+			}
+		}
+		map {$_ *= $data->{ktrans}} $data->{se1ai},$data->{se2ai}	if($data->{ktrans});
+		$Sse1 += $data->{se1ai};
+		$Sse2 += $data->{se2ai};
+		$Sise += $data->{se1ai} + $data->{se2ai};
+	} else {
+		if($verb) {
+			if($pretty) {
+				print "$id \"".DTime($data->{date})."\" ".sprintf("%0.3f",$data->{ise})."\n";
+			} else {
+				print "$id ".$data->{date}." ".$data->{ise}."\n";
+			}
+		}
+
+		$Sise += $data->{ise};
+	}
+	$Mise->{tm} = int($Mise->{date} - $data->{date})	if(int($Mise->{date} - $data->{date}) > $Mise->{tm});
+
+}
+$dbh->disconnect;
+
+if($mode) {
+
+	if($pretty) {
+		print "T1 delta:".sprintf("%0.3f",$Mise->{se1}-$Sse1)." T2 delta:".sprintf("%0.3f",$Mise->{se2}-$Sse2)." Sum delta:".sprintf("%0.3f",$Mise->{ise} - $Sise)." Time delta: ".$Mise->{tm}." sec\n";
+	} else {	# simple output
+		print sprintf("%0.3f",$Mise->{se1}-$Sse1)." ".sprintf("%0.3f",$Mise->{se2}-$Sse2)." ".sprintf("%0.3f",$Mise->{ise} - $Sise)." ".$Mise->{tm}."\n";
+	}
+} else {
+	my $delta = $Mise->{ise} - $Sise;
+	if($pretty) {
+		print DTime($Mise->{date})." Power delta: ".sprintf("%0.3f",$delta)." Time delta: ".$Mise->{tm}." sec\n";
+	} else {	# simple output
+		print $Mise->{date}." $delta ".$Mise->{tm}."\n";
+	}
+}
+
+sub DTime {
+	my $tm = shift;
+	my ($sec,$min,$hour,$mday,$mon,$year) = (localtime($tm))[0,1,2,3,4,5];
+	return sprintf("%4d-%02d-%02d %d:%02d:%02d",$year+1900,$mon+1,$mday,$hour,$min,$sec);
+}
+
+

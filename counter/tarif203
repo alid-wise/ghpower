@@ -1,0 +1,150 @@
+#!/usr/bin/perl -w
+use strict;
+$| = 1;
+
+#
+#       Copyright (C) 2008-2012 áÌÅËÓÁÎÄÒ äÅ×ÑÔËÉÎ, "úÅÌ£ÎÁÑ ÇÏÒËÁ"
+#
+#       òÁÚÒÅÛÁÅÔÓÑ ĞÏ×ÔÏÒÎÏÅ ÒÁÓĞÒÏÓÔÒÁÎÅÎÉÅ É ÉÓĞÏÌØÚÏ×ÁÎÉÅ ËÁË × ×ÉÄÅ ÉÓÈÏÄÎÏÇÏ
+#       ËÏÄÁ, ÔÁË É × Ä×ÏÉŞÎÏÊ ÆÏÒÍÅ, Ó ÉÚÍÅÎÅÎÉÑÍÉ ÉÌÉ ÂÅÚ, ĞÒÉ ÓÏÂÌÀÄÅÎÉÉ ÓÌÅÄÕÀİÉÈ
+#       ÕÓÌÏ×ÉÊ:
+#
+#       * ğÒÉ ĞÏ×ÔÏÒÎÏÍ ÒÁÓĞÒÏÓÔÒÁÎÅÎÉÉ ÉÓÈÏÄÎÏÇÏ ËÏÄÁ ÄÏÌÖÎÏ ÏÓÔÁ×ÁÔØÓÑ ÕËÁÚÁÎÎÏÅ
+#         ×ÙÛÅ Õ×ÅÄÏÍÌÅÎÉÅ ÏÂ Á×ÔÏÒÓËÏÍ ĞÒÁ×Å, ÜÔÏÔ ÓĞÉÓÏË ÕÓÌÏ×ÉÊ É ĞÏÓÌÅÄÕÀİÉÊ
+#         ÏÔËÁÚ ÏÔ ÇÁÒÁÎÔÉÊ.
+#       * ğÒÉ ĞÏ×ÔÏÒÎÏÍ ÒÁÓĞÒÏÓÔÒÁÎÅÎÉÉ Ä×ÏÉŞÎÏÇÏ ËÏÄÁ ÄÏÌÖÎÁ ÓÏÈÒÁÎÑÔØÓÑ ÕËÁÚÁÎÎÁÑ
+#         ×ÙÛÅ ÉÎÆÏÒÍÁÃÉÑ ÏÂ Á×ÔÏÒÓËÏÍ ĞÒÁ×Å, ÜÔÏÔ ÓĞÉÓÏË ÕÓÌÏ×ÉÊ É ĞÏÓÌÅÄÕÀİÉÊ ÏÔËÁÚ
+#         ÏÔ ÇÁÒÁÎÔÉÊ × ÄÏËÕÍÅÎÔÁÃÉÉ É/ÉÌÉ × ÄÒÕÇÉÈ ÍÁÔÅÒÉÁÌÁÈ, ĞÏÓÔÁ×ÌÑÅÍÙÈ ĞÒÉ
+#         ÒÁÓĞÒÏÓÔÒÁÎÅÎÉÉ.
+#       * îÉ ÎÁÚ×ÁÎÉÅ "úÅÌ£ÎÁÑ ÇÏÒËÁ", ÎÉ ÉÍÅÎÁ ÅÅ ÓÏÔÒÕÄÎÉËÏ× ÎÅ ÍÏÇÕÔ ÂÙÔØ
+#         ÉÓĞÏÌØÚÏ×ÁÎÙ × ËÁŞÅÓÔ×Å ĞÏÄÄÅÒÖËÉ ÉÌÉ ĞÒÏÄ×ÉÖÅÎÉÑ ĞÒÏÄÕËÔÏ×, ÏÓÎÏ×ÁÎÎÙÈ
+#         ÎÁ ÜÔÏÍ ğï ÂÅÚ ĞÒÅÄ×ÁÒÉÔÅÌØÎÏÇÏ ĞÉÓØÍÅÎÎÏÇÏ ÒÁÚÒÅÛÅÎÉÑ.
+#
+#       üôá ğòïçòáííá ğòåäïóôá÷ìåîá ÷ìáäåìøãáíé á÷ôïòóëéè ğòá÷ é/éìé äòõçéíé óôïòïîáíé
+#	"ëáë ïîá åóôø" âåú ëáëïçï-ìéâï ÷éäá çáòáîôéê, ÷ùòáöåîîùè ñ÷îï éìé ğïäòáúõíå÷áåíùè,
+#	÷ëìàşáñ, îï îå ïçòáîéşé÷áñóø éíé, ğïäòáúõíå÷áåíùå çáòáîôéé ëïííåòşåóëïê ãåîîïóôé
+#	é ğòéçïäîïóôé äìñ ëïîëòåôîïê ãåìé. îé ÷ ëïåí óìõşáå, åóìé îå ôòåâõåôóñ
+#	óïïô÷åôóô÷õàıéí úáëïîïí, éìé îå õóôáîï÷ìåîï ÷ õóôîïê æïòíå, îé ïäéî ÷ìáäåìåã
+#	á÷ôïòóëéè ğòá÷ é îé ïäîï äòõçïå ìéãï, ëïôïòïå íïöåô éúíåîñôø é/éìé ğï÷ôïòîï
+#	òáóğòïóôòáîñôø ğòïçòáííõ, ëáë âùìï óëáúáîï ÷ùûå, îå îåó³ô ïô÷åôóô÷åîîïóôé,
+#	÷ëìàşáñ ìàâùå ïâıéå, óìõşáêîùå, óğåãéáìøîùå éìé ğïóìåäï÷á÷ûéå õâùôëé,
+#	÷óìåäóô÷éå éóğïìøúï÷áîéñ éìé îå÷ïúíïöîïóôé éóğïìøúï÷áîéñ ğòïçòáííù (÷ëìàşáñ,
+#	îï îå ïçòáîéşé÷áñóø ğïôåòåê äáîîùè, éìé äáîîùíé, óôá÷ûéíé îåğòá÷éìøîùíé, éìé
+#	ğïôåòñíé ğòéîåóåîîùíé éú-úá ÷áó éìé ôòåôøéè ìéã, éìé ïôëáúïí ğòïçòáííù òáâïôáôø
+#	óï÷íåóôîï ó äòõçéíé ğòïçòáííáíé), äáöå åóìé ôáëïê ÷ìáäåìåã éìé äòõçïå ìéãï âùìé
+#	éú÷åıåîù ï ÷ïúíïöîïóôé ôáëéè õâùôëï÷.
+#
+
+#       Copyright (C) 2008-2012 Aleksandr Deviatkin, "Green Hill"
+#
+#       Redistribution and use in source and binary forms, with or without
+#       modification, are permitted provided that the following conditions are
+#       met:
+#       
+#       * Redistributions of source code must retain the above copyright
+#         notice, this list of conditions and the following disclaimer.
+#       * Redistributions in binary form must reproduce the above
+#         copyright notice, this list of conditions and the following disclaimer
+#         in the documentation and/or other materials provided with the
+#         distribution.
+#       * Neither the name of the Green Hill nor the names of its
+#         contributors may be used to endorse or promote products derived from
+#         this software without specific prior written permission.
+#       
+#       THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+#       "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+#       LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+#       A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+#       OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#       SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+#       LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+#       DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+#       THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#       (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#       OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+#
+# õĞÒÁ×ÌÅÎÉÅ ÔÁÒÉÆÎÙÍ ÒÁÓĞÉÓÁÎÉÅÍ ÓŞÅÔŞÉËÁ íÅÒËÕÒÉÊ-203.2ô
+# 2011-08-05 alid
+#
+
+use lib "$ENV{MY}/counter";
+use Mercury;
+
+my %mon = ( 'Jan' => 0, 'Feb' => 1, 'Mar' => 2, 'Apr' => 3, 'May' => 4, 'Jun' => 5, 'Jul' => 6, 'Aug' => 7, 'Sep' => 8, 'Oct' => 9, 'Nov' => 10, 'Dec' => 11, );
+my %wday = ( 'Mon' => 1, 'Tue' => 2, 'Wed' => 3, 'Thu' => 4, 'Fri' => 5, 'Sat' => 6, 'Sun' => 7. );
+my $retries = 5;
+
+my (@args, %opts);
+foreach(@ARGV){
+   if(/^\-(\S)(.*)/){	$opts{$1} = $2;	} else {	push @args, $_;	}
+}
+my $load = exists $opts{f};
+my ($saddr, $device) = (@args);
+die "Usage: $0 addr serial-dev"	unless(defined $saddr && $device);
+
+my $addr = sprintf("%08x",$saddr);
+$addr =~ s/(\w\w)(\w\w)(\w\w)(\w\w)/$1 $2 $3 $4/;
+
+my ($status,$cnt,@data);
+my $connect = Mercury->new($device,'M203',$addr,'','',$retries);
+
+$status = $connect->tst();
+die	"[$addr] Connection failed: [$status]"	unless($status=~/ok/);
+
+if($load) {	# úÁÇÒÕÚËÁ ÔÁÒÉÆÎÏÇÏ ÒÁÓĞÉÓÁÎÉÑ × ÓŞÅÔŞÉË
+	my (@Data, $Mon, $Wd);
+	while(<STDIN>) {
+		chomp;
+		my (@str) = split(" ");
+		next 	until($str[0]);
+		if(exists $mon{$str[0]}) {
+			$Mon = $mon{$str[0]};
+			next;
+		}
+		if(exists $wday{$str[0]}) {
+			$Wd = $wday{shift @str};
+			my $ii2 = sprintf("%X%X", $Mon, $Wd);
+			my $cs;
+			foreach my $i (0,2,4,6,8,10,12,14) {
+				if(defined $str[$i]) {
+					my ($hr,$min) = split(":",$str[$i]);
+					my $T = sprintf("%02X",(($str[1+$i]-1)<<6) & 0xc0);
+					$hr = $hr & 0x3f;
+					$cs .= sprintf("%02X",(hex($T) | hex($hr)));
+					$cs .= " $min ";
+				} else {
+					$cs .= 'ff ff ';
+				}
+			}
+			$cs .= $ii2;
+			push @Data, $cs;
+		}
+	}
+	foreach my $cs (@Data) {
+		($status,$cnt,@data) = $connect->get("11 $cs");
+		die "[$addr] 1h request failed: [$status]"	unless($status=~/ok/);
+	}
+} else {	# şÔÅÎÉÅ ÔÁÒÉÆÎÏÇÏ ÒÁÓĞÉÓÁÎÉÑ ÉÚ ÓŞÅÔŞÉËÁ
+	foreach my $mon (sort {$mon{$a} <=> $mon{$b}} keys %mon) {
+		print "$mon\n";
+		foreach my $wd (sort {$wday{$a} <=> $wday{$b}} keys %wday) {
+			my $ii2 = sprintf("%X%X", $mon{$mon}, $wday{$wd});
+			($status,$cnt,@data) = $connect->get("31 $ii2");
+			die "[$addr] 31h request failed: [$status]"	unless($status=~/ok/);
+			print "$wd";
+			foreach my $i (5,7,9,11,13,15,17,19) {
+				next	if($data[0+$i] eq 'ff');
+				my $T = ((hex($data[0+$i]) & 0xc0)>>6)+1;
+				my $hr = sprintf("%02X",hex($data[0+$i]) & 0x3f);
+				print " $hr:".$data[1+$i]." $T";
+			}
+			print "\n";
+		}
+	}
+}
+
+$connect->quit();
+
+

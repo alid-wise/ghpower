@@ -1,0 +1,228 @@
+#!/usr/bin/perl
+
+#
+#       Copyright (C) 2008-2012 áÌÅËÓÁÎÄÒ äÅ×ÑÔËÉÎ, "úÅÌ£ÎÁÑ ÇÏÒËÁ"
+#
+#       òÁÚÒÅÛÁÅÔÓÑ ÐÏ×ÔÏÒÎÏÅ ÒÁÓÐÒÏÓÔÒÁÎÅÎÉÅ É ÉÓÐÏÌØÚÏ×ÁÎÉÅ ËÁË × ×ÉÄÅ ÉÓÈÏÄÎÏÇÏ
+#       ËÏÄÁ, ÔÁË É × Ä×ÏÉÞÎÏÊ ÆÏÒÍÅ, Ó ÉÚÍÅÎÅÎÉÑÍÉ ÉÌÉ ÂÅÚ, ÐÒÉ ÓÏÂÌÀÄÅÎÉÉ ÓÌÅÄÕÀÝÉÈ
+#       ÕÓÌÏ×ÉÊ:
+#
+#       * ðÒÉ ÐÏ×ÔÏÒÎÏÍ ÒÁÓÐÒÏÓÔÒÁÎÅÎÉÉ ÉÓÈÏÄÎÏÇÏ ËÏÄÁ ÄÏÌÖÎÏ ÏÓÔÁ×ÁÔØÓÑ ÕËÁÚÁÎÎÏÅ
+#         ×ÙÛÅ Õ×ÅÄÏÍÌÅÎÉÅ ÏÂ Á×ÔÏÒÓËÏÍ ÐÒÁ×Å, ÜÔÏÔ ÓÐÉÓÏË ÕÓÌÏ×ÉÊ É ÐÏÓÌÅÄÕÀÝÉÊ
+#         ÏÔËÁÚ ÏÔ ÇÁÒÁÎÔÉÊ.
+#       * ðÒÉ ÐÏ×ÔÏÒÎÏÍ ÒÁÓÐÒÏÓÔÒÁÎÅÎÉÉ Ä×ÏÉÞÎÏÇÏ ËÏÄÁ ÄÏÌÖÎÁ ÓÏÈÒÁÎÑÔØÓÑ ÕËÁÚÁÎÎÁÑ
+#         ×ÙÛÅ ÉÎÆÏÒÍÁÃÉÑ ÏÂ Á×ÔÏÒÓËÏÍ ÐÒÁ×Å, ÜÔÏÔ ÓÐÉÓÏË ÕÓÌÏ×ÉÊ É ÐÏÓÌÅÄÕÀÝÉÊ ÏÔËÁÚ
+#         ÏÔ ÇÁÒÁÎÔÉÊ × ÄÏËÕÍÅÎÔÁÃÉÉ É/ÉÌÉ × ÄÒÕÇÉÈ ÍÁÔÅÒÉÁÌÁÈ, ÐÏÓÔÁ×ÌÑÅÍÙÈ ÐÒÉ
+#         ÒÁÓÐÒÏÓÔÒÁÎÅÎÉÉ.
+#       * îÉ ÎÁÚ×ÁÎÉÅ "úÅÌ£ÎÁÑ ÇÏÒËÁ", ÎÉ ÉÍÅÎÁ ÅÅ ÓÏÔÒÕÄÎÉËÏ× ÎÅ ÍÏÇÕÔ ÂÙÔØ
+#         ÉÓÐÏÌØÚÏ×ÁÎÙ × ËÁÞÅÓÔ×Å ÐÏÄÄÅÒÖËÉ ÉÌÉ ÐÒÏÄ×ÉÖÅÎÉÑ ÐÒÏÄÕËÔÏ×, ÏÓÎÏ×ÁÎÎÙÈ
+#         ÎÁ ÜÔÏÍ ðï ÂÅÚ ÐÒÅÄ×ÁÒÉÔÅÌØÎÏÇÏ ÐÉÓØÍÅÎÎÏÇÏ ÒÁÚÒÅÛÅÎÉÑ.
+#
+#       üôá ðòïçòáííá ðòåäïóôá÷ìåîá ÷ìáäåìøãáíé á÷ôïòóëéè ðòá÷ é/éìé äòõçéíé óôïòïîáíé
+#	"ëáë ïîá åóôø" âåú ëáëïçï-ìéâï ÷éäá çáòáîôéê, ÷ùòáöåîîùè ñ÷îï éìé ðïäòáúõíå÷áåíùè,
+#	÷ëìàþáñ, îï îå ïçòáîéþé÷áñóø éíé, ðïäòáúõíå÷áåíùå çáòáîôéé ëïííåòþåóëïê ãåîîïóôé
+#	é ðòéçïäîïóôé äìñ ëïîëòåôîïê ãåìé. îé ÷ ëïåí óìõþáå, åóìé îå ôòåâõåôóñ
+#	óïïô÷åôóô÷õàýéí úáëïîïí, éìé îå õóôáîï÷ìåîï ÷ õóôîïê æïòíå, îé ïäéî ÷ìáäåìåã
+#	á÷ôïòóëéè ðòá÷ é îé ïäîï äòõçïå ìéãï, ëïôïòïå íïöåô éúíåîñôø é/éìé ðï÷ôïòîï
+#	òáóðòïóôòáîñôø ðòïçòáííõ, ëáë âùìï óëáúáîï ÷ùûå, îå îåó³ô ïô÷åôóô÷åîîïóôé,
+#	÷ëìàþáñ ìàâùå ïâýéå, óìõþáêîùå, óðåãéáìøîùå éìé ðïóìåäï÷á÷ûéå õâùôëé,
+#	÷óìåäóô÷éå éóðïìøúï÷áîéñ éìé îå÷ïúíïöîïóôé éóðïìøúï÷áîéñ ðòïçòáííù (÷ëìàþáñ,
+#	îï îå ïçòáîéþé÷áñóø ðïôåòåê äáîîùè, éìé äáîîùíé, óôá÷ûéíé îåðòá÷éìøîùíé, éìé
+#	ðïôåòñíé ðòéîåóåîîùíé éú-úá ÷áó éìé ôòåôøéè ìéã, éìé ïôëáúïí ðòïçòáííù òáâïôáôø
+#	óï÷íåóôîï ó äòõçéíé ðòïçòáííáíé), äáöå åóìé ôáëïê ÷ìáäåìåã éìé äòõçïå ìéãï âùìé
+#	éú÷åýåîù ï ÷ïúíïöîïóôé ôáëéè õâùôëï÷.
+#
+
+#       Copyright (C) 2008-2012 Aleksandr Deviatkin, "Green Hill"
+#
+#       Redistribution and use in source and binary forms, with or without
+#       modification, are permitted provided that the following conditions are
+#       met:
+#       
+#       * Redistributions of source code must retain the above copyright
+#         notice, this list of conditions and the following disclaimer.
+#       * Redistributions in binary form must reproduce the above
+#         copyright notice, this list of conditions and the following disclaimer
+#         in the documentation and/or other materials provided with the
+#         distribution.
+#       * Neither the name of the Green Hill nor the names of its
+#         contributors may be used to endorse or promote products derived from
+#         this software without specific prior written permission.
+#       
+#       THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+#       "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+#       LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+#       A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+#       OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#       SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+#       LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+#       DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+#       THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#       (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#       OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+
+$|=1;
+use DBI;
+#use Time::Local;
+use strict;
+
+#
+# ðÏÓÔÒÏÅÎÉÅ ÇÒÁÆÉËÏ× ÎÁ ÌÕÞÅ
+# 2012-01-02 alid
+#
+
+my (@args, %opts);
+foreach(@ARGV){
+	if(/^\-(\S)(\S*)/) { $opts{$1} = $2; } else {  push @args, $_; }
+}
+my ($database,$mgid) = (@args);
+die "Usage: $0 database counter_id group_id [start date] [end date]"		unless($database);
+my $verb = exists $opts{v};
+my $pgport = 5432;
+
+my $dpath = $ENV{MY}."data/$database/rrd";
+my $gpath = $ENV{MY}."data/$database/graph";
+my $balcmd = $ENV{MY}."counter/balance";
+my $canbalance = 0;
+
+
+my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1});
+# óÐÉÓÏË ÓÞÅÔÞÉËÏ× ÌÕÞÁ
+my @Glist;
+my $cnt = 0;
+my $sth = $dbh->prepare("select id from counters where mgroup=? and active=1");
+$sth->execute($mgid);
+while(my $r = $sth->fetchrow_arrayref) {
+	push @Glist, $r->[0];
+	$cnt++;
+}
+$sth->finish;
+
+# ëÁÔÁÌÏÇÉ ÄÌÑ ÂÁÚÙ É ÇÒÁÆÉËÏ× ÜÔÏÇÏ ÌÕÞÁ
+unless(-d "$dpath/$mgid") {
+	mkdir "$dpath/$mgid"	or die "Can't create database directory: $dpath/$mgid - $!";
+}
+unless(-d "$gpath/$mgid") {
+	mkdir "$gpath/$mgid"	or die "Can't create graph directory: $gpath/$mgid - $!";
+}
+
+# âÁÌÁÎÓÎÙÊ ÓÞÅÔÞÉË ÜÔÏÇÏ ÌÕÞÁ
+$sth = $dbh->prepare("select bid from mgroup where id=?");
+$sth->execute($mgid);
+my ($cid) = $sth->fetchrow_array;
+$sth->finish;
+unless($cid) {
+	print "Can't found Balance counter id for group $mgid\n"	if($verb);
+} else {
+	# âÁÌÁÎÓ ÎÁ ÌÕÞÅ
+	unless(-e "$dpath/$mgid/balance.rrd") {	# ÂÁÚÁ ÂÁÌÁÎÓÁ
+		my $res = system("rrdtool","create","$dpath/$mgid/balance.rrd","--start","1200000000","--step","300","DS:delta:GAUGE:600:U:U","RRA:AVERAGE:0.1:1:600","RRA:AVERAGE:0.1:6:300","RRA:AVERAGE:0.1:24:300","RRA:AVERAGE:0.1:72:300","RRA:AVERAGE:0.1:288:300");
+		die "Can't create balance database: $dpath/$mgid/balance.rrd - $!"	if $res;
+	}
+	my $bal = `$balcmd $database $cid $mgid`;
+	my ($tm,$val,undef) = split(/\s/,$bal);
+	if($tm && defined $val) {
+		eval{my $res = system("rrdtool","update","$dpath/$mgid/balance.rrd","$tm:$val"); };
+	#	warn "Can't update balance database: $!"	if $res;
+	}
+
+
+	# çÒÁÆÉËÉ ÂÁÌÁÎÓ
+	system("rrdtool graph $gpath/$mgid/balance-day.png --imgformat PNG -z "
+		."--start -24h --end now "
+		."--title \"Balance today\" "
+		."DEF:delta=$dpath/$mgid/balance.rrd:delta:AVERAGE "
+		."LINE:delta#FF0000:Delta"
+	." >/dev/null");
+	system("rrdtool graph $gpath/$mgid/balance-yesterday.png --imgformat PNG -z "
+		."--start -48h --end -24h "
+		."--title \"Balance yestertoday\" "
+		."DEF:delta=$dpath/$mgid/balance.rrd:delta:AVERAGE "
+		."LINE:delta#FF0000:Delta"
+	." >/dev/null");
+	system("rrdtool graph $gpath/$mgid/balance-week.png --imgformat PNG -z "
+		."--start -7d --end now "
+		."--title \"Balance last week\" "
+		."DEF:delta=$dpath/$mgid/balance.rrd:delta:AVERAGE "
+		."LINE:delta#FF0000:Delta"
+	." >/dev/null");
+	system("rrdtool graph $gpath/$mgid/balance-month.png --imgformat PNG -z "
+		."--start -30d --end now "
+		."--title \"Balance last month\" "
+		."DEF:delta=$dpath/$mgid/balance.rrd:delta:AVERAGE "
+		."LINE:delta#FF0000:Delta"
+	." >/dev/null");
+	system("rrdtool graph $gpath/$mgid/balance-3month.png --imgformat PNG -z "
+		."--start -91d --end now "
+		."--title \"Balance last three month\" "
+		."DEF:delta=$dpath/$mgid/balance.rrd:delta:AVERAGE "
+		."LINE:delta#FF0000:Delta"
+	." >/dev/null");
+	system("rrdtool graph $gpath/$mgid/balance-year.png --imgformat PNG -z "
+		."--start -365d --end now "
+		."--title \"Balance last year\" "
+		."DEF:delta=$dpath/$mgid/balance.rrd:delta:AVERAGE "
+		."LINE:delta#FF0000:Delta"
+	." >/dev/null");
+}	# balance
+
+# çÒÁÆÉËÉ ÐÏÔÒÅÂÌÅÎÉÑ ÓÞÅÔÞÉËÏ× ÌÕÞÁ
+$sth = $dbh->prepare("select date,ise from monitor where counter=? order by date desc limit 1");
+foreach my $id (@Glist) {
+	unless(-e "$dpath/$mgid/$id.rrd") {	# ÂÁÚÁ ÜÔÏÇÏ ÓÞÅÔÞÉËÁ
+		my $res = system("rrdtool","create","$dpath/$mgid/$id.rrd","--start","1200000000","--step","300","DS:ise:GAUGE:600:U:U","RRA:AVERAGE:0.1:1:600","RRA:AVERAGE:0.1:6:300","RRA:AVERAGE:0.1:24:300","RRA:AVERAGE:0.1:72:300","RRA:AVERAGE:0.1:288:300");
+		die "Can't create counter database: $dpath/$mgid/$id.rrd - $!"	if $res;
+	}
+	$sth->execute($id);
+	my ($tm,$val) = $sth->fetchrow_array;
+	$sth->finish;
+	if($tm && defined $val) {
+		$val *= 1000;	# ÷ÁÔÔÙ
+		eval{ my $res = system("rrdtool","update","$dpath/$mgid/$id.rrd","$tm:$val"); };
+#		warn "Can't update counter database: $!"	if $res;
+	}
+
+	system("rrdtool graph $gpath/$mgid/$id-day.png --imgformat PNG -z "
+		."--start -24h --end now "
+		."--title \"Power today\" "
+		."DEF:ise=$dpath/$mgid/$id.rrd:ise:AVERAGE "
+		."LINE:ise#0000FF:Power"
+	." >/dev/null");
+	system("rrdtool graph $gpath/$mgid/$id-yesterday.png --imgformat PNG -z "
+		."--start -48h --end -24h "
+		."--title \"Power yestertoday\" "
+		."DEF:ise=$dpath/$mgid/$id.rrd:ise:AVERAGE "
+		."LINE:ise#0000FF:Power"
+	." >/dev/null");
+	system("rrdtool graph $gpath/$mgid/$id-week.png --imgformat PNG -z "
+		."--start -7d --end now "
+		."--title \"Power last week\" "
+		."DEF:ise=$dpath/$mgid/$id.rrd:ise:AVERAGE "
+		."LINE:ise#0000FF:Power"
+	." >/dev/null");
+	system("rrdtool graph $gpath/$mgid/$id-month.png --imgformat PNG -z "
+		."--start -30d --end now "
+		."--title \"Power last month\" "
+		."DEF:ise=$dpath/$mgid/$id.rrd:ise:AVERAGE "
+		."LINE:ise#0000FF:Power"
+	." >/dev/null");
+	system("rrdtool graph $gpath/$mgid/$id-3month.png --imgformat PNG -z "
+		."--start -91d --end now "
+		."--title \"Power last three month\" "
+		."DEF:ise=$dpath/$mgid/$id.rrd:ise:AVERAGE "
+		."LINE:ise#0000FF:Power"
+	." >/dev/null");
+	system("rrdtool graph $gpath/$mgid/$id-year.png --imgformat PNG -z "
+		."--start -365d --end now "
+		."--title \"Power last year\" "
+		."DEF:ise=$dpath/$mgid/$id.rrd:ise:AVERAGE "
+		."LINE:ise#0000FF:Power"
+	." >/dev/null");
+
+}
+
+$dbh->disconnect;
+
+

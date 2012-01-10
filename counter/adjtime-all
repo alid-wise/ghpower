@@ -1,0 +1,118 @@
+#!/usr/bin/perl -w
+use strict;
+$| = 1;
+
+#
+#       Copyright (C) 2008-2012 áÌÅËÓÁÎÄÒ äÅ×ÑÔËÉÎ, "úÅÌ£ÎÁÑ ÇÏÒËÁ"
+#
+#       òÁÚÒÅÛÁÅÔÓÑ ÐÏ×ÔÏÒÎÏÅ ÒÁÓÐÒÏÓÔÒÁÎÅÎÉÅ É ÉÓÐÏÌØÚÏ×ÁÎÉÅ ËÁË × ×ÉÄÅ ÉÓÈÏÄÎÏÇÏ
+#       ËÏÄÁ, ÔÁË É × Ä×ÏÉÞÎÏÊ ÆÏÒÍÅ, Ó ÉÚÍÅÎÅÎÉÑÍÉ ÉÌÉ ÂÅÚ, ÐÒÉ ÓÏÂÌÀÄÅÎÉÉ ÓÌÅÄÕÀÝÉÈ
+#       ÕÓÌÏ×ÉÊ:
+#
+#       * ðÒÉ ÐÏ×ÔÏÒÎÏÍ ÒÁÓÐÒÏÓÔÒÁÎÅÎÉÉ ÉÓÈÏÄÎÏÇÏ ËÏÄÁ ÄÏÌÖÎÏ ÏÓÔÁ×ÁÔØÓÑ ÕËÁÚÁÎÎÏÅ
+#         ×ÙÛÅ Õ×ÅÄÏÍÌÅÎÉÅ ÏÂ Á×ÔÏÒÓËÏÍ ÐÒÁ×Å, ÜÔÏÔ ÓÐÉÓÏË ÕÓÌÏ×ÉÊ É ÐÏÓÌÅÄÕÀÝÉÊ
+#         ÏÔËÁÚ ÏÔ ÇÁÒÁÎÔÉÊ.
+#       * ðÒÉ ÐÏ×ÔÏÒÎÏÍ ÒÁÓÐÒÏÓÔÒÁÎÅÎÉÉ Ä×ÏÉÞÎÏÇÏ ËÏÄÁ ÄÏÌÖÎÁ ÓÏÈÒÁÎÑÔØÓÑ ÕËÁÚÁÎÎÁÑ
+#         ×ÙÛÅ ÉÎÆÏÒÍÁÃÉÑ ÏÂ Á×ÔÏÒÓËÏÍ ÐÒÁ×Å, ÜÔÏÔ ÓÐÉÓÏË ÕÓÌÏ×ÉÊ É ÐÏÓÌÅÄÕÀÝÉÊ ÏÔËÁÚ
+#         ÏÔ ÇÁÒÁÎÔÉÊ × ÄÏËÕÍÅÎÔÁÃÉÉ É/ÉÌÉ × ÄÒÕÇÉÈ ÍÁÔÅÒÉÁÌÁÈ, ÐÏÓÔÁ×ÌÑÅÍÙÈ ÐÒÉ
+#         ÒÁÓÐÒÏÓÔÒÁÎÅÎÉÉ.
+#       * îÉ ÎÁÚ×ÁÎÉÅ "úÅÌ£ÎÁÑ ÇÏÒËÁ", ÎÉ ÉÍÅÎÁ ÅÅ ÓÏÔÒÕÄÎÉËÏ× ÎÅ ÍÏÇÕÔ ÂÙÔØ
+#         ÉÓÐÏÌØÚÏ×ÁÎÙ × ËÁÞÅÓÔ×Å ÐÏÄÄÅÒÖËÉ ÉÌÉ ÐÒÏÄ×ÉÖÅÎÉÑ ÐÒÏÄÕËÔÏ×, ÏÓÎÏ×ÁÎÎÙÈ
+#         ÎÁ ÜÔÏÍ ðï ÂÅÚ ÐÒÅÄ×ÁÒÉÔÅÌØÎÏÇÏ ÐÉÓØÍÅÎÎÏÇÏ ÒÁÚÒÅÛÅÎÉÑ.
+#
+#       üôá ðòïçòáííá ðòåäïóôá÷ìåîá ÷ìáäåìøãáíé á÷ôïòóëéè ðòá÷ é/éìé äòõçéíé óôïòïîáíé
+#	"ëáë ïîá åóôø" âåú ëáëïçï-ìéâï ÷éäá çáòáîôéê, ÷ùòáöåîîùè ñ÷îï éìé ðïäòáúõíå÷áåíùè,
+#	÷ëìàþáñ, îï îå ïçòáîéþé÷áñóø éíé, ðïäòáúõíå÷áåíùå çáòáîôéé ëïííåòþåóëïê ãåîîïóôé
+#	é ðòéçïäîïóôé äìñ ëïîëòåôîïê ãåìé. îé ÷ ëïåí óìõþáå, åóìé îå ôòåâõåôóñ
+#	óïïô÷åôóô÷õàýéí úáëïîïí, éìé îå õóôáîï÷ìåîï ÷ õóôîïê æïòíå, îé ïäéî ÷ìáäåìåã
+#	á÷ôïòóëéè ðòá÷ é îé ïäîï äòõçïå ìéãï, ëïôïòïå íïöåô éúíåîñôø é/éìé ðï÷ôïòîï
+#	òáóðòïóôòáîñôø ðòïçòáííõ, ëáë âùìï óëáúáîï ÷ùûå, îå îåó³ô ïô÷åôóô÷åîîïóôé,
+#	÷ëìàþáñ ìàâùå ïâýéå, óìõþáêîùå, óðåãéáìøîùå éìé ðïóìåäï÷á÷ûéå õâùôëé,
+#	÷óìåäóô÷éå éóðïìøúï÷áîéñ éìé îå÷ïúíïöîïóôé éóðïìøúï÷áîéñ ðòïçòáííù (÷ëìàþáñ,
+#	îï îå ïçòáîéþé÷áñóø ðïôåòåê äáîîùè, éìé äáîîùíé, óôá÷ûéíé îåðòá÷éìøîùíé, éìé
+#	ðïôåòñíé ðòéîåóåîîùíé éú-úá ÷áó éìé ôòåôøéè ìéã, éìé ïôëáúïí ðòïçòáííù òáâïôáôø
+#	óï÷íåóôîï ó äòõçéíé ðòïçòáííáíé), äáöå åóìé ôáëïê ÷ìáäåìåã éìé äòõçïå ìéãï âùìé
+#	éú÷åýåîù ï ÷ïúíïöîïóôé ôáëéè õâùôëï÷.
+#
+
+#       Copyright (C) 2008-2012 Aleksandr Deviatkin, "Green Hill"
+#
+#       Redistribution and use in source and binary forms, with or without
+#       modification, are permitted provided that the following conditions are
+#       met:
+#       
+#       * Redistributions of source code must retain the above copyright
+#         notice, this list of conditions and the following disclaimer.
+#       * Redistributions in binary form must reproduce the above
+#         copyright notice, this list of conditions and the following disclaimer
+#         in the documentation and/or other materials provided with the
+#         distribution.
+#       * Neither the name of the Green Hill nor the names of its
+#         contributors may be used to endorse or promote products derived from
+#         this software without specific prior written permission.
+#       
+#       THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+#       "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+#       LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+#       A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+#       OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#       SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+#       LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+#       DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+#       THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#       (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#       OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+#
+# ëÏÒÒÅËÃÉÑ ÞÁÓÏ× ÓÞÅÔÞÉËÏ× ÇÒÕÐÐÙ
+# 2008-04-20 alid
+#
+
+use DBI;
+use Carp;
+use Time::Local;
+use Fcntl qw (:DEFAULT :flock);
+
+my (@args, %opts);
+foreach(@ARGV){
+   if(/^\-(\S)(.*)/){	$opts{$1} = $2;	} else {	push @args, $_;	}
+}
+my $verb = exists $opts{v};
+my $force = exists $opts{f};	# ÉÇÎÏÒÉÒÏ×ÁÔØ ÏÔÓÕÔÓÔ×ÉÅ ÆÌÁÇÁ mgroup.active
+my ($database,$mgid,$flag) = (@args);
+die "Usage: $0 database mgroup_id"	unless($database);
+$mgid ||= 1;
+$flag ||= 0;	# ÎÅ ÐÅÒÅÈÏÄÉÔØ ÎÁ ÌÅÔÎÅÅ ×ÒÅÍÑ (ÔÏÌØËÏ ÄÌÑ í203)
+
+my $action230 = "$ENV{MY}counter/adjtime -a";
+my $action203 = "$ENV{MY}counter/adjtime203 -a";
+
+my $dbh = DBI->connect("dbi:Pg:dbname=$database","","",{AutoCommit => 0})	or die;
+
+# ÓÐÉÓÏË ÓÞÅÔÞÉËÏ×
+my $sth = $dbh->prepare("select counters.id,counters.name,counters.addr,counters.passwd,iface.dev,counters.ktrans,counter_type.type,status.id as status_id,status.state,status.pstate from counters inner join mgroup on mgroup.id=counters.mgroup inner join iface on mgroup.if_id=iface.id inner join counter_type on model=counter_type.id left outer join status on counters.id=status.cid where counters.active=1 and counters.mgroup=? ".($force? "":"and mgroup.active=1")." order by counters.id");
+
+$sth->execute($mgid)	or die;
+my $List;
+while(my $row = $sth->fetchrow_hashref) {
+	push @$List, $row;	
+}
+$sth->finish;
+$dbh->disconnect;
+
+# ×ÏÔ ÔÕÔ
+foreach my $counter (@$List) {
+	print "set: ".$counter->{addr}." ".$counter->{type}."..."	if $verb;
+	if($counter->{type} =~ /M203/) {
+		system("$action203 ".$counter->{addr}." ".$counter->{dev}." ".($verb ? '-v':'')." $flag");
+	}
+	elsif($counter->{type} =~ /M230/) {
+		system("$action230 ".$counter->{addr}." ".$counter->{passwd}." ".$counter->{dev}." ".($verb ? '-v':'')."");
+	} else {
+		print " ERROR: unknown device type [".$counter->{type}."]\n"	if $verb;
+		next;
+	}
+	print "done\n"	if $verb;
+}
+
