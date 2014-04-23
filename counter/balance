@@ -116,7 +116,7 @@ if($sdate) {	# баланс за период
 
 } else {	# баланс по текущим показаниям
 
-	$sth = $dbh->prepare("select date,ise from monitor where counter=? order by date desc limit 1");
+	$sth = $dbh->prepare("select date,ise from ONLY monitor where counter=? order by date desc limit 1");
 }
 
 # список счетчиков группы

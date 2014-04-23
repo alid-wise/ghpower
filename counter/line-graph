@@ -138,7 +138,7 @@ unless($cid) {
 	." >/dev/null");
 	system("rrdtool graph $gpath/$mgid/balance-yesterday.png --imgformat PNG -z "
 		."--start -48h --end -24h "
-		."--title \"Balance yestertoday\" "
+		."--title \"Balance yesterday\" "
 		."DEF:delta=$dpath/$mgid/balance.rrd:delta:AVERAGE "
 		."LINE:delta#FF0000:Delta"
 	." >/dev/null");
@@ -169,7 +169,7 @@ unless($cid) {
 }	# balance
 
 # Графики потребления счетчиков луча
-$sth = $dbh->prepare("select date,ise from monitor where counter=? order by date desc limit 1");
+$sth = $dbh->prepare("select date,ise from ONLY monitor where counter=? order by date desc limit 1");
 foreach my $id (@Glist) {
 	unless(-e "$dpath/$mgid/$id.rrd") {	# база этого счетчика
 		my $res = system("rrdtool","create","$dpath/$mgid/$id.rrd","--start","1200000000","--step","300","DS:ise:GAUGE:600:U:U","RRA:AVERAGE:0.1:1:600","RRA:AVERAGE:0.1:6:300","RRA:AVERAGE:0.1:24:300","RRA:AVERAGE:0.1:72:300","RRA:AVERAGE:0.1:288:300");
@@ -192,7 +192,7 @@ foreach my $id (@Glist) {
 	." >/dev/null");
 	system("rrdtool graph $gpath/$mgid/$id-yesterday.png --imgformat PNG -z "
 		."--start -48h --end -24h "
-		."--title \"Power yestertoday\" "
+		."--title \"Power yesterday\" "
 		."DEF:ise=$dpath/$mgid/$id.rrd:ise:AVERAGE "
 		."LINE:ise#0000FF:Power"
 	." >/dev/null");

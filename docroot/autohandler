@@ -6,6 +6,12 @@ use DBI;
 use strict;
 
 my $dbh = DBI->connect("dbi:Pg:dbname=$dbname", "", "", {RaiseError => 1});
+my $sth = $dbh->prepare("select A.id,A.name,A.login,A.email,A.modtime,A.gid,G.name AS group from auth A inner join groups G on A.gid = G.id WHERE A.login=? AND active=1");
+my $auth;
+if($sth->execute($ENV{REMOTE_USER})) {
+	$auth = ($sth->fetchrow_hashref);
+}
+$sth->finish;
 $r->header_out('Content-Type' => 'text/html; charset=KOI8-R');
 $r->send_cgi_header("Pragma: no-cache\n");
 $r->send_cgi_header("Cache-control: no-cache,max-age=0,must-revalidate\n\n");
@@ -18,7 +24,7 @@ $r->send_cgi_header("Cache-control: no-cache,max-age=0,must-revalidate\n\n");
 	<LINK REL="stylesheet" TYPE="text/css" HREF="ghpower.css">
 </head>
 <body>
-<% $m->call_next( dbh=>$dbh)%>
+<% $m->call_next( dbh=>$dbh, auth=>$auth)%>
 </body>
 </html>
 

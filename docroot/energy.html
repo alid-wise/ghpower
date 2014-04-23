@@ -27,13 +27,16 @@ if($date =~ /(\d{4})-(\d{2})-(\d{2})/) {
 my $TM = timelocal(0,0,0,$mday,$mon-1,$year-1900);
 ($mday,$mon,$year) = (localtime($TM-86400))[3,4,5];
 my $prev = sprintf("%4d-%02d-%02d",$year+1900,$mon+1,$mday);
+($mday,$mon,$year) = (localtime($TM+86400))[3,4,5];
+my $next2 = sprintf("%4d-%02d-%02d",$year+1900,$mon+1,$mday);
 my $next;
 unless($TM+86400 > time()) {
-	($mday,$mon,$year) = (localtime($TM+86400))[3,4,5];
-	$next = sprintf("%4d-%02d-%02d",$year+1900,$mon+1,$mday);
+	$next = $next2;
+#	($mday,$mon,$year) = (localtime($TM+86400))[3,4,5];
+#	$next = sprintf("%4d-%02d-%02d",$year+1900,$mon+1,$mday);
 }
 
-my $inf = $dbh->prepare("select counters.mgroup,counters.name,counters.addr,counters.mgroup,counters.sn,counters.model,counters.setdate,counters.memo,counters.active,counters.modtime,counters.year,counters.house,counter_type.name as model,street.name as street,towers.name as tower from counters inner join counter_type on counter_type.id=model left outer join street on street.id=counters.street left outer join towers on towers.id=counters.tower_id where counters.id=?");
+my $inf = $dbh->prepare("select A.plimit,A.mgroup,A.name,A.addr,A.mgroup,A.sn,A.model,A.setdate,A.memo,A.active,A.modtime,A.year,A.house,B.name as model,C.name as street,D.name as tower from counters A inner join counter_type B on B.id=A.model left outer join street C on C.id=A.street left outer join towers D on D.id=A.tower_id where A.id=?");
 $inf->execute($id);
 my $Info = $inf->fetchrow_hashref;
 $inf->finish;
@@ -47,9 +50,8 @@ if($h) {
 }
 
 my $Data;
-
-my $sth = $dbh->prepare("select to_timestamp(monitor.date::double precision) AS tm,se1ai,se2ai,ise from monitor where counter=? and cast(to_timestamp(monitor.date::double precision) as date)=? order by date desc");
-$sth->execute($id,$date);
+my $sth = $dbh->prepare("select dt AS tm,se1ai,se2ai,ise from monitor where counter=? and dt <= ? and dt > ? order by dt desc");
+$sth->execute($id,$next2,$date);
 while(my $row = $sth->fetchrow_hashref) {
 	$row->{tm} =~ s/\+\d+$//;
 	$row->{tm} =~ s/^.*\s+//;
@@ -58,9 +60,14 @@ while(my $row = $sth->fetchrow_hashref) {
 }
 </%init>
 <p><a href="index.html">Home</a></p>
-<table border="0">
+<table border=0>
+<tr><td>
+<table border="1">
 <tr><td align="right">Адрес:</td><td><%$Info->{street}%>, <%$Info->{house}%></td></tr>
 </table>
+</td>
+<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="stored.html?id=<%$id%>">Показания счетчика по дням</a></td>
+</tr></table>
 %if($Info->{mgid}) {
 <p>Это балансный счетчик</p>
 %}
@@ -95,6 +102,7 @@ while(my $row = $sth->fetchrow_hashref) {
 <tr><td align="right">Год выпуска:</td><td><%$Info->{year}%></td></tr>
 <tr><td align="right">Дата установки:</td><td><%$Info->{setdate}%></td></tr>
 <tr><td align="right">Номер столба:</td><td><%$Info->{tower}%></td></tr>
+<tr><td align="right">Лимит мощности:</td><td><%$Info->{plimit}%></td></tr>
 <tr><td align="right">Доп.информация:</td><td><%$Info->{memo}%></td></tr>
 </table>
 <br>

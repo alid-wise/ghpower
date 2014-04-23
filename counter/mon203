@@ -97,7 +97,7 @@ if($verb) {
 	print "Connection testing ... "	if $verb;
 	$status = $connect->tst();
 	print "$status\n"	if $verb;
-	die	"[$addr] Connection failed: [$status]"	unless($status=~/ok/);
+	die	"[".hex($addr)."] Connection failed: [$status]"	unless($status=~/ok/);
 }
 
 my $Data;
@@ -108,7 +108,7 @@ my $Data;
 print "Stored energy ########################\n"	if $verb;
 ($status,$cnt,@data) = $connect->get('27');
 
-die "[$addr] 27h request failed: [$status]"	unless($status=~/ok/);
+die "[$addr] [$device] 27h request failed: [$status]"	unless($status=~/ok/);
 print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
 
 my @a;
@@ -125,7 +125,7 @@ print "Monitoring ########################\n"	if $verb;
 # мощность
 ($status,$cnt,@data) = $connect->get('26');
 
-die "[$addr] 26h request failed: [$status]"	unless($status=~/ok/);
+die "[".hex($addr)."] 26h request failed: [$status]"	unless($status=~/ok/);
 print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
 push @{$Data->{mp}}, join("",$data[5],$data[6])/100;
 print "mp [26h]: ".join(' ',@{$Data->{mp}})."\n"	if $verb;
@@ -133,14 +133,14 @@ print "mp [26h]: ".join(' ',@{$Data->{mp}})."\n"	if $verb;
 # частота
 ($status,$cnt,@data) = $connect->get('81');
 
-die "[$addr] 81h request failed: [$status]"	unless($status=~/ok/);
+die "[".hex($addr)."] 81h request failed: [$status]"	unless($status=~/ok/);
 print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
 push @{$Data->{mf}}, join("",$data[5],$data[6])/100;
 print "mf [81h]: ".join(' ',@{$Data->{mf}})."\n"	if $verb;
 
 # напряжение, ток, мощность (1 сек)
 ($status,$cnt,@data) = $connect->get('63');
-die "[$addr] 63h request failed: [$status]"	unless($status=~/ok/);
+die "[".hex($addr)."] 63h request failed: [$status]"	unless($status=~/ok/);
 print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
 push @{$Data->{mv}}, join("",$data[5],$data[6])/10;
 print "mv [63h]: ".join(' ',@{$Data->{mv}})."\n"	if $verb;
