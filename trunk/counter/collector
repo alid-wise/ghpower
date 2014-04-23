@@ -103,8 +103,11 @@ while(my $row = $sth->fetchrow_hashref) {
 }
 $sth->finish;
 
-my $sins = $dbh->prepare("insert into status (cid,state,pstate,se1,se2,modtime) values (?,?,?,?,?,now())");
-my $supd = $dbh->prepare("update status set state=?,pstate=?,se1=?,se2=?,modtime=now() where id=?");
+my $sins = $dbh->prepare("insert into status (cid,state,pstate,se1,se2,lpower,modtime) values (?,?,?,?,?,?,now())");
+my $supd = $dbh->prepare("update status set state=?,pstate=?,se1=?,se2=?,lpower=?,modtime=now() where id=?");
+my $ins1 = $dbh->prepare("insert into monitor (dt,date,counter,mv1,mc1,mf,mps,mss,se1ai,se2ai) values (?,?,?,?,?,?,?,?,?,?) returning ise");
+my $ins2 = $dbh->prepare("insert into monitor (dt,date,counter,mv1,mv2,mv3,mc1,mc2,mc3,mf,ma1,ma2,ma3,mps,mp1,mp2,mp3,mqs,mq1,mq2,mq3,mss,ms1,ms2,ms3,mks,mk1,mk2,mk3,se1ai,se1ae,se1ri,se1re,se2ai,se2ae,se2ri,se2re) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) returning ise");
+
 
 # вот тут
 foreach my $counter (@$List) {
@@ -113,15 +116,21 @@ foreach my $counter (@$List) {
 	my $Data;
 	my ($addr,$mv1,$mv2,$mv3,$mc1,$mc2,$mc3,$mf,$ma1,$ma2,$ma3,$mps,$mp1,$mp2,$mp3,$mqs,$mq1,$mq2,$mq3,$mss,$ms1,$ms2,$ms3,$mks,$mk1,$mk2,$mk3,$se1ai,$se1ae,$se1ri,$se1re,$se2ai,$se2ae,$se2ri,$se2re);
 	map {$_=0;} ($addr,$mv1,$mv2,$mv3,$mc1,$mc2,$mc3,$mf,$ma1,$ma2,$ma3,$mps,$mp1,$mp2,$mp3,$mqs,$mq1,$mq2,$mq3,$mss,$ms1,$ms2,$ms3,$mks,$mk1,$mk2,$mk3,$se1ai,$se1ae,$se1ri,$se1re,$se2ai,$se2ae,$se2ri,$se2re);
+	my $time = time();
+	my $tm = Now();
+	my $lpower = 0;
 	if($counter->{type} =~ /M203/) {
 		print " M203\n"	if $verb;
 		eval{ $Data = `$cget203 $counter->{addr} $counter->{dev}`; };
 		chomp $Data;
 		$Data =~ s/,/\./g;
 		($addr, $mv1,$mc1,$mf,$mps,$mss,$se1ai,$se2ai) = split(";",$Data);
-		my $time = time();
 		if($addr && $addr eq $counter->{addr}) {
-		$dbh->do("insert into monitor (date,counter,mv1,mc1,mf,mps,mss,se1ai,se2ai) values ($time,$counter->{id},$mv1,$mc1,$mf,$mps,$mss,$se1ai,$se2ai)")	or die;
+			map { $_ = ($_=~/null/i) ? 0 : $_; } ($mv1,$mc1,$mf,$mps,$mss,$se1ai,$se2ai);
+			$ins1->execute($tm,$time,$counter->{id},$mv1,$mc1,$mf,$mps,$mss,$se1ai,$se2ai)	or die;
+			$lpower = $ins1->fetch()->[0];
+			$ins1->finish;
+#			$dbh->do("insert into monitor (dt,date,counter,mv1,mc1,mf,mps,mss,se1ai,se2ai) values ('$tm',$time,$counter->{id},$mv1,$mc1,$mf,$mps,$mss,$se1ai,$se2ai)")	or die;
 		} else {
 			$err++;
 			print "Error reading from: ".$counter->{addr}." (1f)\n"	if($verb);
@@ -133,9 +142,12 @@ foreach my $counter (@$List) {
 		chomp $Data;
 		$Data =~ s/,/\./g;
 		($addr,$mv1,$mv2,$mv3,$mc1,$mc2,$mc3,$mf,$ma1,$ma2,$ma3,$mps,$mp1,$mp2,$mp3,$mqs,$mq1,$mq2,$mq3,$mss,$ms1,$ms2,$ms3,$mks,$mk1,$mk2,$mk3,$se1ai,$se1ae,$se1ri,$se1re,$se2ai,$se2ae,$se2ri,$se2re) = split(";",$Data);
-		my $time = time();
 		if($addr && $addr eq $counter->{addr}) {
-		$dbh->do("insert into monitor (date,counter,mv1,mv2,mv3,mc1,mc2,mc3,mf,ma1,ma2,ma3,mps,mp1,mp2,mp3,mqs,mq1,mq2,mq3,mss,ms1,ms2,ms3,mks,mk1,mk2,mk3,se1ai,se1ae,se1ri,se1re,se2ai,se2ae,se2ri,se2re) values ($time,$counter->{id},$mv1,$mv2,$mv3,$mc1,$mc2,$mc3,$mf,$ma1,$ma2,$ma3,$mps,$mp1,$mp2,$mp3,$mqs,$mq1,$mq2,$mq3,$mss,$ms1,$ms2,$ms3,$mks,$mk1,$mk2,$mk3,$se1ai,$se1ae,$se1ri,$se1re,$se2ai,$se2ae,$se2ri,$se2re)")	or die;
+			map { $_ = ($_=~/null/i) ? 0 : $_; } ($mv1,$mv2,$mv3,$mc1,$mc2,$mc3,$mf,$ma1,$ma2,$ma3,$mps,$mp1,$mp2,$mp3,$mqs,$mq1,$mq2,$mq3,$mss,$ms1,$ms2,$ms3,$mks,$mk1,$mk2,$mk3,$se1ai,$se1ae,$se1ri,$se1re,$se2ai,$se2ae,$se2ri,$se2re);
+			$ins2->execute($tm,$time,$counter->{id},$mv1,$mv2,$mv3,$mc1,$mc2,$mc3,$mf,$ma1,$ma2,$ma3,$mps,$mp1,$mp2,$mp3,$mqs,$mq1,$mq2,$mq3,$mss,$ms1,$ms2,$ms3,$mks,$mk1,$mk2,$mk3,$se1ai,$se1ae,$se1ri,$se1re,$se2ai,$se2ae,$se2ri,$se2re)	or die;
+			$lpower = $ins2->fetch()->[0];
+			$ins2->finish;
+#		$dbh->do("insert into monitor (dt,date,counter,mv1,mv2,mv3,mc1,mc2,mc3,mf,ma1,ma2,ma3,mps,mp1,mp2,mp3,mqs,mq1,mq2,mq3,mss,ms1,ms2,ms3,mks,mk1,mk2,mk3,se1ai,se1ae,se1ri,se1re,se2ai,se2ae,se2ri,se2re) values ('$tm',$time,$counter->{id},$mv1,$mv2,$mv3,$mc1,$mc2,$mc3,$mf,$ma1,$ma2,$ma3,$mps,$mp1,$mp2,$mp3,$mqs,$mq1,$mq2,$mq3,$mss,$ms1,$ms2,$ms3,$mks,$mk1,$mk2,$mk3,$se1ai,$se1ae,$se1ri,$se1re,$se2ai,$se2ae,$se2ri,$se2re)")	or die;
 		} else {
 			$err++;
 			print "Error reading from: ".$counter->{addr}." (3f)\n"	if($verb);
@@ -148,13 +160,22 @@ foreach my $counter (@$List) {
 	$counter->{pstate} = $counter->{state} || 0;
 	$counter->{state} = $err;
 	if($counter->{"status_id"}) {
-		$supd->execute($counter->{state},$counter->{pstate},$se1ai,$se2ai,$counter->{"status_id"});
+		$supd->execute($counter->{state},$counter->{pstate},$se1ai,$se2ai,$lpower,$counter->{"status_id"});
 	} else {
-		$sins->execute($counter->{id},$counter->{state},$counter->{pstate},$se1ai,$se2ai);
+		$sins->execute($counter->{id},$counter->{state},$counter->{pstate},$se1ai,$se2ai,$lpower);
 	}
 	print "done: ".$counter->{addr}."\n"	if $verb;
 }
 
 $dbh->disconnect;
 $lock->clear;
+
+sub Now {
+        my ($stamp, %opts) = @_;
+        $stamp = time()         unless defined $stamp;
+        my ($sec, $min, $hour, $mday, $mon, $year) = localtime( $stamp );
+        return $opts{iso} ?
+                sprintf("%.4d-%.2d-%.2d %.2d:%.2d:%.2d", $year+1900, $mon+1, $mday, $hour, $min, $sec) :
+                sprintf("%.2d.%.2d.%.4d %.2d:%.2d:%.2d", $mday, $mon+1, $year+1900, $hour, $min, $sec) ;
+}
 

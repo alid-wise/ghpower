@@ -116,13 +116,13 @@ if($verb) {
 	print "Connection testing ... "	if $verb;
 	$status = $connect->tst();
 	print "$status\n"	if $verb;
-	die	"[$addr] Connection failed: [$status]"	unless($status=~/ok/);
+	die	"[".hex($addr)."] Connection failed: [$status]"	unless($status=~/ok/);
 }
 
 print "Session opening (level $level) ... "	if $verb;
 $status = $connect->sopen();
 print "$status\n"	if $verb;
-die	"[$addr] Session failed: [$status]"	unless($status=~/ok/);
+die	"[".hex($addr)."] Session failed: [$status]"	unless($status=~/ok/);
 
 my $ts;	# команда
 my $Data;
@@ -143,7 +143,7 @@ foreach my $type (keys %ts) {
 	if(exists $types{$type}) {
 		$ts = $ts{$type};
 		($status,$cnt,@data) = $connect->get($ts);
-		die "[$addr] $type request failed: [$status]"	unless($status=~/ok/);
+		die "[".hex($addr)."] $type request failed: [$status]"	unless($status=~/ok/);
 		print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
 		@{$Data->{$type}} = decimal4(@data);
 		print $types{$type}." [$type]: ".join(' ',@{$Data->{$type}})."\n"	if $verb;
@@ -164,7 +164,7 @@ foreach my $type (keys %ts) {
 	if(exists $types{$type}) {
 		$ts = $ts{$type};
 		($status,$cnt,@data) = $connect->get($ts);
-		die "[$addr] $type request failed: [$status]"	unless($status=~/ok/);
+		die "[".hex($addr)."] $type request failed: [$status]"	unless($status=~/ok/);
 		print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
 		@{$Data->{$type}} = decimal3(@data);
 		print $types{$type}." [$type]: ".join(' ',@{$Data->{$type}})."\n"	if $verb;
@@ -183,7 +183,7 @@ foreach my $type (keys %ts) {
 	if(exists $types{$type}) {
 		$ts = $ts{$type};
 		($status,$cnt,@data) = $connect->get($ts);
-		die "[$addr] $type request failed: [$status]"	unless($status=~/ok/);
+		die "[".hex($addr)."] $type request failed: [$status]"	unless($status=~/ok/);
 		print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
 		@{$Data->{$type}} = decimal43(@data);
 		print $types{$type}." [$type]: ".join(' ',@{$Data->{$type}})."\n"	if $verb;
@@ -199,7 +199,7 @@ foreach my $type (keys %ts) {
 	if(exists $types{$type}) {
 		$ts = $ts{$type};
 		($status,$cnt,@data) = $connect->get($ts);
-		die "[$addr] $type request failed: [$status]"	unless($status=~/ok/);
+		die "[".hex($addr)."] $type request failed: [$status]"	unless($status=~/ok/);
 		print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
 		@{$Data->{$type}} = decimal1(@data);
 		print $types{$type}." [$type]: ".join(' ',@{$Data->{$type}})."\n"	if $verb;

@@ -31,6 +31,45 @@ return $ret;
 </%method>
 
 
+<%method userlist>
+<%doc>
+	Список людей
+</%doc>
+<%args>
+	$dbh
+	$name => 'users'
+	$nocache => 0
+</%args>
+<%init>
+unless($nocache) {
+	my ($rv, $cached) = $m->cache_self(
+		expire_in => '1 hour',
+		busy_lock => '5sec',
+		ttl => '5minutes',
+		key => "$name",
+		expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
+	);
+	return $rv	if($cached);
+}
+my $ret = undef;
+my $sth = $dbh->prepare("select * from $name");
+$sth->execute();
+while(my $r = $sth->fetchrow_hashref) {
+	if($r->{fname} =~ /^(.){1}/) {
+		$r->{name} = $r->{lname}." $1.";
+		if($r->{mname} =~ /^(.)/) {
+			$r->{name} .= "$1.";
+		}
+	}
+	$ret->{$r->{id}} = $r;
+}
+$sth->finish;
+$ret = {}	unless $ret;
+return $ret;
+</%init>
+</%method>
+
+
 
 <%method cflistload>
 <%doc>
@@ -52,7 +91,7 @@ unless($nocache) {
 	return $rv	if($cached);
 }
 my $ret = undef;
-my $sth = $dbh->prepare("select counters.id,counters.name,counters.addr,counters.mgroup,counters.passwd,counters.sn,counters.model,counters.setdate,counters.memo,counters.active,counters.modtime,counters.passwd2,counters.ktrans,counters.tower_id,counters.year,counters.street,counters.house,status.id as status_id,status.state,status.pstate,status.se1,status.se2,status.modtime as status_modtime from counters left outer join status on status.cid=counters.id");
+my $sth = $dbh->prepare("select counters.id,counters.name,counters.addr,counters.mgroup,counters.passwd,counters.sn,counters.model,counters.setdate,counters.memo,counters.active,counters.modtime,counters.passwd2,counters.ktrans,counters.tower_id,counters.year,counters.street,counters.house,counters.owner,counters.plimit,status.id as status_id,status.state,status.pstate,status.se1,status.se2,status.modtime as status_modtime from counters left outer join status on status.cid=counters.id");
 $sth->execute();
 while(my $r = $sth->fetchrow_hashref) {
 		push @{$ret->{$r->{mgroup}}->{items}}, $r;
@@ -64,7 +103,112 @@ return $ret;
 </%method>
 
 
+<%method counter_info>
+<%doc>
+	Параметры счетчика
+</%doc>
+<%args>
+	$dbh
+	$id
+</%args>
+<%init>
+my $ret = undef;
+my $sth = $dbh->prepare("SELECT a.id as id,a.name as name,a.addr as addr,a.mgroup as gid,a.passwd as passwd,a.model as model,b.type as type,d.dev AS iface,d.id AS if
+             FROM counters a INNER JOIN counter_type b ON a.model=b.id INNER JOIN mgroup c ON a.mgroup=c.id INNER JOIN iface d ON c.if_id=d.id WHERE a.id=? LIMIT 1"
+);
 
+$sth->execute($id);
+while(my $r = $sth->fetchrow_hashref) {
+		$ret = $r;
+}
+$sth->finish;
+$ret = {}	unless $ret;
+return $ret;
+</%init>
+</%method>
+
+
+
+
+
+<%method tariff>
+<%doc>
+	Текущие тарифы
+</%doc>
+<%args>
+	$dbh
+	$nocache => 0
+</%args>
+<%init>
+unless($nocache) {
+	my ($rv, $cached) = $m->cache_self(
+		expire_in => '1 hour',
+		busy_lock => '5sec',
+		ttl => '5minutes',
+		key => "tariff",
+		expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
+	);
+	return $rv	if($cached);
+}
+my $ret = undef;
+my $sth = $dbh->prepare("select * from tariff order by sdate desc limit 1");
+$sth->execute();
+while(my $r = $sth->fetchrow_hashref) {
+	$ret = $r;
+}
+$sth->finish;
+$ret = {}	unless $ret;
+return $ret;
+</%init>
+</%method>
+
+
+
+<%method lastcounter>
+<%doc>
+	Последние показания счетчика
+</%doc>
+<%args>
+	$dbh
+	$id => 0
+	$nocache => 1
+</%args>
+<%init>
+unless($nocache) {
+	my ($rv, $cached) = $m->cache_self(
+		expire_in => '1 hour',
+		busy_lock => '5sec',
+		ttl => '5minutes',
+		key => "lastcounter_$id",
+		expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
+	);
+	return $rv	if($cached);
+}
+my $ret = undef;
+my $sth;
+if($id) {
+	$sth = $dbh->prepare("select modtime AS tm,se1 AS t1,se2 AS t2, lpower from status where cid=? order by modtime desc LIMIT 1");
+	$sth->execute($id);
+	while(my $r = $sth->fetchrow_hashref) {
+		$r->{lpower} = sprintf("%0.2f", $r->{lpower});
+		map { s/\./,/; } ($r->{t1}, $r->{t2}, $r->{lpower});
+		$ret = $r;
+	}
+} else {	# Полный список
+	$sth = $dbh->prepare("select modtime AS tm,se1 AS t1,se2 AS t2, cid, lpower from status where state=0");
+	$sth->execute();
+	while(my $r = $sth->fetchrow_hashref) {
+		$r->{lpower} = sprintf("%0.2f", $r->{lpower});
+		map { s/\./,/; } ($r->{t1}, $r->{t2}, $r->{lpower});
+		$ret->{$r->{cid}} = $r;
+	}
+}
+
+$sth->finish;
+$ret = {}	unless $ret;
+return $ret;
+</%init>
+</%method>
 
 
 
