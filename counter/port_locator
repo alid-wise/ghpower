@@ -1,0 +1,234 @@
+#!/usr/bin/perl -w
+use strict;
+$| = 1;
+
+#
+#       Copyright (C) 2008-2012 áÌÅËÓÁÎÄÒ äÅ×ÑÔËÉÎ, "úÅÌ£ÎÁÑ ÇÏÒËÁ"
+#
+#       òÁÚÒÅÛÁÅÔÓÑ ĞÏ×ÔÏÒÎÏÅ ÒÁÓĞÒÏÓÔÒÁÎÅÎÉÅ É ÉÓĞÏÌØÚÏ×ÁÎÉÅ ËÁË × ×ÉÄÅ ÉÓÈÏÄÎÏÇÏ
+#       ËÏÄÁ, ÔÁË É × Ä×ÏÉŞÎÏÊ ÆÏÒÍÅ, Ó ÉÚÍÅÎÅÎÉÑÍÉ ÉÌÉ ÂÅÚ, ĞÒÉ ÓÏÂÌÀÄÅÎÉÉ ÓÌÅÄÕÀİÉÈ
+#       ÕÓÌÏ×ÉÊ:
+#
+#       * ğÒÉ ĞÏ×ÔÏÒÎÏÍ ÒÁÓĞÒÏÓÔÒÁÎÅÎÉÉ ÉÓÈÏÄÎÏÇÏ ËÏÄÁ ÄÏÌÖÎÏ ÏÓÔÁ×ÁÔØÓÑ ÕËÁÚÁÎÎÏÅ
+#         ×ÙÛÅ Õ×ÅÄÏÍÌÅÎÉÅ ÏÂ Á×ÔÏÒÓËÏÍ ĞÒÁ×Å, ÜÔÏÔ ÓĞÉÓÏË ÕÓÌÏ×ÉÊ É ĞÏÓÌÅÄÕÀİÉÊ
+#         ÏÔËÁÚ ÏÔ ÇÁÒÁÎÔÉÊ.
+#       * ğÒÉ ĞÏ×ÔÏÒÎÏÍ ÒÁÓĞÒÏÓÔÒÁÎÅÎÉÉ Ä×ÏÉŞÎÏÇÏ ËÏÄÁ ÄÏÌÖÎÁ ÓÏÈÒÁÎÑÔØÓÑ ÕËÁÚÁÎÎÁÑ
+#         ×ÙÛÅ ÉÎÆÏÒÍÁÃÉÑ ÏÂ Á×ÔÏÒÓËÏÍ ĞÒÁ×Å, ÜÔÏÔ ÓĞÉÓÏË ÕÓÌÏ×ÉÊ É ĞÏÓÌÅÄÕÀİÉÊ ÏÔËÁÚ
+#         ÏÔ ÇÁÒÁÎÔÉÊ × ÄÏËÕÍÅÎÔÁÃÉÉ É/ÉÌÉ × ÄÒÕÇÉÈ ÍÁÔÅÒÉÁÌÁÈ, ĞÏÓÔÁ×ÌÑÅÍÙÈ ĞÒÉ
+#         ÒÁÓĞÒÏÓÔÒÁÎÅÎÉÉ.
+#       * îÉ ÎÁÚ×ÁÎÉÅ "úÅÌ£ÎÁÑ ÇÏÒËÁ", ÎÉ ÉÍÅÎÁ ÅÅ ÓÏÔÒÕÄÎÉËÏ× ÎÅ ÍÏÇÕÔ ÂÙÔØ
+#         ÉÓĞÏÌØÚÏ×ÁÎÙ × ËÁŞÅÓÔ×Å ĞÏÄÄÅÒÖËÉ ÉÌÉ ĞÒÏÄ×ÉÖÅÎÉÑ ĞÒÏÄÕËÔÏ×, ÏÓÎÏ×ÁÎÎÙÈ
+#         ÎÁ ÜÔÏÍ ğï ÂÅÚ ĞÒÅÄ×ÁÒÉÔÅÌØÎÏÇÏ ĞÉÓØÍÅÎÎÏÇÏ ÒÁÚÒÅÛÅÎÉÑ.
+#
+#       üôá ğòïçòáííá ğòåäïóôá÷ìåîá ÷ìáäåìøãáíé á÷ôïòóëéè ğòá÷ é/éìé äòõçéíé óôïòïîáíé
+#	"ëáë ïîá åóôø" âåú ëáëïçï-ìéâï ÷éäá çáòáîôéê, ÷ùòáöåîîùè ñ÷îï éìé ğïäòáúõíå÷áåíùè,
+#	÷ëìàşáñ, îï îå ïçòáîéşé÷áñóø éíé, ğïäòáúõíå÷áåíùå çáòáîôéé ëïííåòşåóëïê ãåîîïóôé
+#	é ğòéçïäîïóôé äìñ ëïîëòåôîïê ãåìé. îé ÷ ëïåí óìõşáå, åóìé îå ôòåâõåôóñ
+#	óïïô÷åôóô÷õàıéí úáëïîïí, éìé îå õóôáîï÷ìåîï ÷ õóôîïê æïòíå, îé ïäéî ÷ìáäåìåã
+#	á÷ôïòóëéè ğòá÷ é îé ïäîï äòõçïå ìéãï, ëïôïòïå íïöåô éúíåîñôø é/éìé ğï÷ôïòîï
+#	òáóğòïóôòáîñôø ğòïçòáííõ, ëáë âùìï óëáúáîï ÷ùûå, îå îåó³ô ïô÷åôóô÷åîîïóôé,
+#	÷ëìàşáñ ìàâùå ïâıéå, óìõşáêîùå, óğåãéáìøîùå éìé ğïóìåäï÷á÷ûéå õâùôëé,
+#	÷óìåäóô÷éå éóğïìøúï÷áîéñ éìé îå÷ïúíïöîïóôé éóğïìøúï÷áîéñ ğòïçòáííù (÷ëìàşáñ,
+#	îï îå ïçòáîéşé÷áñóø ğïôåòåê äáîîùè, éìé äáîîùíé, óôá÷ûéíé îåğòá÷éìøîùíé, éìé
+#	ğïôåòñíé ğòéîåóåîîùíé éú-úá ÷áó éìé ôòåôøéè ìéã, éìé ïôëáúïí ğòïçòáííù òáâïôáôø
+#	óï÷íåóôîï ó äòõçéíé ğòïçòáííáíé), äáöå åóìé ôáëïê ÷ìáäåìåã éìé äòõçïå ìéãï âùìé
+#	éú÷åıåîù ï ÷ïúíïöîïóôé ôáëéè õâùôëï÷.
+#
+
+#       Copyright (C) 2008-2012 Aleksandr Deviatkin, "Green Hill"
+#
+#       Redistribution and use in source and binary forms, with or without
+#       modification, are permitted provided that the following conditions are
+#       met:
+#       
+#       * Redistributions of source code must retain the above copyright
+#         notice, this list of conditions and the following disclaimer.
+#       * Redistributions in binary form must reproduce the above
+#         copyright notice, this list of conditions and the following disclaimer
+#         in the documentation and/or other materials provided with the
+#         distribution.
+#       * Neither the name of the Green Hill nor the names of its
+#         contributors may be used to endorse or promote products derived from
+#         this software without specific prior written permission.
+#       
+#       THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+#       "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+#       LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+#       A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+#       OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#       SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+#       LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+#       DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+#       THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#       (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#       OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+#
+# port_locator
+# ÷ÙŞÉÓÌÅÎÉÅ ÒÁÓĞÒÅÄÅÌÅÎÉÑ ÇÒÕĞĞ ĞÏ ĞÏÒÔÁÍ iface
+# 2014-05-12 alid
+#
+
+
+use lib "$ENV{MY}/counter";
+use Mercury;
+use Lock;
+use DBI;
+
+my (@args, %opts);
+foreach(@ARGV){
+   if(/^\-(\S)(.*)/){	$opts{$1} = $2;	} else {	push @args, $_;	}
+}
+my $verb = exists $opts{v};
+my $commit = exists $opts{f};	# ëÏÍÍÉÔÉÔØ ÉÚÍÅÎÅÎÉÑ × ÂÁÚÕ. âÅÚ ÜÔÏÇÏ ËÌÀŞÁ - ÄÅÍÏ ÒÅÖÉÍ.
+my $retries = (exists $opts{r}) ? $opts{r} : 10;
+my ($database) = (@args);
+die "Usage: $0 database"	unless($database);
+
+my $plock = '/tmp/port_locator.lock';
+my $lock = Lock->new($plock,1);
+die "port_locator: Locked"	if($lock->set);
+
+my $dbh = DBI->connect("dbi:Pg:dbname=$database","","",{AutoCommit => 0})	or die;
+# óĞÉÓÏË ÉÎÔÅÒÆÅÊÓÏ×
+my $Iface;
+my $sth = $dbh->prepare("SELECT id,dev FROM iface");
+$sth->execute();
+while(my $r = $sth->fetchrow_hashref) {
+	$Iface->{$r->{id}} = $r;
+}
+$sth->finish;
+
+# óĞÉÓÏË ÇÒÕĞĞ
+my $Mgroup;
+$sth = $dbh->prepare("SELECT id,active,name,if_id,memo,rank,bid,modtime FROM mgroup WHERE active=1");
+my $upd = $dbh->prepare("UPDATE mgroup SET if_id=?,modtime=now() WHERE id=?");
+$sth->execute();
+while(my $r = $sth->fetchrow_hashref) { $Mgroup->{$r->{id}} = $r; }
+$sth->finish;
+	
+# óĞÉÓÏË ÓŞÅÔŞÉËÏ×
+my $CList;
+$sth = $dbh->prepare("SELECT A.id AS id,addr,mgroup,passwd,passwd2,model,B.type AS ctype FROM counters A INNER JOIN counter_type B ON A.model=B.id WHERE A.active=1 ORDER BY random()");
+$sth->execute();
+while(my $r = $sth->fetchrow_hashref) { $CList->{$r->{mgroup}}->{$r->{id}} = $r; }
+$sth->finish;
+# ïÓÔÁ×ÌÑÅÍ × ÓĞÉÓËÅ ÔÏÌØËÏ ÕÎÉËÁÌØÎÙÅ ÁÄÒÅÓÁ
+my $List;
+foreach my $gid (keys %{$CList}) {
+	foreach my $cid (keys %{$CList->{$gid}}) {
+		my $addr = $CList->{$gid}->{$cid}->{addr};
+		my $distinct = 1;
+		foreach my $g (keys %{$CList}) {
+			next	if($gid == $g);
+			foreach my $c (keys %{$CList->{$g}}) {
+				next	if($c =~ m/\D/);
+				if($addr eq $CList->{$g}->{$c}->{addr}) {
+					undef $distinct;
+					last;
+				}
+			}
+			last	unless($distinct);
+		}
+		if($distinct) {
+			$List->{$gid} = $CList->{$gid}->{$cid};
+			$CList->{$gid}->{D} = 1;	#
+			last;						# ÷ ËÁÖÄÏÊ ÇÒÕĞĞÅ - ĞÏ ÏÄÎÏÍÕ ÕÎÉËÁÌØÎÏÍÕ ÁÄÒÅÓÕ
+		}
+	}
+}
+
+# ğÏÄÂÉÒÁÅÍ ËÁÖÄÏÊ ÇÒÕĞĞÅ ÉÎÔÅÒÆÅÊÓ
+foreach my $gid (keys %{$List}) {
+	foreach my $if_id (keys %{$Iface}) {
+		next	unless($Iface->{$if_id}->{dev});
+		if(iftest($Iface->{$if_id}->{dev},$List->{$gid})) {	# ĞÒÏÂÕÅÍ ÜÔÏÔ ÉÎÔÅÒÆÅÊÓ
+			# upd ğÒÏĞÉÓÙ×ÁÅÍ ÉÎÔÅÒÆÅÊÓ × ÔÁÂÌÉÃÅ ÇÒÕĞĞ
+			$upd->execute($if_id,$gid);
+			print "gid: $gid iface: $if_id\n"	if($verb);
+			# õÄÁÌÑÅÍ ÜÔÏÔ ÉÎÔÅÒÆÅÊÓ ÉÚ ÓĞÉÓËÁ, ŞÔÏÂÙ ÂÏÌØÛÅ ÅÇÏ ÎÅ ÔÒÏÇÁÔØ
+			delete $Iface->{$if_id};
+			# õÄÁÌÑÅÍ ÇÒÕĞĞÕ ÉÚ ÓĞÉÓËÁ
+			delete $List->{$gid};
+			last;
+		}
+	}
+}
+# çÒÕĞĞÙ, ËÏÔÏÒÙÍ ÎÅ ÕÄÁÌÏÓØ ĞÏÄÏÂÒÁÔØ ÉÎÔÅÒÆÅÊÓ
+foreach my $gid (keys %{$List}) {
+	print STDERR "Unconnected group: [$gid] ".$Mgroup->{$gid}->{name}."\n";
+	$upd->execute(0,$gid);	# îÅÓÕİÅÓÔ×ÕÀİÉÊ ÉÎÔÅÒÆÅÊÓ
+}
+
+# åÓÌÉ ÏÓÔÁÌÉÓØ ÇÒÕĞĞÙ, ÉÚ ËÏÔÏÒÙÈ ÎÅ ÕÄÁÌÏÓØ ×ÙÄÅÌÉÔØ ÕÎÉËÁÌØÎÙÅ ÁÄÒÅÓÁ, ÔÏ Ó ÎÉÍÉ ÒÁÚÂÉÒÁÅÍÓÑ ÏÔÄÅÌØÎÏ
+# ğÙÔÁÅÍÓÑ ĞÏÄÏÂÒÁÔØ ÉÍ ÉÎÔÅÒÆÅÊÓ ÉÚ ÏÓÔÁ×ÛÉÈÓÑ ÎÅÚÁÎÑÔÙÈ
+foreach my $gid (keys %{$CList}) {
+	next	if($CList->{$gid}->{D});
+	my $C;
+	foreach(keys %{$CList->{$gid}}) {
+		$C = $CList->{$gid}->{$_};	#	ğÅÒ×ÙÊ ĞÏĞÁ×ÛÉÊÓÑ ÓŞÅÔŞÉË ÉÚ ÇÒÕĞĞÙ
+		last;
+	}
+	# ĞÏÄÂÉÒÁÅÍ ÅÍÕ ÉÎÔÅÒÆÅÊÓ
+	foreach my $if_id (keys %{$Iface}) {
+		next	unless($Iface->{$if_id}->{dev});
+		if(iftest($Iface->{$if_id}->{dev},$C)) {	# ĞÒÏÂÕÅÍ ÜÔÏÔ ÉÎÔÅÒÆÅÊÓ
+			# ğÒÏĞÉÓÙ×ÁÅÍ ÉÎÔÅÒÆÅÊÓ × ÔÁÂÌÉÃÅ ÇÒÕĞĞ
+			$upd->execute($if_id,$gid);
+			print "gid: $gid iface: $if_id (non-unique group)\n"	if($verb);
+			# õÄÁÌÑÅÍ ÜÔÏÔ ÉÎÔÅÒÆÅÊÓ ÉÚ ÓĞÉÓËÁ, ŞÔÏÂÙ ÂÏÌØÛÅ ÅÇÏ ÎÅ ÔÒÏÇÁÔØ
+			delete $Iface->{$if_id};
+			$CList->{$gid}->{D} = 1;	#
+			last;
+		}
+	}
+}
+# óÏ×ÓÅÍ ÂÅÚÎÁÄÅÖÎÙÅ ÇÒÕĞĞÙ, ÅÓÌÉ ÔÁËÏ×ÙÅ ÏÓÔÁÌÉÓØ
+foreach my $gid (keys %{$CList}) {
+	next	if($CList->{$gid}->{D});
+	print STDERR "Unconnected group: [$gid] ".$List->{$gid}->{name}."\n";
+	$upd->execute(0,$gid);	# îÅÓÕİÅÓÔ×ÕÀİÉÊ ÉÎÔÅÒÆÅÊÓ
+}
+
+$dbh->commit	if($commit);
+$dbh->disconnect;
+$lock->clear;
+
+# subs
+sub iftest {
+	my ($device, $G) = @_;
+	my $retries = 10;
+
+	my $addr;
+	if($G->{ctype} eq 'M203') {
+		$addr = sprintf("%08x",$G->{addr});
+		$addr =~ s/(\w\w)(\w\w)(\w\w)(\w\w)/$1 $2 $3 $4/;
+	}
+	elsif($G->{ctype} eq 'M230') {
+		$addr = sprintf("%x",$G->{addr});
+	}
+	print "Addr: [$addr] $G->{ctype}\n"	if $verb;
+
+	my $STALL_DEFAULT=2;	# how many seconds to wait for new input
+	my $MAXLENGTH = 255;	# ÎÁÉÂÏÌØÛÁÑ ÄÌÉÎÁ ĞÁËÅÔÁ
+
+	my $status = '';
+
+	print "Connection testing $device addr: ".$G->{addr}."... "	if $verb;
+	eval {
+		my $connect = Mercury->new($device,$G->{ctype},$addr,$G->{passwd},1,$retries,$verb);
+		$status = $connect->tst();
+		$connect->quit();
+		};
+
+	print "$status"	if $verb;
+	if($status=~/ok/) {
+		print " OK\n"	if($verb);
+		return 1;
+	} else {
+		print " failed\n"	if($verb);
+		return 0;
+	}
+}
+

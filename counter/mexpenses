@@ -1,3 +1,5 @@
+#!/usr/bin/perl
+
 #
 #       Copyright (C) 2008-2012 Александр Девяткин, "Зелёная горка"
 #
@@ -60,82 +62,88 @@
 #       OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-package Lock;
+
+$|=1;
+use DBI;
+use Date::Manip;
 use strict;
-use vars qw($VERSION);
-use Fcntl qw (:DEFAULT :flock);
-
-$VERSION="1.0";
 
 #
-# Блокировка
-# 2011-02-11 alid
+# Ежемесячное обновление таблицы расходов по счетчикам
+# 2014-05-06 alid
 #
 
-sub new {
-	my $class = shift;
-	my ($file,$nowait,$timeout)=@_;
-	die unless defined $file;
-	my $self={};
-	$self->{_file} = $file;
-	$self->{_nowait} = $nowait;
-	$self->{timeout} = $timeout || 10;
-	bless $self,$class;
-	return $self;
+my (@args, %opts);
+foreach(@ARGV){
+	if(/^\-(\S)(\S*)/) { $opts{$1} = $2; } else {  push @args, $_; }
+}
+my ($database) = (@args);
+die "Usage: $0 database"		unless($database);
+my $verb = exists $opts{v};
+my $full = exists $opts{f};	# полное обновление таблицы
+my $pgport = 5432;
+
+my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1, AutoCommit => 0});
+my $sth = $dbh->prepare("SELECT id FROM counters");
+my $sel = $dbh->prepare("SELECT id,(SELECT COUNT(*) FROM mexpenses WHERE cid=? AND year=? AND month=?) FROM mexpenses WHERE cid=? AND year=? AND month=?");
+my $upd = $dbh->prepare("UPDATE mexpenses SET exp1=?,exp2=?,modtime=now() WHERE id=?");
+my $ins = $dbh->prepare("INSERT INTO mexpenses (cid,year,month,exp1,exp2) VALUES (?,?,?,?,?)");
+my $del = $dbh->prepare("DELETE FROM mexpenses WHERE cid=? AND year=? AND month=?");
+
+# Список счетчиков
+my @List;
+$sth->execute();
+while(my ($r) = $sth->fetchrow_array) { push @List,$r;} $sth->finish;
+
+if($full) {	# полное обновление
+	$sth = $dbh->prepare("SELECT dt,se1ai,se2ai FROM monitor WHERE counter=? AND dt LIKE '%-01 %' ORDER BY dt DESC");
+	print "Full update\n"	if $verb;
+} else {	# только последний месяц
+	# FreeBSD only:
+	#my $lm = `date -v-1m "+%Y-%m"`; chomp $lm;
+
+	my $edate = UnixDate("today","%Y-%m");
+	my $sdate = UnixDate("1 month ago","%Y-%m");
+	$sth = $dbh->prepare("SELECT dt,se1ai,se2ai FROM monitor WHERE counter=? AND ((dt>'$sdate-01 00:00:00' AND dt<'$sdate-01 23:59:59') OR (dt>'$edate-01 00:00:00' AND dt<'$edate-01 23:59:59')) ORDER BY dt DESC");
+	print "Last month: $sdate - $edate\n"	if $verb;
 }
 
-sub set {
-	my $self=shift;
-	my $pid;
-	return $self->_set()	if($self->{_nowait});
-	eval{
-		$SIG{ALRM} = sub { die "timeout"; };
-		alarm($self->{timeout});
-		do { $pid=$self->_set(); }while($pid); 
-		alarm(0);
-	};
-	return $pid	if($pid);
-	return 0;
+foreach my $cid (@List) {
+	print "cid=$cid\n"	if $verb;
+	$sth->execute($cid);
+	my $Data;
+	while(my $r = $sth->fetchrow_hashref) {
+		my ($year, $mon) = ($r->{dt} =~ m/^(\d{4})\-(\d{2})/);
+		$Data->{$year}->{$mon} = $r;
+	}
+	$sth->finish;
+
+	my ($data1,$data2);
+	foreach my $year (sort {$b<=>$a} keys %$Data) {
+		foreach my $mon (sort {$b<=>$a} keys %{$Data->{$year}}) {
+			if(defined $data1) {
+				print "$year $mon ".($data1 - $Data->{$year}->{$mon}->{se1ai})." ".($data2 - $Data->{$year}->{$mon}->{se2ai})."\n"	if $verb;
+				setdata($cid,$year,$mon,$data1 - $Data->{$year}->{$mon}->{se1ai},$data2 - $Data->{$year}->{$mon}->{se2ai});
+			}
+			($data1,$data2) = ($Data->{$year}->{$mon}->{se1ai},$Data->{$year}->{$mon}->{se2ai});
+		}
+	}
+#last;
+}
+$dbh->commit;
+$dbh->disconnect;
+
+sub setdata {
+	my ($cid,$year,$month,$exp1,$exp2) = @_;
+	$sel->execute($cid,$year,$month,$cid,$year,$month);
+	my ($id,$count) = ($sel->fetchrow_array);
+	$sel->finish;
+	if($id && $count == 1) {
+		$upd->execute($exp1,$exp2,$id);
+	} else {
+		$del->execute($cid,$year,$month)	if($count > 1);
+		$ins->execute($cid,$year,$month,$exp1,$exp2);
+	}
 }
 
-sub _set {
-	my $self=shift;
-	if(open LCK, $self->{_file}){
-		my $pid = <LCK>;
-		close LCK;
-		return($pid)	if $pid && kill(0, $pid);	# Процесс еще живой
-	}
-	# Ставим свою блокировку
-	sysopen(LCK, $self->{_file}, O_RDWR|O_CREAT)	or die "Can't open $self->{_file}: $!";
-	flock(LCK, LOCK_EX|LOCK_NB)		or die "Can't lock $self->{_file}: $!";
-	seek(LCK, 0, 0)				or die "Can't rewind $self->{_file}: $!";
-	truncate(LCK, 0)				or die "Can't truncate $self->{_file}: $!";
-	print LCK "$$";
-	close(LCK)				or die "Can't close $self->{_file}: $!";
-	system("chmod 664 $self->{_file}");
-	return 0;
-}
-sub clear {
-	my $self=shift;
-	my $pid;
-	open(LCK, $self->{_file})	or return undef;
-	if(flock(LCK, 1|4)){
-		$pid = <LCK>;
-	}
-	close LCK;
-	if($pid && $pid eq $$){
-		return unlink $self->{_file};
-	}
-	return undef;
-}
-sub get {
-	my $self=shift;
-	if(open LCK, $self->{_file}){
-		my $pid = <LCK>;
-		close LCK;
-		return($pid)	if $pid && kill(0, $pid);
-	}
-	return 0;
-}
 
-1;

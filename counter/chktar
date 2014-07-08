@@ -94,10 +94,10 @@ my $sth;
 # mgroups
 my $Glist;
 if($mgid) {	#
-	$sth = $dbh->prepare("select mgroup.id,mgroup.name as name ,mgroup.memo,mgroup.modtime,mgroup.active,mgroup.rank,iface.id as if_id,iface.name as ifname,iface.dev from mgroup left outer join iface on iface.id=mgroup.if_id where mgroup.id=?");
+	$sth = $dbh->prepare("select mgroup.id,mgroup.name as name ,mgroup.memo,mgroup.modtime,mgroup.active,mgroup.rank,iface.id as if_id,iface.dev from mgroup left outer join iface on iface.id=mgroup.if_id where mgroup.id=?");
 	$sth->execute($mgid);
 } else {		#
-	$sth = $dbh->prepare("select mgroup.id,mgroup.name as name ,mgroup.memo,mgroup.modtime,mgroup.active,mgroup.rank,iface.id as if_id,iface.name as ifname,iface.dev from mgroup left outer join iface on iface.id=mgroup.if_id ".($force? "":"where mgroup.active=1")." order by rank");
+	$sth = $dbh->prepare("select mgroup.id,mgroup.name as name ,mgroup.memo,mgroup.modtime,mgroup.active,mgroup.rank,iface.id as if_id,iface.dev from mgroup left outer join iface on iface.id=mgroup.if_id ".($force? "":"where mgroup.active=1")." order by rank");
 	$sth->execute;
 }
 while(my $r = $sth->fetchrow_hashref) {
@@ -111,7 +111,7 @@ my $se = $dbh->prepare("select date,se1ai,se2ai from monitor where counter=? ord
 foreach my $mg (@$Glist) {
 	unless($quiet) {
 		print "*****************************************************\n";
-		print $mg->{name}." [".$mg->{id}."] Active: ".$mg->{active}." Iface: ".$mg->{ifname}." [".$mg->{if_id}."] Dev: ".$mg->{dev}."\n";
+		print $mg->{name}." [".$mg->{id}."] Active: ".$mg->{active}." Iface: ".$mg->{dev}." [".$mg->{if_id}."] Dev: ".$mg->{dev}."\n";
 		print $mg->{memo}."\n";
 	}
 	# counters

@@ -1,0 +1,65 @@
+<%args>
+	$dbh
+	$id => undef
+</%args>
+<%init>
+use POSIX;
+use locale;
+use Time::Local;
+setlocale(&LC_COLLATE, 'ru_RU.KOI8-R');
+
+#my $login = $ENV{REMOTE_USER} || '-';
+
+map { $_ =~ s/\D//g; } ( $id);
+map { $_ = 0 if($_ > 100000) } ($id);
+return unless $id;
+
+my ($mday,$mon,$year) = (localtime)[3,4,5];
+my $date = sprintf("%4d-%02d-%02d",$year+1900-1,$mon+1,$mday);
+
+
+my $inf = $dbh->prepare("select A.plimit,A.mgroup,A.name,A.addr,A.mgroup,A.sn,A.model,A.setdate,A.memo,A.active,A.modtime,A.year,A.house,B.name as model,C.name as street,D.name as tower from counters A inner join counter_type B on B.id=A.model left outer join street C on C.id=A.street left outer join towers D on D.id=A.tower_id where A.id=?");
+$inf->execute($id);
+my $Info = $inf->fetchrow_hashref;
+$inf->finish;
+# Этот счетчик - балансный?
+$inf = $dbh->prepare("select * from mgroup where active=1 and bid=?");
+$inf->execute($id);
+my $h = $inf->fetchrow_hashref;
+$inf->finish;
+if($h) {
+	($Info->{mgid},$Info->{gname}) = ($h->{id},$h->{name});
+}
+
+my $Data;
+my $sth = $dbh->prepare("select dt,se1ai,se2ai from monitor where counter=? and extract(hour from dt)=0 and extract(minute from dt)=0 and dt>? order by dt desc");
+$sth->execute($id,$date);
+while(my $row = $sth->fetchrow_hashref) {
+	$row->{dt} =~ s/\s.+$//;
+	map { $_ =sprintf("%0.3f",$_); s/\./\,/;} ($row->{se1ai},$row->{se2ai});
+	push @$Data, $row;
+}
+</%init>
+<p><a href="index.html">Home</a></p>
+<table border="0">
+<tr><td align="right">Адрес:</td><td><%$Info->{street}%>, <%$Info->{house}%></td></tr>
+</table>
+%if($Info->{mgid}) {
+<p>Это балансный счетчик</p>
+%}
+<h3>Показания счетчика по дням<br>за последний год</h3>
+%if($Data) {
+<table border="1">
+<tr><th>Дата</th><th>&nbsp;Тариф-1&nbsp;</th><th>&nbsp;Тариф-2&nbsp;</th></tr>
+%foreach my $row (@$Data) {
+<tr>
+<td><b><% $row->{dt} %></b></td>
+<td align="right"><%$row->{se1ai}%></td>
+<td align="right"><%$row->{se2ai}%></td>
+</tr>
+%}
+</table>
+%} else {
+<p>Нет данных на этот день</p>
+%}
+

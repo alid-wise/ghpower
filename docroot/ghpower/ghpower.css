@@ -1,0 +1,41 @@
+body {
+	font-family: arial, verdana, serif;
+	font-weight: normal;
+	font-size: 10pt;
+	}
+
+BODY { color: black; background: white }
+FONT { font-family: Verdana, Arial, Helvetica; font-size:10pt}
+
+
+P    { font-family: Verdana, Arial, Helvetica; font-size:10pt}
+
+TABLE    { border-style:solid; border-width:1px; border-collapse:collapse;}
+
+
+TD    { font-family: Verdana, Arial, Helvetica; font-size:10pt; border-width:0px; empty-cells:show; padding:3px; outline:1px solid gray; }
+TH    { font-family: Verdana, Arial, Helvetica; font-size:10pt; border-width:0px; empty-cells:show; padding:1px; outline:1px solid gray; background-color: yellow;}
+
+LI   { font-family: Verdana, Arial, Helvetica; font-size:10pt}
+H1   { font-family: Verdana, Arial, Helvetica; font-size:16pt}
+H3   { font-family: Verdana, Arial, Helvetica; font-size:12pt}
+
+
+A:link { color: blue; }
+
+
+A:visited { color: purple; }
+
+
+A:active { color: brown; } 
+
+
+A:hover { color: green; }
+
+
+.error { color: red; }
+
+
+.error input { color: red; }
+
+

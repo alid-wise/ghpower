@@ -1,0 +1,142 @@
+<%args>
+	$dbh
+	$id => undef
+	$date => undef
+</%args>
+<%init>
+use POSIX;
+use locale;
+use Time::Local;
+setlocale(&LC_COLLATE, 'ru_RU.KOI8-R');
+
+#my $login = $ENV{REMOTE_USER} || '-';
+
+map { $_ =~ s/\D//g; } ( $id);
+map { $_ = 0 if($_ > 100000) } ($id);
+return unless $id;
+
+unless($date =~ /\d{4}-\d{2}-\d{2}/) {
+	my ($mday,$mon,$year) = (localtime)[3,4,5];
+	$date = sprintf("%4d-%02d-%02d",$year+1900,$mon+1,$mday);
+}
+
+my ($mday,$mon,$year);
+if($date =~ /(\d{4})-(\d{2})-(\d{2})/) {
+	($mday,$mon,$year) = ($3,$2,$1);
+}
+my $TM = timelocal(0,0,0,$mday,$mon-1,$year-1900);
+($mday,$mon,$year) = (localtime($TM-86400))[3,4,5];
+my $prev = sprintf("%4d-%02d-%02d",$year+1900,$mon+1,$mday);
+($mday,$mon,$year) = (localtime($TM+86400))[3,4,5];
+my $next2 = sprintf("%4d-%02d-%02d",$year+1900,$mon+1,$mday);
+my $next;
+unless($TM+86400 > time()) {
+	$next = $next2;
+#	($mday,$mon,$year) = (localtime($TM+86400))[3,4,5];
+#	$next = sprintf("%4d-%02d-%02d",$year+1900,$mon+1,$mday);
+}
+
+my $inf = $dbh->prepare("select A.plimit,A.mgroup,A.name,A.addr,A.mgroup,A.sn,A.model,A.setdate,A.memo,A.active,A.modtime,A.year,A.house,B.name as model,C.name as street,D.name as tower from counters A inner join counter_type B on B.id=A.model left outer join street C on C.id=A.street left outer join towers D on D.id=A.tower_id where A.id=?");
+$inf->execute($id);
+my $Info = $inf->fetchrow_hashref;
+$inf->finish;
+# Этот счетчик - балансный?
+$inf = $dbh->prepare("select * from mgroup where active=1 and bid=?");
+$inf->execute($id);
+my $h = $inf->fetchrow_hashref;
+$inf->finish;
+if($h) {
+	($Info->{mgid},$Info->{gname}) = ($h->{id},$h->{name});
+}
+
+my $Data;
+my $sth = $dbh->prepare("select dt AS tm,se1ai,se2ai,ise from monitor where counter=? and dt <= ? and dt > ? order by dt desc");
+$sth->execute($id,$next2,$date);
+while(my $row = $sth->fetchrow_hashref) {
+	$row->{tm} =~ s/\+\d+$//;
+	$row->{tm} =~ s/^.*\s+//;
+	map { $_ =sprintf("%0.3f",$_); s/\./\,/;} ($row->{ise},$row->{se1ai},$row->{se2ai});
+	push @$Data, $row;
+}
+</%init>
+<p><a href="index.html">Home</a></p>
+<table border=0>
+<tr><td>
+<table border="1">
+<tr><td align="right">Адрес:</td><td><%$Info->{street}%>, <%$Info->{house}%></td></tr>
+</table>
+</td>
+<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="stored.html?id=<%$id%>">Показания счетчика по дням</a>&nbsp;&nbsp;&nbsp;<a href="expense.html?id=<%$id%>">Расход по месяцам</a></td>
+</tr></table>
+%if($Info->{mgid}) {
+<p>Это балансный счетчик</p>
+%}
+<h3><a href="?id=<%$id%>&date=<%$prev%>"><<</a>&nbsp;<%$date%>&nbsp;<% $next ? "<a href=?id=".$id."&date=".$next.">>></a>":""%></h3>
+<table border="0">
+<tr>
+<td valign="top">
+%if($Data) {
+<table border="1">
+<tr><th>Время</th><th>&nbsp;Тариф-1&nbsp;</th><th>&nbsp;Тариф-2&nbsp;</th><th>&nbsp;Ср.потр.&nbsp;</th></tr>
+%foreach my $row (@$Data) {
+<tr>
+<td><b><% $row->{tm} %></b></td>
+<td align="right"><%$row->{se1ai}%></td>
+<td align="right"><%$row->{se2ai}%></td>
+<td align="right"><%$row->{ise}%></td>
+</tr>
+%}
+</table>
+%} else {
+<p>Нет данных на этот день</p>
+%}
+</td>
+<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+<td valign="top">
+
+
+
+<table border="0">
+<tr><td align="right">Тип:</td><td><%$Info->{model}%></td></tr>
+<tr><td align="right">Серийный номер:</td><td><%$Info->{sn}%></td></tr>
+<tr><td align="right">Год выпуска:</td><td><%$Info->{year}%></td></tr>
+<tr><td align="right">Дата установки:</td><td><%$Info->{setdate}%></td></tr>
+<tr><td align="right">Номер столба:</td><td><%$Info->{tower}%></td></tr>
+<tr><td align="right">Лимит мощности:</td><td><%$Info->{plimit}%></td></tr>
+<tr><td align="right">Доп.информация:</td><td><%$Info->{memo}%></td></tr>
+</table>
+<br>
+<img src="graph/<%$Info->{mgroup}%>/<%$id%>-day.png">
+<br>
+<img src="graph/<%$Info->{mgroup}%>/<%$id%>-yesterday.png">
+<br>
+<img src="graph/<%$Info->{mgroup}%>/<%$id%>-week.png">
+<br>
+<img src="graph/<%$Info->{mgroup}%>/<%$id%>-month.png">
+<br>
+<img src="graph/<%$Info->{mgroup}%>/<%$id%>-3month.png">
+<br>
+<img src="graph/<%$Info->{mgroup}%>/<%$id%>-year.png">
+%if($Info->{mgid}) {
+<br>
+<img src="graph/<%$Info->{mgid}%>/balance-day.png">
+<br>
+<img src="graph/<%$Info->{mgid}%>/balance-yesterday.png">
+<br>
+<img src="graph/<%$Info->{mgid}%>/balance-week.png">
+<br>
+<img src="graph/<%$Info->{mgid}%>/balance-month.png">
+<br>
+<img src="graph/<%$Info->{mgid}%>/balance-3month.png">
+<br>
+<img src="graph/<%$Info->{mgid}%>/balance-year.png">
+
+
+
+
+%}
+
+
+</td>
+</tr>
+</table>

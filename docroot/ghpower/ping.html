@@ -1,0 +1,84 @@
+<%args>
+	$dbh
+	$auth
+	$id => undef
+	$sn => undef
+	$type => undef
+	$if => undef
+	$ping => undef
+</%args>
+<%init>
+if($auth->{gid} > 2) {	# только admin и manager
+	$r->status_line('');
+	$m->clear_buffer;
+	$m->abort(404);
+}
+
+map { $_ =~ s/\D//g; } ( $id, $type, $if);
+map { $_ = 0 if($_ > 100000) } ($id);
+my $data;
+
+my ($L,$If);
+
+if($id) {
+
+	$L = $m->comp("lib.msn:counter_info", dbh=>$dbh, id=>$id);
+	$sn = $L->{addr};
+	$if = $L->{if};
+
+	if($L->{type} =~ /M203/) {
+		$type = 1;
+	} else {
+		$type = 2;
+	}
+}
+my $sth = $dbh->prepare("select id,dev from iface order by dev");
+$sth->execute();
+while(my $r = $sth->fetchrow_hashref) {
+	$If->{$r->{id}} = $r	if($r->{dev});
+}
+$sth->finish;
+
+if($ping) {
+	if($type eq 1) {
+		open PING, "$ENV{MY}/counter/ping -r1 -v $sn $If->{$if}->{dev} |";
+	}
+	elsif($type eq 2) {
+		open PING, "$ENV{MY}/counter/ping -v -r1 -3 $sn $If->{$if}->{dev} |";
+	}
+	while(<PING>) {
+		$data .= $_;
+	}
+	close PING;
+}
+</%init>
+<form method="POST" action="ping.html">
+<table border="0">
+<tr>
+<td valign="top"><textarea name="memo" cols="30" rows="6"><%$data%></textarea></td>
+
+<td valign="top">
+<table border="0">
+<tr><td align="right">Serial:</td><td><input type="text" name="sn" value="<%$sn%>"></td></tr>
+<tr><td align="right">Type:</td><td>
+<select name="type">
+<option value="1" <%$type eq 1 ? "selected":""%>>М203</option>
+<option value="2" <%$type eq 2 ? "selected":""%>>М230</option>
+</select></td></tr>
+<tr><td align="right">Iface:</td><td>
+<select name="if">
+%foreach my $iface (sort {$If->{$a}->{dev} cmp $If->{$b}->{dev}} keys %$If) { 
+<option value="<%$iface%>" <%$iface eq $if ? "selected":""%>><%$If->{$iface}->{dev}%></option>
+%}
+</select>
+</td></tr>
+<tr><td align="right"></td><td><input type="submit" name="ping" value="Ping"></td></tr>
+</table>
+</td></tr>
+</table>
+
+</form>
+
+
+
+

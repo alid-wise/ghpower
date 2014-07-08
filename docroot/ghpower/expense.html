@@ -1,0 +1,218 @@
+<%args>
+	$dbh
+	$auth
+	$verb => 0
+	$id => undef
+	$filter => undef
+	$filter2 => undef
+	$showdel => undef
+	$fyear => undef
+	$fmonth => undef
+</%args>
+<%init>
+use Data::Dumper;
+use POSIX;
+use Date::Manip;
+use locale;
+setlocale(&LC_COLLATE, 'ru_RU.KOI8-R');
+
+#if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# только admin и manager
+#	$r->status_line('');
+#	$m->clear_buffer;
+#	$m->abort(404);
+#}
+
+map { $_ =~ s/\D//g; } ( $verb, $id, $filter, $filter2,$fyear,$fmonth);
+map { $_ = 1 if($_ > 1) } ( $verb);
+map { $_ = 0 if($_ > 1000) } ( $id);
+undef $filter unless $filter;
+undef $filter2 unless $filter2;
+undef $showdel unless $showdel;
+if(!$fyear || !$fmonth) {
+	my $ymon = UnixDate("1 month ago","%Y-%m");
+	my ($year,$mon) = ($ymon =~ m/(\d{4})\-(\d{2})/);
+	$fmonth = $mon	unless $fmonth;
+	$fyear = $year	unless $fyear;
+}
+
+my %Err;
+#my $OK=0;
+
+my $sth;
+# Справочники
+
+# Проезды (улицы)
+my $S = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'street', nocache=>0);
+# Люди
+my $Owners = $m->comp("lib.msn:userlist", dbh=>$dbh, nocache=>0);
+
+my $MExpenses;
+
+my $Global = $m->comp("lib.msn:global", dbh=>$dbh, nocache=>0);
+
+
+my ($List, $Usr);
+# Группы
+$sth = $dbh->prepare("select * from mgroup");
+$sth->execute();
+while(my $r = $sth->fetchrow_hashref) {
+	$List->{$r->{id}} = $r;
+}
+$sth->finish;
+
+if($id) {
+	$sth = $dbh->prepare("select * from counters where id=?");
+	$sth->execute($id);
+	while(my $r = $sth->fetchrow_hashref) {
+		$Usr = $r;
+	}
+	$sth->finish;
+	$Usr->{the_street} = $S->{$Usr->{street}};
+	$Usr->{the_owner} = $Owners->{$Usr->{owner}};
+
+	# Расходы
+	$MExpenses = $m->comp("lib.msn:mexpenses", dbh=>$dbh, cid=>$id, nocache=>0);
+
+} else {	# Счетчики полный список
+
+	# Расходы
+	$MExpenses = $m->comp("lib.msn:mexpenses", dbh=>$dbh, ymon=>sprintf("%4d-%02d",$fyear,$fmonth), cid=>0, nocache=>0);
+
+	my $L = $m->comp("lib.msn:cflistload", dbh=>$dbh, nocache=>1);
+	foreach(keys %$L) { $List->{$_}->{items} = $L->{$_}->{items}; }
+
+}
+</%init>
+<pre>
+%#<%Dumper $auth%>
+</pre>
+
+
+
+%if($id) {
+<h2>Расход электроэнергии по месяцам</h2>
+<p><b><% $Usr->{the_street}->{name} %>, <% $Usr->{house} %><br>
+<% $Usr->{the_owner}->{name} %><br>
+<% $Usr->{ktrans} > 1 ? "Коэффициент: ".$Usr->{ktrans} : "" %>
+</b></p>
+<table border="1">
+<tr><th>Год</th><th>Месяц</th><th>Дневной тариф</th><th>Ночной тариф</th></tr>
+%foreach my $year (sort {$b<=>$a} keys %{$MExpenses}) {
+%	foreach my $month (sort {$b<=>$a} keys %{$MExpenses->{$year}}) {
+<tr>
+<td><% $year %></td>
+<td><% $month %></td>
+<td align="right"><% $MExpenses->{$year}->{$month}->{exp1} %></td>
+<td align="right"><% $MExpenses->{$year}->{$month}->{exp2} %></td>
+</tr>
+%	}
+%}
+</table>
+
+
+%} else {	# полный список
+%	my ($sec,$min,$hour,$mday,$mon,$year) = (localtime)[0,1,2,3,4,5];
+
+
+<p><a href="/">Home</a>&nbsp;<a href="index.html">Счетчики</a>&nbsp;
+%if($auth->{gid} < 3) {
+<a href="pays.html">Платежи</a>&nbsp;
+%}
+%if($auth->{gid} eq 1) {
+<a href="auth.html">authors</a>
+%}
+</p>
+<form name="filter" method="POST">
+<select name="filter">
+<option value="0">-- все группы --</option>
+%foreach my $mgid (sort {$List->{$a}->{rank} <=> $List->{$b}->{rank}} keys %$List) { 
+%	next unless $List->{$mgid}->{items};
+<option value="<%$mgid%>" <% $filter && $mgid == $filter ? "selected":""%>><% $List->{$mgid}->{name}%></option>
+%}
+</select>
+<select name="filter2">
+<option value="0">-- все счетчики --</option>
+<option value="1" <%$filter2 eq '1' ? "selected":""%>>-- активные --</option>
+<option value="2" <%$filter2 eq '2' ? "selected":""%>>-- неактивные --</option>
+</select>
+<input type="checkbox" name="showdel" <%$showdel ? "checked":""%>>Показывать удаленные
+<br>
+<nobr>Год:&nbsp;
+<select name="fyear">
+% my $y = $Global->{last_year};
+%do {
+<option value="<%$y%>" <%$fyear eq $y ? "selected":""%>><%$y%></option>
+% $y--;
+%} while($y>=$Global->{first_year});
+</select>
+</nobr>
+<nobr>Месяц:&nbsp;
+<select name="fmonth">
+<option value="01" <%$fmonth eq '01' ? "selected":""%>>Январь</option>
+<option value="02" <%$fmonth eq '02' ? "selected":""%>>Февраль</option>
+<option value="03" <%$fmonth eq '03' ? "selected":""%>>Март</option>
+<option value="04" <%$fmonth eq '04' ? "selected":""%>>Апрель</option>
+<option value="05" <%$fmonth eq '05' ? "selected":""%>>Май</option>
+<option value="06" <%$fmonth eq '06' ? "selected":""%>>Июнь</option>
+<option value="07" <%$fmonth eq '07' ? "selected":""%>>Июль</option>
+<option value="08" <%$fmonth eq '08' ? "selected":""%>>Август</option>
+<option value="09" <%$fmonth eq '09' ? "selected":""%>>Сентябрь</option>
+<option value="10" <%$fmonth eq '10' ? "selected":""%>>Октябрь</option>
+<option value="11" <%$fmonth eq '11' ? "selected":""%>>Ноябрь</option>
+<option value="12" <%$fmonth eq '12' ? "selected":""%>>Декабрь</option>
+</select>
+</nobr>
+<input type="submit" name="sel" value="Выбрать">
+</form>
+
+<h4>Расход электроэнергии за месяц</h4>
+<table border="1">
+%foreach my $mgid (sort {$List->{$a}->{rank} <=> $List->{$b}->{rank}} keys %$List) {
+%	next if $filter &&  !($mgid == $filter);
+%	next unless $List->{$mgid}->{items};
+<tr>
+<td><input type="checkbox" name="mgid_<%$mgid%>" <% ($ARGS{"mgid_".$mgid} || $List->{mgid}->{active}) ? "checked":""%> disabled></td>
+<td><b><% $List->{$mgid}->{name}%></b></td>
+<td colspan="4"><% $List->{$mgid}->{memo}%></td>
+</tr>
+%	my $i=1; my $total=0;
+%	foreach my $item (sort { $S->{$a->{street}}->{name} cmp $S->{$b->{street}}->{name} || $a->{house} <=> $b->{house}} @{$List->{$mgid}->{items}}) {
+%		if($filter2) {
+%			next	if($filter2 eq '1' && $item->{active} ne '1');
+%			next	if($filter2 eq '2' && $item->{active});
+%		}
+%		next	if($item->{active} < 0 && !$showdel);
+<tr>
+<td align="center"><%$i%>.</td>
+%	my $parcel;
+%	if($item->{street}) {
+%		$parcel = $item->{street};
+%		$parcel = $S->{$item->{street}}->{name};
+%		$parcel = substr($parcel, 0, 1);
+%		$parcel .= '.-';
+%	} $parcel .= $item->{house};
+<td><% $parcel %></td>
+<td><% $Owners->{$item->{owner}}->{name} || $Owners->{$item->{owner}}->{lname}%></td>
+
+<td align="right"><%$MExpenses->{$item->{id}}->{exp1}%></td>
+<td align="right"><%$MExpenses->{$item->{id}}->{exp2}%></td>
+
+</tr>
+%	$i++;
+%	}
+%}
+</table>
+
+%}
+
+
+
+
+<pre>
+%#<% Dumper $Usr %>
+%#<% Dumper %ARGS %>
+%#<% Dumper $MExpenses %>
+%#<% Dumper $Owners %>
+</pre>
+
+
