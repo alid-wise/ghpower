@@ -3,6 +3,7 @@
 </%args>
 <%init>
 use DBI;
+use utf8;
 use strict;
 
 my $dbh = DBI->connect("dbi:Pg:dbname=$dbname", "", "", {RaiseError => 1});
@@ -12,16 +13,16 @@ if($sth->execute($ENV{REMOTE_USER})) {
 	$auth = ($sth->fetchrow_hashref);
 }
 $sth->finish;
-$r->header_out('Content-Type' => 'text/html; charset=KOI8-R');
-$r->send_cgi_header("Pragma: no-cache\n");
-$r->send_cgi_header("Cache-control: no-cache,max-age=0,must-revalidate\n\n");
+#$r->header_out('Content-Type' => 'text/html; charset=KOI8-R');
+#$r->send_cgi_header("Pragma: no-cache\n");
+#$r->send_cgi_header("Cache-control: no-cache,max-age=0,must-revalidate\n\n");
 </%init>
 <html>
 <head>
-        <meta http-equiv=Content-Type content="text/html;charset=KOI8-R">
+%#        <meta http-equiv=Content-Type content="text/html;charset=KOI8-R">
 	<meta http-equiv=Pragma Content="no-cache">
         <title>Green Hill</title>
-	<LINK REL="stylesheet" TYPE="text/css" HREF="/ghpower/ghpower.css">
+	<LINK REL="stylesheet" TYPE="text/css" HREF="/ghpower.css">
 </head>
 <body>
 <% $m->call_next( dbh=>$dbh, auth=>$auth)%>
