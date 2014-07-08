@@ -10,10 +10,11 @@
 <%init>
 use Data::Dumper;
 use POSIX;
-use locale;
-setlocale(&LC_COLLATE, 'ru_RU.KOI8-R');
+#use locale;
+#setlocale(&LC_COLLATE, 'ru_RU.KOI8-R');
+use utf8;
 
-#if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# только admin и manager
+#if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# я┌п╬п╩я▄п╨п╬ admin п╦ manager
 #	$r->status_line('');
 #	$m->clear_buffer;
 #	$m->abort(404);
@@ -30,21 +31,21 @@ my %Err;
 my $OK=0;
 
 my $sth;
-# Справочники
+# п║п©я─п╟п╡п╬я┤п╫п╦п╨п╦
 
-# Проезды (улицы)
+# п÷я─п╬п╣п╥п╢я▀ (я┐п╩п╦я├я▀)
 my $S = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'street', nocache=>0);
-# Люди
+# п⌡я▌п╢п╦
 my $Owners = $m->comp("lib.msn:userlist", dbh=>$dbh, nocache=>0);
-# Столбы
+# п║я┌п╬п╩п╠я▀
 my $Towers = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'towers', nocache=>0);
-# Типы счетчиков
+# п╒п╦п©я▀ я│я┤п╣я┌я┤п╦п╨п╬п╡
 my $Ctypes = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'counter_type', nocache=>0);
-# Текущие показания счетчиков
+# п╒п╣п╨я┐я┴п╦п╣ п©п╬п╨п╟п╥п╟п╫п╦я▐ я│я┤п╣я┌я┤п╦п╨п╬п╡
 my $LastCounter = $m->comp("lib.msn:lastcounter", dbh=>$dbh, id=>0, nocache=>0);
 
 my ($List, $Usr);
-# Группы
+# п⌠я─я┐п©п©я▀
 $sth = $dbh->prepare("select * from mgroup");
 $sth->execute();
 while(my $r = $sth->fetchrow_hashref) {
@@ -62,7 +63,7 @@ if($id) {
 }
 
 if($ARGS{submit} && $auth->{gid} eq 1) {
-	if($ARGS{delete} && $id) {	# удаление записи
+	if($ARGS{delete} && $id) {	# я┐п╢п╟п╩п╣п╫п╦п╣ п╥п╟п©п╦я│п╦
 #		$dbh->do("delete from counters where id=$id");
 		$dbh->do("UPDATE counters SET active=-1 WHERE id=$id");
 		undef $id;
@@ -78,14 +79,14 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 		$ARGS{setdate} ||= sprintf("%4d-%02d-%02d",$year+1900,$mon+1,$mday);
 
 		unless(%Err) {
-			if($Usr) {	# Обновление
+			if($Usr) {	# п·п╠п╫п╬п╡п╩п╣п╫п╦п╣
 				my $chg = ($active ne $Usr->{active})? 1:0;
 				map {$chg++ if($ARGS{$_} ne $Usr->{$_})} ('name','addr','mgroup','sn','model','setdate','memo','tower_id','year','street','house','owner','plimit');
-				if($chg) {	# есть изменения
+				if($chg) {	# п╣я│я┌я▄ п╦п╥п╪п╣п╫п╣п╫п╦я▐
 					my $upd = $dbh->prepare("update counters set name=?,addr=?,mgroup=?,sn=?,model=?,setdate=?,memo=?,active=?,tower_id=?,year=?,street=?,house=?,owner=?,modtime=now(),plimit=? where id=?");
 					$upd->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{street},$ARGS{house},$ARGS{owner},$ARGS{plimit},$id);
 				}
-			} else {	# Новая запись
+			} else {	# п²п╬п╡п╟я▐ п╥п╟п©п╦я│я▄
 
 				my ($passwd1,$passwd2) = ('','');
 				if($Ctypes->{$ARGS{model}}->{type} eq 'M230') { ($passwd1,$passwd2) = ('111111','222222'); }
@@ -107,7 +108,7 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 }
 
 if(!$ARGS{"add_new"} && !$id && !$OK) {
-	# Счетчики полный список
+	# п║я┤п╣я┌я┤п╦п╨п╦ п©п╬п╩п╫я▀п╧ я│п©п╦я│п╬п╨
 #	$sth = $dbh->prepare("select counters.id,counters.name,counters.addr,counters.mgroup,counters.passwd,counters.sn,counters.model,counters.setdate,counters.memo,counters.active,counters.modtime,counters.passwd2,counters.ktrans,counters.tower_id,counters.year,counters.street,counters.house,status.id as status_id,status.state,status.pstate,status.se1,status.se2,status.modtime as status_modtime from counters left outer join status on status.cid=counters.id");
 #	$sth->execute();
 #	while(my $r = $sth->fetchrow_hashref) {
@@ -127,15 +128,15 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 
 
 %if($OK) {
-<h3>Запись сохранена</h3>
+<h3>п≈п╟п©п╦я│я▄ я│п╬я┘я─п╟п╫п╣п╫п╟</h3>
 <p><a href="index.html">Home</a></p>
 %} elsif($id || $ARGS{"add_new"}) {
 <form method="POST">
 <input type="hidden" name="add_new" value="<%$ARGS{"add_new"}%>">
-<p><a href="index.html">Отменить</a></p>
+<p><a href="index.html">п·я┌п╪п╣п╫п╦я┌я▄</a></p>
 <table border="1">
 <tr>
-<td>Используется:</td>
+<td>п≤я│п©п╬п╩я▄п╥я┐п╣я┌я│я▐:</td>
 <td><input type="checkbox" name="active" <% $ARGS{active} || (!$ARGS{submit} ? $Usr->{active} : "") ? "checked":""%> <% ($auth->{gid} >1) ? "disabled":"" %>>
 %	if($id) {
 <div align=right><small>modtime: <%$Usr->{modtime} =~ /(.+)\.\d+/%></small></div>
@@ -143,15 +144,15 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 </td>
 </tr>
 <tr>
-<td>Название:</td>
+<td>п²п╟п╥п╡п╟п╫п╦п╣:</td>
 <td><input type="text" name="name" value="<%$ARGS{name} || (!$ARGS{submit} ? $Usr->{name} : "")%>" <% ($auth->{gid} >1) ? "disabled":"" %>></td>
 </tr>
 <tr>
-<td>Сетевой адрес:</td>
+<td>п║п╣я┌п╣п╡п╬п╧ п╟п╢я─п╣я│:</td>
 <td><input type="text" name="addr" value="<%$ARGS{addr} || (!$ARGS{submit} ? $Usr->{addr} : "") %>" <% ($auth->{gid} >1) ? "disabled":"" %>></td>
 </tr>
 <tr>
-<td>Группа:</td>
+<td>п⌠я─я┐п©п©п╟:</td>
 <td><select name="mgroup" <% ($auth->{gid} >1) ? "disabled":"" %>>
 <option></option>
 %	foreach my $gid (sort {$List->{$a}->{name} cmp $List->{$b}->{name}} keys %$List) {
@@ -160,15 +161,15 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 </select></td>
 </tr>
 <tr>
-<td>Серийный номер:</td>
+<td>п║п╣я─п╦п╧п╫я▀п╧ п╫п╬п╪п╣я─:</td>
 <td><input type="text" name="sn" value="<%$ARGS{sn} || (!$ARGS{submit} ? $Usr->{sn} : "") %>" <% ($auth->{gid} >1) ? "disabled":"" %>></td>
 </tr>
 <tr>
-<td>Год выпуска:</td>
+<td>п⌠п╬п╢ п╡я▀п©я┐я│п╨п╟:</td>
 <td><input type="text" name="year" value="<%$ARGS{year} || (!$ARGS{submit} ? $Usr->{year} : "")%>" <% ($auth->{gid} >1) ? "disabled":"" %>></td>
 </tr>
 <tr>
-<td>Тип:</td>
+<td>п╒п╦п©:</td>
 <td><select name="model" <% ($auth->{gid} >1) ? "disabled":"" %>>
 <option></option>
 %	foreach my $cid (sort {$Ctypes->{$a}->{name} cmp $Ctypes->{$b}->{name}} keys %$Ctypes) {
@@ -177,7 +178,7 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 </select></td>
 </tr>
 <tr>
-<td>Проезд:</td>
+<td>п÷я─п╬п╣п╥п╢:</td>
 <td><select name="street" <% ($auth->{gid} >1) ? "disabled":"" %>>
 <option></option>
 %	foreach my $sid (sort {$S->{$a}->{name} cmp $S->{$b}->{name}} keys %$S) {
@@ -186,11 +187,11 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 </select></td>
 </tr>
 <tr>
-<td>Участок:</td>
+<td>пёя┤п╟я│я┌п╬п╨:</td>
 <td><input type="text" name="house" value="<%$ARGS{house} || (!$ARGS{submit} ? $Usr->{house} : "")%>" <% ($auth->{gid} >1) ? "disabled":"" %>></td>
 </tr>
 <tr>
-<td>Владелец:</td>
+<td>п▓п╩п╟п╢п╣п╩п╣я├:</td>
 <td>
 <select name="owner" <% ($auth->{gid} >1) ? "disabled":"" %>>
 <option></option>
@@ -202,7 +203,7 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 </td>
 </tr>
 <tr>
-<td>Столб:</td>
+<td>п║я┌п╬п╩п╠:</td>
 <td><select name="tower_id" <% ($auth->{gid} >1) ? "disabled":"" %>>
 <option></option>
 %	foreach my $sid (sort {$Towers->{$a}->{name} <=> $Towers->{$b}->{name}} keys %$Towers) {
@@ -211,15 +212,15 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 </select></td>
 </tr>
 <tr>
-<td>Дата установки:</td>
+<td>п■п╟я┌п╟ я┐я│я┌п╟п╫п╬п╡п╨п╦:</td>
 <td><input type="text" name="setdate" value="<%$ARGS{setdate} || (!$ARGS{submit} ? $Usr->{setdate} : "")%>" <% ($auth->{gid} >1) ? "disabled":"" %>></td>
 </tr>
 <tr>
-<td>Лимит мощности:</td>
+<td>п⌡п╦п╪п╦я┌ п╪п╬я┴п╫п╬я│я┌п╦:</td>
 <td><input type="text" name="plimit" value="<%$ARGS{plimit} || (!$ARGS{plimit} ? $Usr->{plimit} : "")%>" <% ($auth->{gid} >1) ? "disabled":"" %>></td>
 </tr>
 <tr>
-<td>Примечания:</td>
+<td>п÷я─п╦п╪п╣я┤п╟п╫п╦я▐:</td>
 <td><textarea name="memo" cols="30" rows="2" <% ($auth->{gid} >1) ? "disabled":"" %>><%$ARGS{memo} || (!$ARGS{submit} ? $Usr->{memo} : "")%></textarea></td>
 </tr>
 
@@ -228,7 +229,7 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 %if($auth->{gid} eq 1) {
 <tr>
 <td></td>
-<td><input type="submit" name="submit" value="Сохранить">&nbsp;<i>удалить</i><input type="checkbox" name="delete"></td>
+<td><input type="submit" name="submit" value="п║п╬я┘я─п╟п╫п╦я┌я▄">&nbsp;<i>я┐п╢п╟п╩п╦я┌я▄</i><input type="checkbox" name="delete"></td>
 </tr>
 %}
 
@@ -240,7 +241,7 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 <input type="HIDDEN" name="filter2" value="<%$filter2%>">
 %}
 </form>
-%} else {	# полный список
+%} else {	# п©п╬п╩п╫я▀п╧ я│п©п╦я│п╬п╨
 %	my ($sec,$min,$hour,$mday,$mon,$year) = (localtime)[0,1,2,3,4,5];
 
 %if($auth->{gid} eq 1) {
@@ -257,12 +258,12 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 		);
 	}
 </style>
-<iframe name="ping" id="ping" align="right" frameborder="0" width="50%" style:"position:fixed;">iframe не поддерживается</iframe>
+<iframe name="ping" id="ping" align="right" frameborder="0" width="50%" style:"position:fixed;">iframe п╫п╣ п©п╬п╢п╢п╣я─п╤п╦п╡п╟п╣я┌я│я▐</iframe>
 %}
 
-<p><a href="/">Home</a>&nbsp;<a href="expense.html">Расходы</a>&nbsp;
+<p><a href="/">Home</a>&nbsp;<a href="expense.html">п═п╟я│я┘п╬п╢я▀</a>&nbsp;
 %if($auth->{gid} < 3) {
-<a href="pays.html">Платежи</a>&nbsp;
+<a href="pays.html">п÷п╩п╟я┌п╣п╤п╦</a>&nbsp;
 %}
 %if($auth->{gid} eq 1) {
 <a href="auth.html">authors</a>
@@ -270,29 +271,29 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 </p>
 <form name="filter" method="POST">
 <select name="filter">
-<option value="0">-- все группы --</option>
+<option value="0">-- п╡я│п╣ пЁя─я┐п©п©я▀ --</option>
 %foreach my $mgid (sort {$List->{$a}->{rank} <=> $List->{$b}->{rank}} keys %$List) { 
 %	next unless $List->{$mgid}->{items};
 <option value="<%$mgid%>" <% $filter && $mgid == $filter ? "selected":""%>><% $List->{$mgid}->{name}%></option>
 %}
 </select>
 <select name="filter2">
-<option value="0">-- все счетчики --</option>
-<option value="1" <%$filter2 eq '1' ? "selected":""%>>-- активные --</option>
-<option value="2" <%$filter2 eq '2' ? "selected":""%>>-- неактивные --</option>
+<option value="0">-- п╡я│п╣ я│я┤п╣я┌я┤п╦п╨п╦ --</option>
+<option value="1" <%$filter2 eq '1' ? "selected":""%>>-- п╟п╨я┌п╦п╡п╫я▀п╣ --</option>
+<option value="2" <%$filter2 eq '2' ? "selected":""%>>-- п╫п╣п╟п╨я┌п╦п╡п╫я▀п╣ --</option>
 </select>
-<input type="checkbox" name="showdel" <%$showdel ? "checked":""%>>Показывать удаленные
-<input type="submit" name="sel" value="Выбрать">
+<input type="checkbox" name="showdel" <%$showdel ? "checked":""%>>п÷п╬п╨п╟п╥я▀п╡п╟я┌я▄ я┐п╢п╟п╩п╣п╫п╫я▀п╣
+<input type="submit" name="sel" value="п▓я▀п╠я─п╟я┌я▄">
 </form>
 
-<h2>Текушие показания счетчиков</h2>
+<h2>п╒п╣п╨я┐я┬п╦п╣ п©п╬п╨п╟п╥п╟п╫п╦я▐ я│я┤п╣я┌я┤п╦п╨п╬п╡</h2>
 <p><%sprintf("%4d-%02d-%02d %02d:%02d:%02d",$year+1900,$mon+1,$mday,$hour,$min,$sec)%></p>
 
 %if($auth->{gid} eq 1) {
 <p>gid: [<%$filter%>]</p>
 
 <form method="POST">
-<p><input type="submit" name="add_new" value="Добавить счетчик">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p><input type="submit" name="add_new" value="п■п╬п╠п╟п╡п╦я┌я▄ я│я┤п╣я┌я┤п╦п╨">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
 </form>
 %}
 
@@ -347,7 +348,7 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 %	$i++;
 %	}
 % $total=~s/\./\,/;
-<tr><td colspan=7 align=right>Сумма:</td><td align=right><b><%$total%></b></td><td colspan=3></td></tr>
+<tr><td colspan=7 align=right>п║я┐п╪п╪п╟:</td><td align=right><b><%$total%></b></td><td colspan=3></td></tr>
 %}
 </table>
 

@@ -8,9 +8,10 @@
 use Data::Dumper;
 use POSIX;
 use locale;
-setlocale(&LC_COLLATE, 'ru_RU.KOI8-R');
+#setlocale(&LC_COLLATE, 'ru_RU.KOI8-R');
+use utf8;
 
-if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# admin или manager
+if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# admin п╦п╩п╦ manager
 	$r->status_line('');
 	$m->clear_buffer;
 	$m->abort(404);
@@ -27,11 +28,11 @@ map { $_ =~ s/\D//g; } ( $id );
 map { $_ =~ s/[^\.\,\d]//g; } ( $ARGS{i_balance}, $ARGS{i_t1}, $ARGS{i_t2} );
 #map { $_ = 0 unless $_; } ( $ARGS{i_balance}, $ARGS{i_t1}, $ARGS{i_t2} );
 
-# Проезды (улицы)
+# п÷я─п╬п╣п╥п╢я▀ (я┐п╩п╦я├я▀)
 my $S = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'street', nocache=>0);
-# Текущий тариф
+# п╒п╣п╨я┐я┴п╦п╧ я┌п╟я─п╦я└
 my $T = $m->comp("lib.msn:tariff", dbh=>$dbh, nocache=>0);
-# Счетчики
+# п║я┤п╣я┌я┤п╦п╨п╦
 my $L = $m->comp("lib.msn:cflistload", dbh=>$dbh, nocache=>0);
 
 my ($Usr, $C, $List);
@@ -49,7 +50,7 @@ foreach(keys %$L) {
 	}
 }
 
-if($list) {	# будем показывать историю платежей
+if($list) {	# п╠я┐п╢п╣п╪ п©п╬п╨п╟п╥я▀п╡п╟я┌я▄ п╦я│я┌п╬я─п╦я▌ п©п╩п╟я┌п╣п╤п╣п╧
 	my $ls = $dbh->prepare("SELECT id,date,prev1,prev2,current1,current2,amount,balance,modtime FROM payments WHERE cid=? ORDER BY modtime DESC");
 	$ls->execute($id);
 	while(my $r = $ls->fetchrow_hashref) {
@@ -58,7 +59,7 @@ if($list) {	# будем показывать историю платежей
 	$ls->finish;
 } else {
 
-	# Последняя оплата
+	# п÷п╬я│п╩п╣п╢п╫я▐я▐ п╬п©п╩п╟я┌п╟
 	my $gp = $dbh->prepare("SELECT id,date,prev1,prev2,current1,current2,amount,balance FROM payments WHERE cid=? ORDER BY modtime DESC LIMIT 1");
 	$gp->execute($id);
 	($p_id,$p_date,$p_prev1,$p_prev2,$p_current1,$p_current2,$p_amount,$p_balance) = $gp->fetchrow_array;
@@ -66,10 +67,10 @@ if($list) {	# будем показывать историю платежей
 
 	$Usr->{balance} = $p_balance || $ARGS{i_balance};
 
-	# Последние показания счетчика
+	# п÷п╬я│п╩п╣п╢п╫п╦п╣ п©п╬п╨п╟п╥п╟п╫п╦я▐ я│я┤п╣я┌я┤п╦п╨п╟
 	$C = $m->comp("lib.msn:lastcounter", dbh=>$dbh, id=>$Usr->{id}, nocache=>0);
 
-	unless($p_id) {	# первый платеж
+	unless($p_id) {	# п©п╣я─п╡я▀п╧ п©п╩п╟я┌п╣п╤
 		$Usr->{cost} = (($C->{t1} - $ARGS{i_1}) * $T->{t1} + ($C->{t2} - $ARGS{i_t2}) * $T->{t2});
 	} else {
 		$Usr->{cost} = (($C->{t1} - $p_current1) * $T->{t1} + ($C->{t2} - $p_current2) * $T->{t2});
@@ -99,8 +100,8 @@ if($list) {	# будем показывать историю платежей
 <table border="1">
 <tr><td colspan="4" align="right"><input type="submit" name="cancel" value="X"></td></tr>
 <tr><td colspan="4" align="right"><b><%$S->{$Usr->{street}}->{name}%>, <%$Usr->{house}%></b></td></tr>
-%if($list) {	# история платежей
-<tr><th><i>Дата</i></th><th><i>Тариф-1</i></th><th><i>Тариф-2</i></th><th><i>Сумма платежа</i></th><th></th></tr>
+%if($list) {	# п╦я│я┌п╬я─п╦я▐ п©п╩п╟я┌п╣п╤п╣п╧
+<tr><th><i>п■п╟я┌п╟</i></th><th><i>п╒п╟я─п╦я└-1</i></th><th><i>п╒п╟я─п╦я└-2</i></th><th><i>п║я┐п╪п╪п╟ п©п╩п╟я┌п╣п╤п╟</i></th><th></th></tr>
 %	foreach my $row (@$List) {
 <tr>
 <td><%$row->{date}%></td>
@@ -110,22 +111,22 @@ if($list) {	# будем показывать историю платежей
 </tr>
 %	}
 %} else {
-%unless($p_id) {	# это первая оплата
+%unless($p_id) {	# я█я┌п╬ п©п╣я─п╡п╟я▐ п╬п©п╩п╟я┌п╟
 <tr>
-<td align="right" colspan="2"><div style=color:<% $Err{i_t} ? "red":"black"%>>Начальные показания:</div></td>
+<td align="right" colspan="2"><div style=color:<% $Err{i_t} ? "red":"black"%>>п²п╟я┤п╟п╩я▄п╫я▀п╣ п©п╬п╨п╟п╥п╟п╫п╦я▐:</div></td>
 <td align="right"><input type="text" name="i_t1" value="<% defined $ARGS{"i_t1"} ? $ARGS{"i_t1"} : $C->{t1}%>"></td>
 <td align="right"><input type="text" name="i_t2" value="<% defined $ARGS{"i_t2"} ? $ARGS{"i_t2"} : $C->{t2}%>"></td>
 </tr>
-<tr><td align="right" colspan="2">Входной баланс:</td><td align="right" colspan="2"><input type="text" name="i_balance" value="<%$ARGS{"i_balance"}%>"> руб. 00 коп.</td></tr>
+<tr><td align="right" colspan="2">п▓я┘п╬п╢п╫п╬п╧ п╠п╟п╩п╟п╫я│:</td><td align="right" colspan="2"><input type="text" name="i_balance" value="<%$ARGS{"i_balance"}%>"> я─я┐п╠. 00 п╨п╬п©.</td></tr>
 %}
-<tr><td align="right" colspan="2">Дата:</td><td colspan="2"><%$C->{tm}%></td></tr>
-<tr><td align="right" colspan="2">Текущие показания:</td><td align="right"><%$C->{t1}%></td><td align="right"><%$C->{t2}%></td></tr>
-<tr><td align="right" colspan="2">Сумма:</td><td colspan="2" align="right"><% sprintf("%.02f", $Usr->{cost}) %></td></tr>
-<tr><td align="right" colspan="2">Аванс:</td><td colspan="2" align="right"><% sprintf("%.02f", $Usr->{balance}) %></td></tr>
-<tr><td align="right" colspan="2">Долг:</td><td colspan="2" align="right"><b><% sprintf("%.02f", $Usr->{deposit}>0 ? $Usr->{deposit} : 0) %></b></td></tr>
-%#<tr><td align="right" colspan="2"><div style=color:<% $Err{amount} ? "red":"black"%>>Сумма платежа:</div></td><td colspan="2"><input type="text" name="amount" value="<%$ARGS{amount} || sprintf("%d",$Usr->{balance}+$Usr->{deposit})%>"> руб. 00 коп.</td></tr>
-<tr><td align="right" colspan="2"><div style=color:<% $Err{amount} ? "red":"black"%>>Сумма платежа:</div></td><td colspan="2"><input type="text" name="amount" value="<%$ARGS{amount} || ''%>"> руб. 00 коп.</td></tr>
-<tr><td colspan="4" align="right"><input type="submit" name="submit" value="Сохранить"></td></tr>
+<tr><td align="right" colspan="2">п■п╟я┌п╟:</td><td colspan="2"><%$C->{tm}%></td></tr>
+<tr><td align="right" colspan="2">п╒п╣п╨я┐я┴п╦п╣ п©п╬п╨п╟п╥п╟п╫п╦я▐:</td><td align="right"><%$C->{t1}%></td><td align="right"><%$C->{t2}%></td></tr>
+<tr><td align="right" colspan="2">п║я┐п╪п╪п╟:</td><td colspan="2" align="right"><% sprintf("%.02f", $Usr->{cost}) %></td></tr>
+<tr><td align="right" colspan="2">п░п╡п╟п╫я│:</td><td colspan="2" align="right"><% sprintf("%.02f", $Usr->{balance}) %></td></tr>
+<tr><td align="right" colspan="2">п■п╬п╩пЁ:</td><td colspan="2" align="right"><b><% sprintf("%.02f", $Usr->{deposit}>0 ? $Usr->{deposit} : 0) %></b></td></tr>
+%#<tr><td align="right" colspan="2"><div style=color:<% $Err{amount} ? "red":"black"%>>п║я┐п╪п╪п╟ п©п╩п╟я┌п╣п╤п╟:</div></td><td colspan="2"><input type="text" name="amount" value="<%$ARGS{amount} || sprintf("%d",$Usr->{balance}+$Usr->{deposit})%>"> я─я┐п╠. 00 п╨п╬п©.</td></tr>
+<tr><td align="right" colspan="2"><div style=color:<% $Err{amount} ? "red":"black"%>>п║я┐п╪п╪п╟ п©п╩п╟я┌п╣п╤п╟:</div></td><td colspan="2"><input type="text" name="amount" value="<%$ARGS{amount} || ''%>"> я─я┐п╠. 00 п╨п╬п©.</td></tr>
+<tr><td colspan="4" align="right"><input type="submit" name="submit" value="п║п╬я┘я─п╟п╫п╦я┌я▄"></td></tr>
 %}
 </table>
 

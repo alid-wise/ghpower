@@ -6,7 +6,8 @@
 use POSIX;
 use locale;
 use Time::Local;
-setlocale(&LC_COLLATE, 'ru_RU.KOI8-R');
+#setlocale(&LC_COLLATE, 'ru_RU.KOI8-R');
+use utf8;
 
 #my $login = $ENV{REMOTE_USER} || '-';
 
@@ -22,7 +23,7 @@ my $inf = $dbh->prepare("select A.plimit,A.mgroup,A.name,A.addr,A.mgroup,A.sn,A.
 $inf->execute($id);
 my $Info = $inf->fetchrow_hashref;
 $inf->finish;
-# Этот счетчик - балансный?
+# п╜я┌п╬я┌ я│я┤п╣я┌я┤п╦п╨ - п╠п╟п╩п╟п╫я│п╫я▀п╧?
 $inf = $dbh->prepare("select * from mgroup where active=1 and bid=?");
 $inf->execute($id);
 my $h = $inf->fetchrow_hashref;
@@ -42,15 +43,15 @@ while(my $row = $sth->fetchrow_hashref) {
 </%init>
 <p><a href="index.html">Home</a></p>
 <table border="0">
-<tr><td align="right">Адрес:</td><td><%$Info->{street}%>, <%$Info->{house}%></td></tr>
+<tr><td align="right">п░п╢я─п╣я│:</td><td><%$Info->{street}%>, <%$Info->{house}%></td></tr>
 </table>
 %if($Info->{mgid}) {
-<p>Это балансный счетчик</p>
+<p>п╜я┌п╬ п╠п╟п╩п╟п╫я│п╫я▀п╧ я│я┤п╣я┌я┤п╦п╨</p>
 %}
-<h3>Показания счетчика по дням<br>за последний год</h3>
+<h3>п÷п╬п╨п╟п╥п╟п╫п╦я▐ я│я┤п╣я┌я┤п╦п╨п╟ п©п╬ п╢п╫я▐п╪<br>п╥п╟ п©п╬я│п╩п╣п╢п╫п╦п╧ пЁп╬п╢</h3>
 %if($Data) {
 <table border="1">
-<tr><th>Дата</th><th>&nbsp;Тариф-1&nbsp;</th><th>&nbsp;Тариф-2&nbsp;</th></tr>
+<tr><th>п■п╟я┌п╟</th><th>&nbsp;п╒п╟я─п╦я└-1&nbsp;</th><th>&nbsp;п╒п╟я─п╦я└-2&nbsp;</th></tr>
 %foreach my $row (@$Data) {
 <tr>
 <td><b><% $row->{dt} %></b></td>
@@ -60,6 +61,6 @@ while(my $row = $sth->fetchrow_hashref) {
 %}
 </table>
 %} else {
-<p>Нет данных на этот день</p>
+<p>п²п╣я┌ п╢п╟п╫п╫я▀я┘ п╫п╟ я█я┌п╬я┌ п╢п╣п╫я▄</p>
 %}
 

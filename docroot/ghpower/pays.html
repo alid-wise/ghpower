@@ -7,21 +7,22 @@
 use Data::Dumper;
 use POSIX;
 use locale;
-setlocale(&LC_COLLATE, 'ru_RU.KOI8-R');
+#setlocale(&LC_COLLATE, 'ru_RU.KOI8-R');
+use utf8;
 
-if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# admin или manager
+if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# admin п╦п╩п╦ manager
 	$r->status_line('');
 	$m->clear_buffer;
 	$m->abort(404);
 }
 
-# Проезды (улицы)
+# п÷я─п╬п╣п╥п╢я▀ (я┐п╩п╦я├я▀)
 my $S = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'street', nocache=>0);
-# Текущий тариф
+# п╒п╣п╨я┐я┴п╦п╧ я┌п╟я─п╦я└
 my $T = $m->comp("lib.msn:tariff", dbh=>$dbh, nocache=>0);
 my $Owners = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'users', nocache=>0);;
 
-# Счетчики
+# п║я┤п╣я┌я┤п╦п╨п╦
 my $L = $m->comp("lib.msn:cflistload", dbh=>$dbh, nocache=>0);
 
 
@@ -36,12 +37,12 @@ foreach(keys %$L) {
 #$m->out(Dumper $item);
 #$m->out('</pre>');
 		next	unless($item->{street});
-		next	unless($item->{active});	# только работающие счетчики
-		# последний платеж по этому счетчику
+		next	unless($item->{active});	# я┌п╬п╩я▄п╨п╬ я─п╟п╠п╬я┌п╟я▌я┴п╦п╣ я│я┤п╣я┌я┤п╦п╨п╦
+		# п©п╬я│п╩п╣п╢п╫п╦п╧ п©п╩п╟я┌п╣п╤ п©п╬ я█я┌п╬п╪я┐ я│я┤п╣я┌я┤п╦п╨я┐
 		$gp->execute($item->{id});
 		my ($p_id,$p_date,$p_prev1,$p_prev2,$p_current1,$p_current2,$p_amount,$p_balance) = $gp->fetchrow_array;
 		$gp->finish;
-		if($p_id) {	# платеж был
+		if($p_id) {	# п©п╩п╟я┌п╣п╤ п╠я▀п╩
 			$item->{p_date} = $p_date;
 			my $h = $m->comp("lib.msn:lastcounter", dbh=>$dbh, id=>$item->{id}, nocache=>1);
 			my ($c_date,$c1,$c2) = ($h->{tm},$h->{t1},$h->{t2});
@@ -71,14 +72,14 @@ foreach(keys %$L) {
 		);
 	}
 </style>
-<iframe name="pform" id="pform" align="right" frameborder="0" width="70%" style:"position:fixed;">iframe не поддерживается</iframe>
+<iframe name="pform" id="pform" align="right" frameborder="0" width="70%" style:"position:fixed;">iframe п╫п╣ п©п╬п╢п╢п╣я─п╤п╦п╡п╟п╣я┌я│я▐</iframe>
 
 
 <table border="1">
 %foreach my $street_id (sort { $a <=> $b } keys %$List) {
 %	my $items = $List->{$street_id};
 <tr><td colspan="5"><b><%$S->{$street_id}->{name}%></b></td></tr>
-<tr><th><i>Дом</i></th><th><i>Владелец</i></th><th><i>Баланс</i></th><th><i>Посл.оплата</i></th><th></th></tr>
+<tr><th><i>п■п╬п╪</i></th><th><i>п▓п╩п╟п╢п╣п╩п╣я├</i></th><th><i>п▒п╟п╩п╟п╫я│</i></th><th><i>п÷п╬я│п╩.п╬п©п╩п╟я┌п╟</i></th><th></th></tr>
 %	foreach my $house (sort {$a<=>$b} keys %$items) {
 <tr>
 <td align="right"><b><%$house%></b></td>

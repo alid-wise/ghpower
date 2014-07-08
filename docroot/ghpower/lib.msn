@@ -1,6 +1,6 @@
 <%method listload>
 <%doc>
-	Список
+	п║п©п╦я│п╬п╨
 </%doc>
 <%args>
 	$dbh
@@ -8,6 +8,7 @@
 	$nocache => 0
 </%args>
 <%init>
+use utf8;
 unless($nocache) {
 	my ($rv, $cached) = $m->cache_self(
 		expire_in => '1 hour',
@@ -33,7 +34,7 @@ return $ret;
 
 <%method userlist>
 <%doc>
-	Список людей
+	п║п©п╦я│п╬п╨ п╩я▌п╢п╣п╧
 </%doc>
 <%args>
 	$dbh
@@ -41,6 +42,7 @@ return $ret;
 	$nocache => 0
 </%args>
 <%init>
+use utf8;
 unless($nocache) {
 	my ($rv, $cached) = $m->cache_self(
 		expire_in => '1 hour',
@@ -73,13 +75,14 @@ return $ret;
 
 <%method cflistload>
 <%doc>
-	Список счетчиков
+	п║п©п╦я│п╬п╨ я│я┤п╣я┌я┤п╦п╨п╬п╡
 </%doc>
 <%args>
 	$dbh
 	$nocache => 0
 </%args>
 <%init>
+use utf8;
 unless($nocache) {
 	my ($rv, $cached) = $m->cache_self(
 		expire_in => '1 hour',
@@ -105,13 +108,14 @@ return $ret;
 
 <%method counter_info>
 <%doc>
-	Параметры счетчика
+	п÷п╟я─п╟п╪п╣я┌я─я▀ я│я┤п╣я┌я┤п╦п╨п╟
 </%doc>
 <%args>
 	$dbh
 	$id
 </%args>
 <%init>
+use utf8;
 my $ret = undef;
 my $sth = $dbh->prepare("SELECT a.id as id,a.name as name,a.addr as addr,a.mgroup as gid,a.passwd as passwd,a.model as model,b.type as type,d.dev AS iface,d.id AS if
              FROM counters a INNER JOIN counter_type b ON a.model=b.id INNER JOIN mgroup c ON a.mgroup=c.id INNER JOIN iface d ON c.if_id=d.id WHERE a.id=? LIMIT 1"
@@ -133,13 +137,14 @@ return $ret;
 
 <%method tariff>
 <%doc>
-	Текущие тарифы
+	п╒п╣п╨я┐я┴п╦п╣ я┌п╟я─п╦я└я▀
 </%doc>
 <%args>
 	$dbh
 	$nocache => 0
 </%args>
 <%init>
+use utf8;
 unless($nocache) {
 	my ($rv, $cached) = $m->cache_self(
 		expire_in => '1 hour',
@@ -166,7 +171,7 @@ return $ret;
 
 <%method lastcounter>
 <%doc>
-	Последние показания счетчика
+	п÷п╬я│п╩п╣п╢п╫п╦п╣ п©п╬п╨п╟п╥п╟п╫п╦я▐ я│я┤п╣я┌я┤п╦п╨п╟
 </%doc>
 <%args>
 	$dbh
@@ -174,6 +179,7 @@ return $ret;
 	$nocache => 1
 </%args>
 <%init>
+use utf8;
 unless($nocache) {
 	my ($rv, $cached) = $m->cache_self(
 		expire_in => '1 hour',
@@ -194,7 +200,7 @@ if($id) {
 		map { s/\./,/; } ($r->{t1}, $r->{t2}, $r->{lpower});
 		$ret = $r;
 	}
-} else {	# Полный список
+} else {	# п÷п╬п╩п╫я▀п╧ я│п©п╦я│п╬п╨
 	$sth = $dbh->prepare("select modtime AS tm,se1 AS t1,se2 AS t2, cid, lpower from status where state=0");
 	$sth->execute();
 	while(my $r = $sth->fetchrow_hashref) {
@@ -212,7 +218,7 @@ return $ret;
 
 <%method mexpenses>
 <%doc>
-	Месячные расходы счетчика
+	п°п╣я│я▐я┤п╫я▀п╣ я─п╟я│я┘п╬п╢я▀ я│я┤п╣я┌я┤п╦п╨п╟
 </%doc>
 <%args>
 	$dbh
@@ -221,6 +227,7 @@ return $ret;
 	$nocache => 1
 </%args>
 <%init>
+use utf8;
 $ymon = UnixDate("1 month ago","%Y-%m")	unless($ymon);
 unless($nocache) {
 	my ($rv, $cached) = $m->cache_self(
@@ -243,7 +250,7 @@ if($cid) {
 		$r->{month} = sprintf("%02d",$r->{month});
 		$ret->{$r->{year}}->{$r->{month}} = $r;
 	}
-} else {	# Полный список
+} else {	# п÷п╬п╩п╫я▀п╧ я│п©п╦я│п╬п╨
 	$sth = $dbh->prepare("select id,cid,year,month,exp1,exp2,modtime FROM mexpenses WHERE year=? AND month=?");
 	my ($year,$mon) = ($ymon =~ m/(\d{4})\-(\d{2})/);
 
@@ -265,13 +272,14 @@ return $ret;
 
 <%method global>
 <%doc>
-	Общая информация
+	п·п╠я┴п╟я▐ п╦п╫я└п╬я─п╪п╟я├п╦я▐
 </%doc>
 <%args>
 	$dbh
 	$nocache => 0
 </%args>
 <%init>
+use utf8;
 unless($nocache) {
 	my ($rv, $cached) = $m->cache_self(
 		expire_in => '1 hour',
