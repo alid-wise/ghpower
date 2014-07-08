@@ -1,0 +1,240 @@
+<%args>
+	$dbname => 'ghpower'
+</%args>
+<%init>
+use utf8;
+use Time::Local;
+
+# Контрольная дата - последний день предыдущего месяца
+my $cdate;
+my ($MIN, $HOUR, $DAY, $MONTH, $YEAR) = (localtime)[1,2,3,4,5];
+my $now = sprintf("%02d.%02d.%04d %02d:%02d", $DAY, $MONTH+1, $YEAR+1900, $HOUR, $MIN);
+
+my $CTIME = timelocal(0, 0, 0, 1, $MONTH, $YEAR);
+$CTIME--;
+($MIN, $HOUR, $DAY, $MONTH, $YEAR) = (localtime($CTIME))[1,2,3,4,5];
+$cdate = sprintf("%02d.%02d.%04d %02d:%02d", $DAY, $MONTH+1, $YEAR+1900, $HOUR, $MIN);
+
+#my %Clist;
+my $Clist;
+
+my $dbh = DBI->connect("dbi:Pg:dbname=$dbname", "", "", {RaiseError => 1});
+# Список счетчиков
+my $sth = $dbh->prepare("select id,memo,ktrans from counters where active=1 and (mgroup=1 OR mgroup=2)");
+#$sth->execute() or die;
+if($sth->execute()) {
+	while (my $row = $sth->fetchrow_arrayref) {
+#		$Clist{$row->[0]} = $row->[1];
+		$Clist->{$row->[0]}->{memo} = $row->[1];
+		$Clist->{$row->[0]}->{kt} = $row->[2];
+	}
+	$sth->finish;
+}
+my ($Cdata, $Pdata, $Delta);
+# Текущие показания счетчиков
+foreach my $cid (keys %$Clist) {
+	($Cdata->{$cid}->{se1},$Cdata->{$cid}->{se2},$Cdata->{$cid}->{sdate}) = ($m->comp('.se', cid=>$cid, dbh=>$dbh));
+}	
+my $mid;	# основной счетчик
+my $maxe = 0;
+# Показания на контрольную дату и расход
+# заодно вычисляем главный счетчик
+foreach my $cid (keys %$Clist) {
+	($Pdata->{$cid}->{se1},$Pdata->{$cid}->{se2},$Pdata->{$cid}->{sdate}) = ($m->comp('.se', cid=>$cid, dbh=>$dbh, ctime=>$CTIME));
+	if(($Cdata->{$cid}->{se1} eq '-') || ($Pdata->{$cid}->{se1} eq '-')) {
+		$Delta->{$cid}->{se1} = '-';
+	} else {
+		$Delta->{$cid}->{se1} = $Cdata->{$cid}->{se1} - $Pdata->{$cid}->{se1};
+	}
+	if(($Cdata->{$cid}->{se2} eq '-') || ($Pdata->{$cid}->{se2} eq '-')) {
+		$Delta->{$cid}->{se2} = '-';
+	} else {
+		$Delta->{$cid}->{se2} = $Cdata->{$cid}->{se2} - $Pdata->{$cid}->{se2};
+	}
+	if($Cdata->{$cid}->{sdate} && $Pdata->{$cid}->{sdate}) {
+		$Delta->{$cid}->{sdate} = $Cdata->{$cid}->{sdate} - $Pdata->{$cid}->{sdate};
+	} else {
+		$Delta->{$cid}->{sdate} = '-';
+	}
+	if($Clist->{$cid}->{kt}) {
+		$Delta->{$cid}->{se1} *= $Clist->{$cid}->{kt}	unless($Delta->{$cid}->{se1} eq '-');
+		$Delta->{$cid}->{se2} *= $Clist->{$cid}->{kt}	unless($Delta->{$cid}->{se2} eq '-');
+	}
+#	if(($Delta->{$cid}->{se1} + $Delta->{$cid}->{se2}) > $maxe) {
+#		$maxe = $Delta->{$cid}->{se1} + $Delta->{$cid}->{se2};
+#		$mid = $cid;
+#	}
+	# Считаем, что главный счетчик работает с самым большим коэффициентом трансформации
+	if($Clist->{$cid}->{kt} > $maxe) {
+		$maxe = $Clist->{$cid}->{kt};
+		$mid = $cid;
+	}
+}
+# Считаем сумму и ошибку
+foreach my $cid (keys %$Delta) {
+	unless($cid eq $mid) {
+		$Delta->{total}->{se1} += $Delta->{$cid}->{se1};
+		$Delta->{total}->{se2} += $Delta->{$cid}->{se2};
+	}
+}
+$Delta->{delta}->{se1} = $Delta->{$mid}->{se1} - $Delta->{total}->{se1};
+$Delta->{delta}->{se2} = $Delta->{$mid}->{se2} - $Delta->{total}->{se2};
+
+
+#$dbh->disconnect;
+</%init>
+<table border=0>
+<tr><td>
+<h3 align=center>Текущие показания счетчиков<br>
+<font size=-1>(<% $now %>)</font></h3>
+<table border=1 width=100%>
+<th>Счетчик</th><th>Дневной</th><th>Ночной</th><th>Сост.</th>
+<tr>
+<td title="id=<% $mid %>"><b><% $Clist->{$mid}->{memo} %></b></td>
+<td align=right><b><& '.format_data', data=>$Cdata->{$mid}->{se1} &></b></td>
+<td align=right><b><& '.format_data', data=>$Cdata->{$mid}->{se2} &></b></td>
+<td align=right><& '.status', cid=>$mid, dbh=>$dbh &></td>
+</tr>
+%foreach my $cid (sort keys %$Clist) {
+%	next	if($cid eq $mid);
+<tr>
+<td title="id=<% $cid %>"><% $Clist->{$cid}->{memo} %></td>
+<td align=right><& '.format_data', data=>$Cdata->{$cid}->{se1} &></td>
+<td align=right><& '.format_data', data=>$Cdata->{$cid}->{se2} &></td>
+<td align=center><& '.status', cid=>$cid, dbh=>$dbh &></td>
+</tr>
+%}
+</table>
+</td></tr>
+<tr><td>&nbsp;</td></tr>
+<tr><td>
+<h3 align=center>Показания на контрольную дату<br>
+<font size=-1>(<% $cdate %>)</font></h3>
+<table border=1 width=100%>
+<th>Счетчик</th><th>Дневной</th><th>Ночной</th>
+<tr>
+<td><b><% $Clist->{$mid}->{memo} %></b></td>
+<td align=right><b><& '.format_data', data=>$Pdata->{$mid}->{se1} &></b></td>
+<td align=right><b><& '.format_data', data=>$Pdata->{$mid}->{se2} &></b></td>
+</tr>
+%foreach my $cid (sort keys %$Clist) {
+%	next	if($cid eq $mid);
+<tr>
+<td><% $Clist->{$cid}->{memo} %></td>
+<td align=right><& '.format_data', data=>$Pdata->{$cid}->{se1} &></td>
+<td align=right><& '.format_data', data=>$Pdata->{$cid}->{se2} &></td>
+</tr>
+%}
+</table>
+</td></tr>
+<tr><td>&nbsp;</td></tr>
+<tr><td>
+<h3 align=center>Расход<br>
+<font size=-1>(<% $cdate %> - <% $now %>)</font></h3>
+<table border=1 width=100%>
+<th>Счетчик</th><th>Дневной</th><th>Ночной</th><th>Сумма</th>
+<tr>
+<td><b><% $Clist->{$mid}->{memo} %></b></td>
+<td align=right><b><& '.format_data', data=>$Delta->{$mid}->{se1} &></b></td>
+<td align=right><b><& '.format_data', data=>$Delta->{$mid}->{se2} &></b></td>
+%#<td align=right><% $Delta->{$mid}->{sdate} %></td>
+<td align=right><b><& '.format_data', data=>($Delta->{$mid}->{se1}+$Delta->{$mid}->{se2}) &></b></td>
+
+</tr>
+%foreach my $cid (sort keys %$Clist) {
+%	next	if($cid eq $mid);
+<tr>
+<td><% $Clist->{$cid}->{memo} %></td>
+<td align=right><& '.format_data', data=>$Delta->{$cid}->{se1} &></td>
+<td align=right><& '.format_data', data=>$Delta->{$cid}->{se2} &></td>
+%#<td align=right><% $Delta->{$cid}->{sdate} %></td>
+<td align=right><& '.format_data', data=>($Delta->{$cid}->{se1}+$Delta->{$cid}->{se2}) &></td>
+</tr>
+%}
+<tr>
+<td><b>Итого:</b></td>
+<td align=right><b><& '.format_data', data=>$Delta->{total}->{se1} &></b></td>
+<td align=right><b><& '.format_data', data=>$Delta->{total}->{se2} &></b></td>
+%#<td align=right></td>
+<td align=right><b><& '.format_data', data=>($Delta->{total}->{se1}+$Delta->{total}->{se2}) &></b></td>
+</tr>
+<tr>
+<td><b>Ошибка:</b></td>
+<td align=right><b><& '.format_data', data=>$Delta->{delta}->{se1} &></b></td>
+<td align=right><b><& '.format_data', data=>$Delta->{delta}->{se2} &></b></td>
+%#<td align=right></td>
+<td align=right><b><& '.format_data', data=>($Delta->{delta}->{se1}+$Delta->{delta}->{se2}) &></b></td>
+</tr>
+</table>
+</td></tr>
+<tr><td align=center>
+<br><a href=/remstats/>Графики</a><br><a href="/ghpower/index.html">Счетчики</a><br>&nbsp;
+</td></tr>
+</table>
+
+<%def .status>
+<%args>
+	$cid => 1
+	$dbh
+</%args>
+<%init>
+use utf8;
+my $now = time();
+my $ret;
+my $sth = $dbh->prepare("select date from ONLY monitor where counter=? and date>? and date<? limit 1");
+if($sth->execute($cid, $now-300,$now)) {
+	($ret) = $sth->fetchrow;
+}
+</%init>
+%if($ret) {
+<font color=green>Вкл.</font>
+%} else {
+<font color=red>Откл.</font>
+%}
+</%def>
+
+<%def .se>
+<%args>
+	$cid => 1
+	$ctime => undef
+	$dbh
+</%args>
+
+<%init>
+use utf8;
+return	unless $cid;
+my ($se1,$se2,$sdate) = (0,0,0);
+my $sql;
+if($ctime) { # на заданную дату
+	$sql = "select se1ai, se2ai, date from ONLY monitor where counter=? and date>$ctime and date<$ctime+300 limit 1";
+} else {	# самые свежие данные
+	$sql = "select se1ai, se2ai, date from ONLY monitor where counter=? order by date desc limit 1";
+	$ctime=0;
+}
+my $sth = $dbh->prepare($sql);
+
+if($sth->execute($cid)) {
+	($se1,$se2,$sdate) = $sth->fetchrow;
+	$sth->finish;
+}
+#$se1 =~ s/\./,/;
+#$se2 =~ s/\./,/;
+$se1 = '-'	unless($se1 =~ /\d/);
+$se2 = '-'	unless($se2 =~ /\d/);
+return $se1,$se2,$sdate;
+</%init>
+</%def>
+
+
+<%def .format_data>
+<%args>
+	$data
+</%args>
+<%init>
+use utf8;
+return	unless defined $data;
+my $str = ($data eq '-')? "-" : sprintf("%0.3f", $data);
+$str =~ s/\./,/;
+</%init>
+<%$str%>
+</%def>
