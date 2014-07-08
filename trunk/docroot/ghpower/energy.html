@@ -7,7 +7,8 @@
 use POSIX;
 use locale;
 use Time::Local;
-setlocale(&LC_COLLATE, 'ru_RU.KOI8-R');
+#setlocale(&LC_COLLATE, 'ru_RU.KOI8-R');
+use utf8;
 
 #my $login = $ENV{REMOTE_USER} || '-';
 
@@ -40,7 +41,7 @@ my $inf = $dbh->prepare("select A.plimit,A.mgroup,A.name,A.addr,A.mgroup,A.sn,A.
 $inf->execute($id);
 my $Info = $inf->fetchrow_hashref;
 $inf->finish;
-# Этот счетчик - балансный?
+# п╜я┌п╬я┌ я│я┤п╣я┌я┤п╦п╨ - п╠п╟п╩п╟п╫я│п╫я▀п╧?
 $inf = $dbh->prepare("select * from mgroup where active=1 and bid=?");
 $inf->execute($id);
 my $h = $inf->fetchrow_hashref;
@@ -63,13 +64,13 @@ while(my $row = $sth->fetchrow_hashref) {
 <table border=0>
 <tr><td>
 <table border="1">
-<tr><td align="right">Адрес:</td><td><%$Info->{street}%>, <%$Info->{house}%></td></tr>
+<tr><td align="right">п░п╢я─п╣я│:</td><td><%$Info->{street}%>, <%$Info->{house}%></td></tr>
 </table>
 </td>
-<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="stored.html?id=<%$id%>">Показания счетчика по дням</a>&nbsp;&nbsp;&nbsp;<a href="expense.html?id=<%$id%>">Расход по месяцам</a></td>
+<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="stored.html?id=<%$id%>">п÷п╬п╨п╟п╥п╟п╫п╦я▐ я│я┤п╣я┌я┤п╦п╨п╟ п©п╬ п╢п╫я▐п╪</a>&nbsp;&nbsp;&nbsp;<a href="expense.html?id=<%$id%>">п═п╟я│я┘п╬п╢ п©п╬ п╪п╣я│я▐я├п╟п╪</a></td>
 </tr></table>
 %if($Info->{mgid}) {
-<p>Это балансный счетчик</p>
+<p>п╜я┌п╬ п╠п╟п╩п╟п╫я│п╫я▀п╧ я│я┤п╣я┌я┤п╦п╨</p>
 %}
 <h3><a href="?id=<%$id%>&date=<%$prev%>"><<</a>&nbsp;<%$date%>&nbsp;<% $next ? "<a href=?id=".$id."&date=".$next.">>></a>":""%></h3>
 <table border="0">
@@ -77,7 +78,7 @@ while(my $row = $sth->fetchrow_hashref) {
 <td valign="top">
 %if($Data) {
 <table border="1">
-<tr><th>Время</th><th>&nbsp;Тариф-1&nbsp;</th><th>&nbsp;Тариф-2&nbsp;</th><th>&nbsp;Ср.потр.&nbsp;</th></tr>
+<tr><th>п▓я─п╣п╪я▐</th><th>&nbsp;п╒п╟я─п╦я└-1&nbsp;</th><th>&nbsp;п╒п╟я─п╦я└-2&nbsp;</th><th>&nbsp;п║я─.п©п╬я┌я─.&nbsp;</th></tr>
 %foreach my $row (@$Data) {
 <tr>
 <td><b><% $row->{tm} %></b></td>
@@ -88,7 +89,7 @@ while(my $row = $sth->fetchrow_hashref) {
 %}
 </table>
 %} else {
-<p>Нет данных на этот день</p>
+<p>п²п╣я┌ п╢п╟п╫п╫я▀я┘ п╫п╟ я█я┌п╬я┌ п╢п╣п╫я▄</p>
 %}
 </td>
 <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
@@ -97,13 +98,13 @@ while(my $row = $sth->fetchrow_hashref) {
 
 
 <table border="0">
-<tr><td align="right">Тип:</td><td><%$Info->{model}%></td></tr>
-<tr><td align="right">Серийный номер:</td><td><%$Info->{sn}%></td></tr>
-<tr><td align="right">Год выпуска:</td><td><%$Info->{year}%></td></tr>
-<tr><td align="right">Дата установки:</td><td><%$Info->{setdate}%></td></tr>
-<tr><td align="right">Номер столба:</td><td><%$Info->{tower}%></td></tr>
-<tr><td align="right">Лимит мощности:</td><td><%$Info->{plimit}%></td></tr>
-<tr><td align="right">Доп.информация:</td><td><%$Info->{memo}%></td></tr>
+<tr><td align="right">п╒п╦п©:</td><td><%$Info->{model}%></td></tr>
+<tr><td align="right">п║п╣я─п╦п╧п╫я▀п╧ п╫п╬п╪п╣я─:</td><td><%$Info->{sn}%></td></tr>
+<tr><td align="right">п⌠п╬п╢ п╡я▀п©я┐я│п╨п╟:</td><td><%$Info->{year}%></td></tr>
+<tr><td align="right">п■п╟я┌п╟ я┐я│я┌п╟п╫п╬п╡п╨п╦:</td><td><%$Info->{setdate}%></td></tr>
+<tr><td align="right">п²п╬п╪п╣я─ я│я┌п╬п╩п╠п╟:</td><td><%$Info->{tower}%></td></tr>
+<tr><td align="right">п⌡п╦п╪п╦я┌ п╪п╬я┴п╫п╬я│я┌п╦:</td><td><%$Info->{plimit}%></td></tr>
+<tr><td align="right">п■п╬п©.п╦п╫я└п╬я─п╪п╟я├п╦я▐:</td><td><%$Info->{memo}%></td></tr>
 </table>
 <br>
 <img src="graph/<%$Info->{mgroup}%>/<%$id%>-day.png">

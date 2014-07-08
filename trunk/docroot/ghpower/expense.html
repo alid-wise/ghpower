@@ -14,9 +14,10 @@ use Data::Dumper;
 use POSIX;
 use Date::Manip;
 use locale;
-setlocale(&LC_COLLATE, 'ru_RU.KOI8-R');
+#setlocale(&LC_COLLATE, 'ru_RU.KOI8-R');
+use utf8;
 
-#if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# только admin и manager
+#if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# я┌п╬п╩я▄п╨п╬ admin п╦ manager
 #	$r->status_line('');
 #	$m->clear_buffer;
 #	$m->abort(404);
@@ -39,11 +40,11 @@ my %Err;
 #my $OK=0;
 
 my $sth;
-# Справочники
+# п║п©я─п╟п╡п╬я┤п╫п╦п╨п╦
 
-# Проезды (улицы)
+# п÷я─п╬п╣п╥п╢я▀ (я┐п╩п╦я├я▀)
 my $S = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'street', nocache=>0);
-# Люди
+# п⌡я▌п╢п╦
 my $Owners = $m->comp("lib.msn:userlist", dbh=>$dbh, nocache=>0);
 
 my $MExpenses;
@@ -52,7 +53,7 @@ my $Global = $m->comp("lib.msn:global", dbh=>$dbh, nocache=>0);
 
 
 my ($List, $Usr);
-# Группы
+# п⌠я─я┐п©п©я▀
 $sth = $dbh->prepare("select * from mgroup");
 $sth->execute();
 while(my $r = $sth->fetchrow_hashref) {
@@ -70,12 +71,12 @@ if($id) {
 	$Usr->{the_street} = $S->{$Usr->{street}};
 	$Usr->{the_owner} = $Owners->{$Usr->{owner}};
 
-	# Расходы
+	# п═п╟я│я┘п╬п╢я▀
 	$MExpenses = $m->comp("lib.msn:mexpenses", dbh=>$dbh, cid=>$id, nocache=>0);
 
-} else {	# Счетчики полный список
+} else {	# п║я┤п╣я┌я┤п╦п╨п╦ п©п╬п╩п╫я▀п╧ я│п©п╦я│п╬п╨
 
-	# Расходы
+	# п═п╟я│я┘п╬п╢я▀
 	$MExpenses = $m->comp("lib.msn:mexpenses", dbh=>$dbh, ymon=>sprintf("%4d-%02d",$fyear,$fmonth), cid=>0, nocache=>0);
 
 	my $L = $m->comp("lib.msn:cflistload", dbh=>$dbh, nocache=>1);
@@ -90,13 +91,13 @@ if($id) {
 
 
 %if($id) {
-<h2>Расход электроэнергии по месяцам</h2>
+<h2>п═п╟я│я┘п╬п╢ я█п╩п╣п╨я┌я─п╬я█п╫п╣я─пЁп╦п╦ п©п╬ п╪п╣я│я▐я├п╟п╪</h2>
 <p><b><% $Usr->{the_street}->{name} %>, <% $Usr->{house} %><br>
 <% $Usr->{the_owner}->{name} %><br>
-<% $Usr->{ktrans} > 1 ? "Коэффициент: ".$Usr->{ktrans} : "" %>
+<% $Usr->{ktrans} > 1 ? "п п╬я█я└я└п╦я├п╦п╣п╫я┌: ".$Usr->{ktrans} : "" %>
 </b></p>
 <table border="1">
-<tr><th>Год</th><th>Месяц</th><th>Дневной тариф</th><th>Ночной тариф</th></tr>
+<tr><th>п⌠п╬п╢</th><th>п°п╣я│я▐я├</th><th>п■п╫п╣п╡п╫п╬п╧ я┌п╟я─п╦я└</th><th>п²п╬я┤п╫п╬п╧ я┌п╟я─п╦я└</th></tr>
 %foreach my $year (sort {$b<=>$a} keys %{$MExpenses}) {
 %	foreach my $month (sort {$b<=>$a} keys %{$MExpenses->{$year}}) {
 <tr>
@@ -110,13 +111,13 @@ if($id) {
 </table>
 
 
-%} else {	# полный список
+%} else {	# п©п╬п╩п╫я▀п╧ я│п©п╦я│п╬п╨
 %	my ($sec,$min,$hour,$mday,$mon,$year) = (localtime)[0,1,2,3,4,5];
 
 
-<p><a href="/">Home</a>&nbsp;<a href="index.html">Счетчики</a>&nbsp;
+<p><a href="/">Home</a>&nbsp;<a href="index.html">п║я┤п╣я┌я┤п╦п╨п╦</a>&nbsp;
 %if($auth->{gid} < 3) {
-<a href="pays.html">Платежи</a>&nbsp;
+<a href="pays.html">п÷п╩п╟я┌п╣п╤п╦</a>&nbsp;
 %}
 %if($auth->{gid} eq 1) {
 <a href="auth.html">authors</a>
@@ -124,20 +125,20 @@ if($id) {
 </p>
 <form name="filter" method="POST">
 <select name="filter">
-<option value="0">-- все группы --</option>
+<option value="0">-- п╡я│п╣ пЁя─я┐п©п©я▀ --</option>
 %foreach my $mgid (sort {$List->{$a}->{rank} <=> $List->{$b}->{rank}} keys %$List) { 
 %	next unless $List->{$mgid}->{items};
 <option value="<%$mgid%>" <% $filter && $mgid == $filter ? "selected":""%>><% $List->{$mgid}->{name}%></option>
 %}
 </select>
 <select name="filter2">
-<option value="0">-- все счетчики --</option>
-<option value="1" <%$filter2 eq '1' ? "selected":""%>>-- активные --</option>
-<option value="2" <%$filter2 eq '2' ? "selected":""%>>-- неактивные --</option>
+<option value="0">-- п╡я│п╣ я│я┤п╣я┌я┤п╦п╨п╦ --</option>
+<option value="1" <%$filter2 eq '1' ? "selected":""%>>-- п╟п╨я┌п╦п╡п╫я▀п╣ --</option>
+<option value="2" <%$filter2 eq '2' ? "selected":""%>>-- п╫п╣п╟п╨я┌п╦п╡п╫я▀п╣ --</option>
 </select>
-<input type="checkbox" name="showdel" <%$showdel ? "checked":""%>>Показывать удаленные
+<input type="checkbox" name="showdel" <%$showdel ? "checked":""%>>п÷п╬п╨п╟п╥я▀п╡п╟я┌я▄ я┐п╢п╟п╩п╣п╫п╫я▀п╣
 <br>
-<nobr>Год:&nbsp;
+<nobr>п⌠п╬п╢:&nbsp;
 <select name="fyear">
 % my $y = $Global->{last_year};
 %do {
@@ -146,26 +147,26 @@ if($id) {
 %} while($y>=$Global->{first_year});
 </select>
 </nobr>
-<nobr>Месяц:&nbsp;
+<nobr>п°п╣я│я▐я├:&nbsp;
 <select name="fmonth">
-<option value="01" <%$fmonth eq '01' ? "selected":""%>>Январь</option>
-<option value="02" <%$fmonth eq '02' ? "selected":""%>>Февраль</option>
-<option value="03" <%$fmonth eq '03' ? "selected":""%>>Март</option>
-<option value="04" <%$fmonth eq '04' ? "selected":""%>>Апрель</option>
-<option value="05" <%$fmonth eq '05' ? "selected":""%>>Май</option>
-<option value="06" <%$fmonth eq '06' ? "selected":""%>>Июнь</option>
-<option value="07" <%$fmonth eq '07' ? "selected":""%>>Июль</option>
-<option value="08" <%$fmonth eq '08' ? "selected":""%>>Август</option>
-<option value="09" <%$fmonth eq '09' ? "selected":""%>>Сентябрь</option>
-<option value="10" <%$fmonth eq '10' ? "selected":""%>>Октябрь</option>
-<option value="11" <%$fmonth eq '11' ? "selected":""%>>Ноябрь</option>
-<option value="12" <%$fmonth eq '12' ? "selected":""%>>Декабрь</option>
+<option value="01" <%$fmonth eq '01' ? "selected":""%>>п╞п╫п╡п╟я─я▄</option>
+<option value="02" <%$fmonth eq '02' ? "selected":""%>>п╓п╣п╡я─п╟п╩я▄</option>
+<option value="03" <%$fmonth eq '03' ? "selected":""%>>п°п╟я─я┌</option>
+<option value="04" <%$fmonth eq '04' ? "selected":""%>>п░п©я─п╣п╩я▄</option>
+<option value="05" <%$fmonth eq '05' ? "selected":""%>>п°п╟п╧</option>
+<option value="06" <%$fmonth eq '06' ? "selected":""%>>п≤я▌п╫я▄</option>
+<option value="07" <%$fmonth eq '07' ? "selected":""%>>п≤я▌п╩я▄</option>
+<option value="08" <%$fmonth eq '08' ? "selected":""%>>п░п╡пЁя┐я│я┌</option>
+<option value="09" <%$fmonth eq '09' ? "selected":""%>>п║п╣п╫я┌я▐п╠я─я▄</option>
+<option value="10" <%$fmonth eq '10' ? "selected":""%>>п·п╨я┌я▐п╠я─я▄</option>
+<option value="11" <%$fmonth eq '11' ? "selected":""%>>п²п╬я▐п╠я─я▄</option>
+<option value="12" <%$fmonth eq '12' ? "selected":""%>>п■п╣п╨п╟п╠я─я▄</option>
 </select>
 </nobr>
-<input type="submit" name="sel" value="Выбрать">
+<input type="submit" name="sel" value="п▓я▀п╠я─п╟я┌я▄">
 </form>
 
-<h4>Расход электроэнергии за месяц</h4>
+<h4>п═п╟я│я┘п╬п╢ я█п╩п╣п╨я┌я─п╬я█п╫п╣я─пЁп╦п╦ п╥п╟ п╪п╣я│я▐я├</h4>
 <table border="1">
 %foreach my $mgid (sort {$List->{$a}->{rank} <=> $List->{$b}->{rank}} keys %$List) {
 %	next if $filter &&  !($mgid == $filter);

@@ -8,7 +8,7 @@
 	$ping => undef
 </%args>
 <%init>
-if($auth->{gid} > 2) {	# только admin и manager
+if($auth->{gid} > 2) {	# я┌п╬п╩я▄п╨п╬ admin п╦ manager
 	$r->status_line('');
 	$m->clear_buffer;
 	$m->abort(404);
@@ -62,8 +62,8 @@ if($ping) {
 <tr><td align="right">Serial:</td><td><input type="text" name="sn" value="<%$sn%>"></td></tr>
 <tr><td align="right">Type:</td><td>
 <select name="type">
-<option value="1" <%$type eq 1 ? "selected":""%>>М203</option>
-<option value="2" <%$type eq 2 ? "selected":""%>>М230</option>
+<option value="1" <%$type eq 1 ? "selected":""%>>п°203</option>
+<option value="2" <%$type eq 2 ? "selected":""%>>п°230</option>
 </select></td></tr>
 <tr><td align="right">Iface:</td><td>
 <select name="if">
