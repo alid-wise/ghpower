@@ -60,6 +60,33 @@
 --       OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 --
 
+-- users
+create table auth (
+	id serial not null,
+	name varchar,
+	login varchar,
+	password varchar,
+	email varchar,
+	active integer default 0,
+	gid integer default 0,
+	memo varchar,
+	modtime timestamp without time zone DEFAULT now()
+);
+create table groups (
+	id integer not null,
+	name varchar
+);
+INSERT INTO groups (id,name) VALUES (1,'admin');
+INSERT INTO groups (id,name) VALUES (2,'manager');
+INSERT INTO groups (id,name) VALUES (3,'user');
+INSERT INTO groups (id,name) VALUES (4,'guest');
+-- admin/admin
+INSERT INTO auth (name,login,password,email,active,gid,memo) VALUES ('- embedded admin -','admin','$1$YqBppwE5$9GaW92wOLUP0v4Au/Lfab.','admin@email',1,1,'Эту запись не стоит удалять');
+
+
+
+# "Эдем" Илья Бояшов
+
 
 -- группы мониторинга (лучи)
 create table mgroup (
@@ -92,6 +119,8 @@ create table counters (
 	year integer,
 	street integer,
 	house varchar,
+	owner integer,	-- users.id
+	plimit decimal DEFAULT 3.6,	-- допустимая потребляемая мощность
 	primary key (id)
 );
 
@@ -105,7 +134,7 @@ create table counter_type (
 -- интерфейсы
 create table iface (
 	id integer not null,
-	name varchar,
+--	name varchar,
 	dev varchar
 );
 
@@ -117,16 +146,25 @@ create table status (
 	pstate integer, -- предыдущее состояние
 	se1 decimal DEFAULT 0, -- текущие показания Т1
 	se2 decimal DEFAULT 0, -- текущие показания Т2
+	lpower decimal,
 	modtime timestamp without time zone DEFAULT now(),
 	primary key (id)
 );
-
-
-
-
+-- лог алертов
+create table alerts (
+ id serial not null,
+ atime timestamp without time zone DEFAULT now(),
+ cid integer,
+ state integer,
+ pstate integer,
+ se1 decimal DEFAULT 0,
+ se2 decimal DEFAULT 0,
+ primary key (id)
+);
 
 -- данные
 create table monitor (
+	dt timestamp without time zone,
 	date integer not null,
 	counter integer not null,
 	mv1 decimal,	-- текущее напряжение ф1
@@ -166,7 +204,9 @@ create table monitor (
 	ise decimal		-- интегральная мощность
 );
 CREATE INDEX monitor_date_i ON monitor (date);
+CREATE INDEX monitor_dt_i ON monitor (dt);
 CREATE INDEX monitor_counter_i ON monitor (counter);
+create index monitor_rdt_i on monitor (counter) where extract(hour from dt)=0 and extract(minute from dt)=0;
 create VIEW m_monitor as SELECT to_timestamp(monitor."date"::double precision) as tm,* from monitor;
 CREATE VIEW m_power AS select to_char(to_timestamp(monitor.date::double precision),'DD.MM.YYYY HH24:MI:SS') AS date,to_char(to_timestamp(monitor.date::double precision),'DD.MM.YYYY') AS dt,to_char(to_timestamp(monitor.date::double precision),'HH24:MI:SS') AS tm,monitor.counter AS counter,to_char(monitor.mp1,'999999') AS p1,to_char(monitor.mp2,'999999') AS p2,to_char(monitor.mp3,'999999') AS p3,to_char(monitor.mps,'999999') AS p,to_char(monitor.ise*1000,'999999') AS pi from monitor;
 
@@ -176,7 +216,7 @@ CREATE FUNCTION ise_stamp() RETURNS trigger AS '
 DECLARE
    prev record;
 BEGIN
-   SELECT INTO prev counters.ktrans,date,se1ai,se2ai from monitor inner join counters on counter=counters.id where date<NEW.date and counter=NEW.counter order by date desc limit 1;
+   SELECT INTO prev counters.ktrans,date,se1ai,se2ai from ONLY monitor inner join counters on counter=counters.id where date<NEW.date and counter=NEW.counter order by date desc limit 1;
    IF NOT FOUND THEN
        NEW.ise := 0;
    ELSE
@@ -233,6 +273,25 @@ insert into monitor_descr (id,name,descr) values (34,'se2re','накопленная энерги
 insert into monitor_descr (id,name,descr) values (35,'ise','интегральная мощность');
 
 
+
+
+-- Месячные расходы по счетчикам
+-- (заполняется раз в месяц counter/mexpenses)
+create table mexpenses (
+	id serial not null,
+	cid integer,	-- counter id
+	year integer,
+	month integer,
+	exp1 decimal DEFAULT 0,
+	exp2 decimal DEFAULT 0,
+	modtime timestamp without time zone DEFAULT now(),
+	primary key (id)
+);
+CREATE INDEX mexpenses_year_i ON mexpenses (year);
+CREATE INDEX mexpenses_month_i ON mexpenses (month);
+CREATE INDEX mexpenses_counter_i ON mexpenses (cid);
+
+
 --
 -- Проезды
 --
@@ -251,5 +310,58 @@ CREATE TABLE towers (
     modtime timestamp without time zone DEFAULT now() NOT NULL,
     primary key (id)
 );
+
+
+--
+-- Платежи
+--
+CREATE TABLE payments (
+    id serial NOT NULL,
+    cid integer,
+    date date,
+    prev1 decimal,
+    prev2 decimal,
+    current1 decimal,
+    current2 decimal,
+    amount decimal,
+    balance decimal,
+    modtime timestamp without time zone DEFAULT now() NOT NULL,
+    primary key (id)
+);
+CREATE INDEX payments_date_i ON payments (date ASC);
+CREATE INDEX payments_cid_i ON payments (cid);
+
+CREATE TABLE tariff (
+    id serial NOT NULL,
+    t1 decimal,
+    t2 decimal,
+    sdate date,           -- начало действия тарифа
+    primary key (id)
+);
+INSERT INTO tariff (t1,t2,sdate) VALUES (4.11,1.39,'2012-07-01');
+
+
+CREATE TABLE users (
+	id integer NOT NULL,
+	fname character varying(255),
+	mname character varying(255),
+	lname character varying(255),
+	status character varying,
+	birthday date,
+	passport character varying,
+	address character varying,	-- адрес прописки
+	active integer,
+	memo character varying,
+	usr character varying,
+	modtime timestamp without time zone DEFAULT now(),
+	primary key (id)
+);
+
+
+
+
+
+
+
 
 

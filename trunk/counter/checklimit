@@ -1,3 +1,5 @@
+#!/usr/bin/perl
+
 #
 #       Copyright (C) 2008-2012 Александр Девяткин, "Зелёная горка"
 #
@@ -60,82 +62,65 @@
 #       OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-package Lock;
+
+$|=1;
+use DBI;
+use Time::Local;
 use strict;
-use vars qw($VERSION);
-use Fcntl qw (:DEFAULT :flock);
-
-$VERSION="1.0";
 
 #
-# Блокировка
-# 2011-02-11 alid
+# Проверка превышения порога додустимой мощности
+# 2013-10-25 alid
 #
 
-sub new {
-	my $class = shift;
-	my ($file,$nowait,$timeout)=@_;
-	die unless defined $file;
-	my $self={};
-	$self->{_file} = $file;
-	$self->{_nowait} = $nowait;
-	$self->{timeout} = $timeout || 10;
-	bless $self,$class;
-	return $self;
+my (@args, %opts);
+foreach(@ARGV){
+	if(/^\-(\S)(\S*)/) { $opts{$1} = $2; } else {  push @args, $_; }
+}
+my ($database, $limit) = (@args);
+die "Usage: $0 database limit"		unless($database);
+my $verb = exists $opts{v};
+my $pgport = 5432;
+my $main_counter_id = 1;
+
+my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1, AutoCommit => 0});
+my $sth = $dbh->prepare("select dt,ise from ONLY monitor where counter=? order by date desc limit 1");
+$sth->execute($main_counter_id);
+my ($date,$ise) = $sth->fetchrow_array;
+$sth->finish;
+
+#print "$date $ise\n";
+$ise = sprintf("%.f",$ise);
+if($ise > $limit) {
+	# Ищем превышение по всем счетчикам
+	my $cntr = $dbh->prepare("select A.id,A.mgroup,A.mgroup,A.house,B.name as street,C.lname as owner,A.plimit,A.ktrans from counters A left outer join street B on B.id=A.street left outer join users C on A.owner=C.id where A.active=1");
+	$cntr->execute();
+	my $List = "Нарушители:\n";
+	while(my $r = $cntr->fetchrow_hashref) {
+		next	if $r->{id} == $main_counter_id; 
+		$sth->execute($r->{id});
+		my ($ldate,$lise) = $sth->fetchrow_array;
+		$sth->finish;
+		$lise = sprintf("%.2f",$lise * $r->{ktrans});
+		if($lise > $r->{plimit}) {	# Превышение
+			$List .= $r->{street}.", ".$r->{house}." ".$r->{owner}."\n";
+			$List .= "Мощность: $lise kWA (разрешено $r->{plimit})\n\n";
+		}
+	}
+	$cntr->finish;
+
+	if($verb) {
+		print "Subject: Alert from ghpower: the limit is exceeded ($ise)\n";
+		print "Превышена потребляемая мощность: $ise kWA (при пороге $limit kWA)\n$List\n";
+	} else {
+		open SND, "| ssmtp aleksandr.deviatkin\@gmail.com";
+		print SND "Subject: Alert from ghpower: the limit is exceeded ($ise)\n";
+		print SND "Превышена потребляемая мощность: $ise kWA (при пороге $limit kWA)\n$List\n";
+		close SND;
+	}
 }
 
-sub set {
-	my $self=shift;
-	my $pid;
-	return $self->_set()	if($self->{_nowait});
-	eval{
-		$SIG{ALRM} = sub { die "timeout"; };
-		alarm($self->{timeout});
-		do { $pid=$self->_set(); }while($pid); 
-		alarm(0);
-	};
-	return $pid	if($pid);
-	return 0;
-}
 
-sub _set {
-	my $self=shift;
-	if(open LCK, $self->{_file}){
-		my $pid = <LCK>;
-		close LCK;
-		return($pid)	if $pid && kill(0, $pid);	# Процесс еще живой
-	}
-	# Ставим свою блокировку
-	sysopen(LCK, $self->{_file}, O_RDWR|O_CREAT)	or die "Can't open $self->{_file}: $!";
-	flock(LCK, LOCK_EX|LOCK_NB)		or die "Can't lock $self->{_file}: $!";
-	seek(LCK, 0, 0)				or die "Can't rewind $self->{_file}: $!";
-	truncate(LCK, 0)				or die "Can't truncate $self->{_file}: $!";
-	print LCK "$$";
-	close(LCK)				or die "Can't close $self->{_file}: $!";
-	system("chmod 664 $self->{_file}");
-	return 0;
-}
-sub clear {
-	my $self=shift;
-	my $pid;
-	open(LCK, $self->{_file})	or return undef;
-	if(flock(LCK, 1|4)){
-		$pid = <LCK>;
-	}
-	close LCK;
-	if($pid && $pid eq $$){
-		return unlink $self->{_file};
-	}
-	return undef;
-}
-sub get {
-	my $self=shift;
-	if(open LCK, $self->{_file}){
-		my $pid = <LCK>;
-		close LCK;
-		return($pid)	if $pid && kill(0, $pid);
-	}
-	return 0;
-}
 
-1;
+$dbh->disconnect;
+

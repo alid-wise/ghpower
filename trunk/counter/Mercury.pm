@@ -88,9 +88,10 @@ sub new {
 	$self->{device} = $device;
 	my $lockfile = $device;
 	$lockfile =~ s(/)(_)g;
-	$self->{lock} = Lock->new("/tmp/$lockfile");
+	$self->{lock} = Lock->new("/tmp/".$lockfile.".PM");
 	die "Mercury: Locked"	if($self->{lock}->set);
-	$self->{port} = Device::SerialPort->new($device);
+#	$self->{port} = Device::SerialPort->new($device,0,"/tmp/".$lockfile.".PM");
+	$self->{port} = Device::SerialPort->new($device,0);
         $self->{ctx} = Digest::CRC->new(width=>16, init=>0xffff, xorout=>0x0000, poly=>0x8005, refin=>1, refout=>1, cont=>0);
 	$self->{model} = $mercury_type;
 	$self->{addr} = $addr;
@@ -122,7 +123,7 @@ END {
 
 
 sub quit {
-        my $self = shift;
+	my $self = shift;
 	$self->{lock}->clear();
 }
 

@@ -89,6 +89,13 @@ $mgid ||= 1;
 my $cget203 = "$ENV{MY}counter/mon203 -r$retries";
 my $cget230 = "$ENV{MY}counter/mon230 -r$retries";
 
+# çÌÏÂÁÌØÎÁÑ ÂÌÏËÉÒÏ×ËÁ ĞÒÏÃÅÓÓÏÍ ĞÏÉÓËÁ ÉÎÔÅÒÆÅÊÓÏ× port_locator
+# 2014-05-14 alid
+my $plock = '/tmp/port_locator.lock';
+my $Plock = Lock->new($plock,1);
+exit 1	if($Plock->get());
+#
+
 my $lock = Lock->new("/tmp/counter.collector.$mgid.lock",1);
 die "collector: Locked for mgroup $mgid"	if($lock->set);
 

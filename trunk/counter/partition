@@ -1,0 +1,204 @@
+#!/usr/bin/perl
+
+#
+#       Copyright (C) 2008-2012 áÌÅËÓÁÎÄÒ äÅ×ÑÔËÉÎ, "úÅÌ£ÎÁÑ ÇÏÒËÁ"
+#
+#       òÁÚÒÅÛÁÅÔÓÑ ÐÏ×ÔÏÒÎÏÅ ÒÁÓÐÒÏÓÔÒÁÎÅÎÉÅ É ÉÓÐÏÌØÚÏ×ÁÎÉÅ ËÁË × ×ÉÄÅ ÉÓÈÏÄÎÏÇÏ
+#       ËÏÄÁ, ÔÁË É × Ä×ÏÉÞÎÏÊ ÆÏÒÍÅ, Ó ÉÚÍÅÎÅÎÉÑÍÉ ÉÌÉ ÂÅÚ, ÐÒÉ ÓÏÂÌÀÄÅÎÉÉ ÓÌÅÄÕÀÝÉÈ
+#       ÕÓÌÏ×ÉÊ:
+#
+#       * ðÒÉ ÐÏ×ÔÏÒÎÏÍ ÒÁÓÐÒÏÓÔÒÁÎÅÎÉÉ ÉÓÈÏÄÎÏÇÏ ËÏÄÁ ÄÏÌÖÎÏ ÏÓÔÁ×ÁÔØÓÑ ÕËÁÚÁÎÎÏÅ
+#         ×ÙÛÅ Õ×ÅÄÏÍÌÅÎÉÅ ÏÂ Á×ÔÏÒÓËÏÍ ÐÒÁ×Å, ÜÔÏÔ ÓÐÉÓÏË ÕÓÌÏ×ÉÊ É ÐÏÓÌÅÄÕÀÝÉÊ
+#         ÏÔËÁÚ ÏÔ ÇÁÒÁÎÔÉÊ.
+#       * ðÒÉ ÐÏ×ÔÏÒÎÏÍ ÒÁÓÐÒÏÓÔÒÁÎÅÎÉÉ Ä×ÏÉÞÎÏÇÏ ËÏÄÁ ÄÏÌÖÎÁ ÓÏÈÒÁÎÑÔØÓÑ ÕËÁÚÁÎÎÁÑ
+#         ×ÙÛÅ ÉÎÆÏÒÍÁÃÉÑ ÏÂ Á×ÔÏÒÓËÏÍ ÐÒÁ×Å, ÜÔÏÔ ÓÐÉÓÏË ÕÓÌÏ×ÉÊ É ÐÏÓÌÅÄÕÀÝÉÊ ÏÔËÁÚ
+#         ÏÔ ÇÁÒÁÎÔÉÊ × ÄÏËÕÍÅÎÔÁÃÉÉ É/ÉÌÉ × ÄÒÕÇÉÈ ÍÁÔÅÒÉÁÌÁÈ, ÐÏÓÔÁ×ÌÑÅÍÙÈ ÐÒÉ
+#         ÒÁÓÐÒÏÓÔÒÁÎÅÎÉÉ.
+#       * îÉ ÎÁÚ×ÁÎÉÅ "úÅÌ£ÎÁÑ ÇÏÒËÁ", ÎÉ ÉÍÅÎÁ ÅÅ ÓÏÔÒÕÄÎÉËÏ× ÎÅ ÍÏÇÕÔ ÂÙÔØ
+#         ÉÓÐÏÌØÚÏ×ÁÎÙ × ËÁÞÅÓÔ×Å ÐÏÄÄÅÒÖËÉ ÉÌÉ ÐÒÏÄ×ÉÖÅÎÉÑ ÐÒÏÄÕËÔÏ×, ÏÓÎÏ×ÁÎÎÙÈ
+#         ÎÁ ÜÔÏÍ ðï ÂÅÚ ÐÒÅÄ×ÁÒÉÔÅÌØÎÏÇÏ ÐÉÓØÍÅÎÎÏÇÏ ÒÁÚÒÅÛÅÎÉÑ.
+#
+#       üôá ðòïçòáííá ðòåäïóôá÷ìåîá ÷ìáäåìøãáíé á÷ôïòóëéè ðòá÷ é/éìé äòõçéíé óôïòïîáíé
+#	"ëáë ïîá åóôø" âåú ëáëïçï-ìéâï ÷éäá çáòáîôéê, ÷ùòáöåîîùè ñ÷îï éìé ðïäòáúõíå÷áåíùè,
+#	÷ëìàþáñ, îï îå ïçòáîéþé÷áñóø éíé, ðïäòáúõíå÷áåíùå çáòáîôéé ëïííåòþåóëïê ãåîîïóôé
+#	é ðòéçïäîïóôé äìñ ëïîëòåôîïê ãåìé. îé ÷ ëïåí óìõþáå, åóìé îå ôòåâõåôóñ
+#	óïïô÷åôóô÷õàýéí úáëïîïí, éìé îå õóôáîï÷ìåîï ÷ õóôîïê æïòíå, îé ïäéî ÷ìáäåìåã
+#	á÷ôïòóëéè ðòá÷ é îé ïäîï äòõçïå ìéãï, ëïôïòïå íïöåô éúíåîñôø é/éìé ðï÷ôïòîï
+#	òáóðòïóôòáîñôø ðòïçòáííõ, ëáë âùìï óëáúáîï ÷ùûå, îå îåó³ô ïô÷åôóô÷åîîïóôé,
+#	÷ëìàþáñ ìàâùå ïâýéå, óìõþáêîùå, óðåãéáìøîùå éìé ðïóìåäï÷á÷ûéå õâùôëé,
+#	÷óìåäóô÷éå éóðïìøúï÷áîéñ éìé îå÷ïúíïöîïóôé éóðïìøúï÷áîéñ ðòïçòáííù (÷ëìàþáñ,
+#	îï îå ïçòáîéþé÷áñóø ðïôåòåê äáîîùè, éìé äáîîùíé, óôá÷ûéíé îåðòá÷éìøîùíé, éìé
+#	ðïôåòñíé ðòéîåóåîîùíé éú-úá ÷áó éìé ôòåôøéè ìéã, éìé ïôëáúïí ðòïçòáííù òáâïôáôø
+#	óï÷íåóôîï ó äòõçéíé ðòïçòáííáíé), äáöå åóìé ôáëïê ÷ìáäåìåã éìé äòõçïå ìéãï âùìé
+#	éú÷åýåîù ï ÷ïúíïöîïóôé ôáëéè õâùôëï÷.
+#
+
+#       Copyright (C) 2008-2012 Aleksandr Deviatkin, "Green Hill"
+#
+#       Redistribution and use in source and binary forms, with or without
+#       modification, are permitted provided that the following conditions are
+#       met:
+#       
+#       * Redistributions of source code must retain the above copyright
+#         notice, this list of conditions and the following disclaimer.
+#       * Redistributions in binary form must reproduce the above
+#         copyright notice, this list of conditions and the following disclaimer
+#         in the documentation and/or other materials provided with the
+#         distribution.
+#       * Neither the name of the Green Hill nor the names of its
+#         contributors may be used to endorse or promote products derived from
+#         this software without specific prior written permission.
+#       
+#       THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+#       "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+#       LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+#       A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+#       OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#       SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+#       LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+#       DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+#       THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#       (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#       OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+
+$|=1;
+use DBI;
+use Time::Local;
+use strict;
+
+#
+# åÖÅÍÅÓÑÞÎÏÅ ÐÅÒÅËÏÎÆÉÇÕÒÉÒÏ×ÁÎÉÅ ÂÁÚÙ
+# 2012-07-20 alid
+#
+
+my (@args, %opts);
+foreach(@ARGV){
+	if(/^\-(\S)(\S*)/) { $opts{$1} = $2; } else {  push @args, $_; }
+}
+my ($database) = (@args);
+die "Usage: $0 database"		unless($database);
+my $verb = exists $opts{v};
+my $pgport = 5432;
+
+my $lm = `date -v-1m "+%Y-%m"`;
+chomp $lm;
+my $sdate = $opts{s} || $lm;
+
+
+#my ($sdate,$edate) =('2008-06','2012-06');
+my $mon = 0;
+
+
+my $edate = $opts{e} || $sdate;
+
+my ($syear,$smon) = ($sdate =~ /(\d{4})\-(\d{2})/);
+my ($eyear,$emon) = ($edate =~ /(\d{4})\-(\d{2})/);
+
+my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1, AutoCommit => 0});
+my $sth;
+
+
+for(my $year=int($syear);$year<=int($eyear);$year++){
+	for(my $i=1; $i<13; $i++) {
+		$mon = sprintf("%02d", $i);
+		if(int($year) == int($syear)) {
+			next	if(int($mon) < int($smon));
+		}
+		if(int($year) == ($eyear)) {
+			last	if(int($mon) > int($emon));
+		}
+		my $date2 = `date -j -f "%Y-%m-%d" -v+1m "+%Y-%m-%d" $year-$mon-01`;
+		my ($year2,$mon2) = ($date2 =~ /(\d{4})\-(\d{2})/);
+		my $table = "monitor_Y".$year."M".$mon;
+		print "$year-$mon $table\n"	if($verb);
+
+		my $sql = "create table ".$table." (check (dt >= '$year-$mon-01 00:00:00' AND dt < '$year2-$mon2-01 00:00:00')) inherits (monitor)";
+		print "$sql\n"	if($verb);
+		$dbh->do($sql);
+
+		$sql = "drop index if exists monitor_dt_i";
+		print "$sql\n"	if($verb);
+		$dbh->do($sql);
+
+		$sql = "create index monitor_dt_i on monitor (dt) where (dt >= '$year-$mon-01 00:00:00' AND dt < '$year2-$mon2-01 00:00:00')";
+		print "$sql\n"	if($verb);
+		$dbh->do($sql);
+
+		$sql = "insert into ".$table." (dt,date,counter,mv1,mv2,mv3,mc1,mc2,mc3,mf,ma1,ma2,ma3,mps,mp1,mp2,mp3,mqs,mq1,mq2,mq3,mss,ms1,ms2,ms3,mks,mk1,mk2,mk3,se1ai,se1ae,se1ri,se1re,se2ai,se2ae,se2ri,se2re,ise) select dt,date,counter,mv1,mv2,mv3,mc1,mc2,mc3,mf,ma1,ma2,ma3,mps,mp1,mp2,mp3,mqs,mq1,mq2,mq3,mss,ms1,ms2,ms3,mks,mk1,mk2,mk3,se1ai,se1ae,se1ri,se1re,se2ai,se2ae,se2ri,se2re,ise from ONLY monitor where dt >= '$year-$mon-01' AND dt < '$year2-$mon2-01'";
+		print "$sql\n"	if($verb);
+		$dbh->do($sql);
+
+		$sql = "CREATE INDEX ".$table."_date_i ON ".$table." (date)";
+		print "$sql\n"	if($verb);
+		$dbh->do($sql);
+
+		$sql = "CREATE INDEX ".$table."_counter_i ON ".$table." (counter)";
+		print "$sql\n"	if($verb);
+		$dbh->do($sql);
+
+		$sql = "CREATE INDEX ".$table."_dt_i ON ".$table." (dt)";
+		print "$sql\n"	if($verb);
+		$dbh->do($sql);
+
+		$sql = "create index ".$table."_rdt_i on ".$table." (counter) where extract(hour from dt)=0 and extract(minute from dt)=0";
+		print "$sql\n"  if($verb);
+		$dbh->do($sql);
+
+		$sql = "delete from ONLY monitor where dt >= '$year-$mon-01' AND dt < '$year2-$mon2-01'";
+		print "$sql\n"	if($verb);
+		$dbh->do($sql);
+
+		$sql = "drop index monitor_dt_i";
+		print "$sql\n"	if($verb);
+		$dbh->do($sql);
+
+		$sql = "grant select on ".$table." to remstats";
+		print "$sql\n"	if($verb);
+		$dbh->do($sql);
+	}
+}
+
+
+#$sth->finish;
+$dbh->commit;
+$dbh->disconnect;
+
+
+__END__
+îÏ×ÁÑ ÍÅÓÑÞÎÁÑ ÔÁÂÌÉÃÁ:
+
+create table monitor_Y2008M04 (check (dt >= '2008-04-01 00:00:00' AND dt < '2008-05-01 00:00:00')) inherits (monitor);
+
+ëÏÐÉÒÕÅÍ ÄÁÎÎÙÅ:
+
+create index monitor_dt_i on monitor (dt) where (dt >= '2008-04-01 00:00:00' AND dt < '2008-05-01 00:00:00');
+
+
+insert into monitor_Y2008M04 (dt,date,counter,mv1,mv2,mv3,mc1,mc2,mc3,mf,ma1,ma2,ma3,mps,mp1,mp2,mp3,mqs,mq1,mq2,mq3,mss,ms1,ms2,ms3,mks,mk1,mk2,mk3,se1ai,se1ae,se1ri,se1re,se2ai,se2ae,se2ri,se2re,ise) select dt,date,counter,mv1,mv2,mv3,mc1,mc2,mc3,mf,ma1,ma2,ma3,mps,mp1,mp2,mp3,mqs,mq1,mq2,mq3,mss,ms1,ms2,ms3,mks,mk1,mk2,mk3,se1ai,se1ae,se1ri,se1re,se2ai,se2ae,se2ri,se2re,ise from ONLY monitor where dt >= '2008-04-01' AND dt < '2008-05-01'
+
+
+
+CREATE INDEX monitor_Y2008M04_date_i ON monitor_Y2008M04 (date);
+CREATE INDEX monitor_Y2008M04_counter_i ON monitor_Y2008M04 (counter);
+CREATE INDEX monitor_Y2008M04_dt_i ON monitor_Y2008M04 (dt);
+
+delete from ONLY monitor where dt >= '2008-04-01' AND dt < '2008-05-01';
+
+
+drop index monitor_dt_i
+
+grant select on monitor_Y2008M04 to remstats
+
+
+
+
+
+
+
+
+
+
+
+

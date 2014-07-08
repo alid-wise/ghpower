@@ -1,3 +1,5 @@
+#!/usr/bin/perl
+
 #
 #       Copyright (C) 2008-2012 Александр Девяткин, "Зелёная горка"
 #
@@ -60,82 +62,60 @@
 #       OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-package Lock;
+
+$|=1;
+use DBI;
+use Time::Local;
 use strict;
-use vars qw($VERSION);
-use Fcntl qw (:DEFAULT :flock);
-
-$VERSION="1.0";
 
 #
-# Блокировка
-# 2011-02-11 alid
+# Генерация алертов
+# 2012-01-29 alid
 #
 
-sub new {
-	my $class = shift;
-	my ($file,$nowait,$timeout)=@_;
-	die unless defined $file;
-	my $self={};
-	$self->{_file} = $file;
-	$self->{_nowait} = $nowait;
-	$self->{timeout} = $timeout || 10;
-	bless $self,$class;
-	return $self;
+my (@args, %opts);
+foreach(@ARGV){
+	if(/^\-(\S)(\S*)/) { $opts{$1} = $2; } else {  push @args, $_; }
+}
+my ($database) = (@args);
+die "Usage: $0 database"		unless($database);
+my $verb = exists $opts{v};
+my $pgport = 5432;
+
+my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1, AutoCommit => 0});
+my $sth = $dbh->prepare("select id,cid,state,pstate,se1,se2,modtime from status where state<>pstate");
+my $alt = $dbh->prepare("insert into alerts (cid,state,pstate,se1,se2,atime) values (?,?,?,?,?,?)");
+my $inf = $dbh->prepare("select E.name as model,A.addr as addr,A.sn as sn,C.name as street,A.house as house,B.name as mgroup,D.name as tower from counters A inner join mgroup B on B.id=A.mgroup inner join street C on C.id=A.street inner join towers D on D.id=A.tower_id inner join counter_type E on E.id=a.model where A.id=?");
+
+
+$sth->execute;
+while(my $r = $sth->fetchrow_hashref) {
+	$alt->execute($r->{cid},$r->{state},$r->{pstate},$r->{se1},$r->{se2},$r->{modtime});
+	alert($r->{cid},$r->{state},$r->{pstate},$r->{se1},$r->{se2},$r->{modtime});
+}
+$sth->finish;
+$dbh->commit;
+$dbh->disconnect;
+
+# Обработка алерта
+sub alert {
+	my ($cid,$state,$pstate,$se1,$se2,$modtime) = @_;
+	$inf->execute($cid);
+	my ($model,$addr,$sn,$street,$house,$mgroup,$tower) = $inf->fetchrow_array;
+	$inf->finish;
+
+	my $event;
+	if($state) {	# set alert
+		$event = "ERROR";
+
+	} else {	# clear alert
+		$event = "CLEAR";
+
+	}
+# Тут надо будет в самом деле отправить алерт (почта, смс ?)
+#print 	"$event [$modtime]: $model,$addr,$sn,$street,$house,$mgroup,$tower\n";
+
+
 }
 
-sub set {
-	my $self=shift;
-	my $pid;
-	return $self->_set()	if($self->{_nowait});
-	eval{
-		$SIG{ALRM} = sub { die "timeout"; };
-		alarm($self->{timeout});
-		do { $pid=$self->_set(); }while($pid); 
-		alarm(0);
-	};
-	return $pid	if($pid);
-	return 0;
-}
 
-sub _set {
-	my $self=shift;
-	if(open LCK, $self->{_file}){
-		my $pid = <LCK>;
-		close LCK;
-		return($pid)	if $pid && kill(0, $pid);	# Процесс еще живой
-	}
-	# Ставим свою блокировку
-	sysopen(LCK, $self->{_file}, O_RDWR|O_CREAT)	or die "Can't open $self->{_file}: $!";
-	flock(LCK, LOCK_EX|LOCK_NB)		or die "Can't lock $self->{_file}: $!";
-	seek(LCK, 0, 0)				or die "Can't rewind $self->{_file}: $!";
-	truncate(LCK, 0)				or die "Can't truncate $self->{_file}: $!";
-	print LCK "$$";
-	close(LCK)				or die "Can't close $self->{_file}: $!";
-	system("chmod 664 $self->{_file}");
-	return 0;
-}
-sub clear {
-	my $self=shift;
-	my $pid;
-	open(LCK, $self->{_file})	or return undef;
-	if(flock(LCK, 1|4)){
-		$pid = <LCK>;
-	}
-	close LCK;
-	if($pid && $pid eq $$){
-		return unlink $self->{_file};
-	}
-	return undef;
-}
-sub get {
-	my $self=shift;
-	if(open LCK, $self->{_file}){
-		my $pid = <LCK>;
-		close LCK;
-		return($pid)	if $pid && kill(0, $pid);
-	}
-	return 0;
-}
-
-1;
