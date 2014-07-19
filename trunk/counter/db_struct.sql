@@ -1,34 +1,34 @@
 --
---       Copyright (C) 2008-2012 Александр Девяткин, "Зелёная горка"
+--       Copyright (C) 2008-2012 п░п╩п╣п╨я│п╟п╫п╢я─ п■п╣п╡я▐я┌п╨п╦п╫, "п≈п╣п╩я▒п╫п╟я▐ пЁп╬я─п╨п╟"
 --
---       Разрешается повторное распространение и использование как в виде исходного
---       кода, так и в двоичной форме, с изменениями или без, при соблюдении следующих
---       условий:
+--       п═п╟п╥я─п╣я┬п╟п╣я┌я│я▐ п©п╬п╡я┌п╬я─п╫п╬п╣ я─п╟я│п©я─п╬я│я┌я─п╟п╫п╣п╫п╦п╣ п╦ п╦я│п©п╬п╩я▄п╥п╬п╡п╟п╫п╦п╣ п╨п╟п╨ п╡ п╡п╦п╢п╣ п╦я│я┘п╬п╢п╫п╬пЁп╬
+--       п╨п╬п╢п╟, я┌п╟п╨ п╦ п╡ п╢п╡п╬п╦я┤п╫п╬п╧ я└п╬я─п╪п╣, я│ п╦п╥п╪п╣п╫п╣п╫п╦я▐п╪п╦ п╦п╩п╦ п╠п╣п╥, п©я─п╦ я│п╬п╠п╩я▌п╢п╣п╫п╦п╦ я│п╩п╣п╢я┐я▌я┴п╦я┘
+--       я┐я│п╩п╬п╡п╦п╧:
 --
---       * При повторном распространении исходного кода должно оставаться указанное
---         выше уведомление об авторском праве, этот список условий и последующий
---         отказ от гарантий.
---       * При повторном распространении двоичного кода должна сохраняться указанная
---         выше информация об авторском праве, этот список условий и последующий отказ
---         от гарантий в документации и/или в других материалах, поставляемых при
---         распространении.
---       * Ни название "Зелёная горка", ни имена ее сотрудников не могут быть
---         использованы в качестве поддержки или продвижения продуктов, основанных
---         на этом ПО без предварительного письменного разрешения.
+--       * п÷я─п╦ п©п╬п╡я┌п╬я─п╫п╬п╪ я─п╟я│п©я─п╬я│я┌я─п╟п╫п╣п╫п╦п╦ п╦я│я┘п╬п╢п╫п╬пЁп╬ п╨п╬п╢п╟ п╢п╬п╩п╤п╫п╬ п╬я│я┌п╟п╡п╟я┌я▄я│я▐ я┐п╨п╟п╥п╟п╫п╫п╬п╣
+--         п╡я▀я┬п╣ я┐п╡п╣п╢п╬п╪п╩п╣п╫п╦п╣ п╬п╠ п╟п╡я┌п╬я─я│п╨п╬п╪ п©я─п╟п╡п╣, я█я┌п╬я┌ я│п©п╦я│п╬п╨ я┐я│п╩п╬п╡п╦п╧ п╦ п©п╬я│п╩п╣п╢я┐я▌я┴п╦п╧
+--         п╬я┌п╨п╟п╥ п╬я┌ пЁп╟я─п╟п╫я┌п╦п╧.
+--       * п÷я─п╦ п©п╬п╡я┌п╬я─п╫п╬п╪ я─п╟я│п©я─п╬я│я┌я─п╟п╫п╣п╫п╦п╦ п╢п╡п╬п╦я┤п╫п╬пЁп╬ п╨п╬п╢п╟ п╢п╬п╩п╤п╫п╟ я│п╬я┘я─п╟п╫я▐я┌я▄я│я▐ я┐п╨п╟п╥п╟п╫п╫п╟я▐
+--         п╡я▀я┬п╣ п╦п╫я└п╬я─п╪п╟я├п╦я▐ п╬п╠ п╟п╡я┌п╬я─я│п╨п╬п╪ п©я─п╟п╡п╣, я█я┌п╬я┌ я│п©п╦я│п╬п╨ я┐я│п╩п╬п╡п╦п╧ п╦ п©п╬я│п╩п╣п╢я┐я▌я┴п╦п╧ п╬я┌п╨п╟п╥
+--         п╬я┌ пЁп╟я─п╟п╫я┌п╦п╧ п╡ п╢п╬п╨я┐п╪п╣п╫я┌п╟я├п╦п╦ п╦/п╦п╩п╦ п╡ п╢я─я┐пЁп╦я┘ п╪п╟я┌п╣я─п╦п╟п╩п╟я┘, п©п╬я│я┌п╟п╡п╩я▐п╣п╪я▀я┘ п©я─п╦
+--         я─п╟я│п©я─п╬я│я┌я─п╟п╫п╣п╫п╦п╦.
+--       * п²п╦ п╫п╟п╥п╡п╟п╫п╦п╣ "п≈п╣п╩я▒п╫п╟я▐ пЁп╬я─п╨п╟", п╫п╦ п╦п╪п╣п╫п╟ п╣п╣ я│п╬я┌я─я┐п╢п╫п╦п╨п╬п╡ п╫п╣ п╪п╬пЁя┐я┌ п╠я▀я┌я▄
+--         п╦я│п©п╬п╩я▄п╥п╬п╡п╟п╫я▀ п╡ п╨п╟я┤п╣я│я┌п╡п╣ п©п╬п╢п╢п╣я─п╤п╨п╦ п╦п╩п╦ п©я─п╬п╢п╡п╦п╤п╣п╫п╦я▐ п©я─п╬п╢я┐п╨я┌п╬п╡, п╬я│п╫п╬п╡п╟п╫п╫я▀я┘
+--         п╫п╟ я█я┌п╬п╪ п÷п· п╠п╣п╥ п©я─п╣п╢п╡п╟я─п╦я┌п╣п╩я▄п╫п╬пЁп╬ п©п╦я│я▄п╪п╣п╫п╫п╬пЁп╬ я─п╟п╥я─п╣я┬п╣п╫п╦я▐.
 --
---       ЭТА ПРОГРАММА ПРЕДОСТАВЛЕНА ВЛАДЕЛЬЦАМИ АВТОРСКИХ ПРАВ И/ИЛИ ДРУГИМИ СТОРОНАМИ
---	"КАК ОНА ЕСТЬ" БЕЗ КАКОГО-ЛИБО ВИДА ГАРАНТИЙ, ВЫРАЖЕННЫХ ЯВНО ИЛИ ПОДРАЗУМЕВАЕМЫХ,
---	ВКЛЮЧАЯ, НО НЕ ОГРАНИЧИВАЯСЬ ИМИ, ПОДРАЗУМЕВАЕМЫЕ ГАРАНТИИ КОММЕРЧЕСКОЙ ЦЕННОСТИ
---	И ПРИГОДНОСТИ ДЛЯ КОНКРЕТНОЙ ЦЕЛИ. НИ В КОЕМ СЛУЧАЕ, ЕСЛИ НЕ ТРЕБУЕТСЯ
---	СООТВЕТСТВУЮЩИМ ЗАКОНОМ, ИЛИ НЕ УСТАНОВЛЕНО В УСТНОЙ ФОРМЕ, НИ ОДИН ВЛАДЕЛЕЦ
---	АВТОРСКИХ ПРАВ И НИ ОДНО ДРУГОЕ ЛИЦО, КОТОРОЕ МОЖЕТ ИЗМЕНЯТЬ И/ИЛИ ПОВТОРНО
---	РАСПРОСТРАНЯТЬ ПРОГРАММУ, КАК БЫЛО СКАЗАНО ВЫШЕ, НЕ НЕСЁТ ОТВЕТСТВЕННОСТИ,
---	ВКЛЮЧАЯ ЛЮБЫЕ ОБЩИЕ, СЛУЧАЙНЫЕ, СПЕЦИАЛЬНЫЕ ИЛИ ПОСЛЕДОВАВШИЕ УБЫТКИ,
---	ВСЛЕДСТВИЕ ИСПОЛЬЗОВАНИЯ ИЛИ НЕВОЗМОЖНОСТИ ИСПОЛЬЗОВАНИЯ ПРОГРАММЫ (ВКЛЮЧАЯ,
---	НО НЕ ОГРАНИЧИВАЯСЬ ПОТЕРЕЙ ДАННЫХ, ИЛИ ДАННЫМИ, СТАВШИМИ НЕПРАВИЛЬНЫМИ, ИЛИ
---	ПОТЕРЯМИ ПРИНЕСЕННЫМИ ИЗ-ЗА ВАС ИЛИ ТРЕТЬИХ ЛИЦ, ИЛИ ОТКАЗОМ ПРОГРАММЫ РАБОТАТЬ
---	СОВМЕСТНО С ДРУГИМИ ПРОГРАММАМИ), ДАЖЕ ЕСЛИ ТАКОЙ ВЛАДЕЛЕЦ ИЛИ ДРУГОЕ ЛИЦО БЫЛИ
---	ИЗВЕЩЕНЫ О ВОЗМОЖНОСТИ ТАКИХ УБЫТКОВ.
+--       п╜п╒п░ п÷п═п·п⌠п═п░п°п°п░ п÷п═п∙п■п·п║п╒п░п▓п⌡п∙п²п░ п▓п⌡п░п■п∙п⌡п╛п╕п░п°п≤ п░п▓п╒п·п═п║п п≤п╔ п÷п═п░п▓ п≤/п≤п⌡п≤ п■п═пёп⌠п≤п°п≤ п║п╒п·п═п·п²п░п°п≤
+--	"п п░п  п·п²п░ п∙п║п╒п╛" п▒п∙п≈ п п░п п·п⌠п·-п⌡п≤п▒п· п▓п≤п■п░ п⌠п░п═п░п²п╒п≤п≥, п▓п╚п═п░п√п∙п²п²п╚п╔ п╞п▓п²п· п≤п⌡п≤ п÷п·п■п═п░п≈пёп°п∙п▓п░п∙п°п╚п╔,
+--	п▓п п⌡п╝п╖п░п╞, п²п· п²п∙ п·п⌠п═п░п²п≤п╖п≤п▓п░п╞п║п╛ п≤п°п≤, п÷п·п■п═п░п≈пёп°п∙п▓п░п∙п°п╚п∙ п⌠п░п═п░п²п╒п≤п≤ п п·п°п°п∙п═п╖п∙п║п п·п≥ п╕п∙п²п²п·п║п╒п≤
+--	п≤ п÷п═п≤п⌠п·п■п²п·п║п╒п≤ п■п⌡п╞ п п·п²п п═п∙п╒п²п·п≥ п╕п∙п⌡п≤. п²п≤ п▓ п п·п∙п° п║п⌡пёп╖п░п∙, п∙п║п⌡п≤ п²п∙ п╒п═п∙п▒пёп∙п╒п║п╞
+--	п║п·п·п╒п▓п∙п╒п║п╒п▓пёп╝п╘п≤п° п≈п░п п·п²п·п°, п≤п⌡п≤ п²п∙ пёп║п╒п░п²п·п▓п⌡п∙п²п· п▓ пёп║п╒п²п·п≥ п╓п·п═п°п∙, п²п≤ п·п■п≤п² п▓п⌡п░п■п∙п⌡п∙п╕
+--	п░п▓п╒п·п═п║п п≤п╔ п÷п═п░п▓ п≤ п²п≤ п·п■п²п· п■п═пёп⌠п·п∙ п⌡п≤п╕п·, п п·п╒п·п═п·п∙ п°п·п√п∙п╒ п≤п≈п°п∙п²п╞п╒п╛ п≤/п≤п⌡п≤ п÷п·п▓п╒п·п═п²п·
+--	п═п░п║п÷п═п·п║п╒п═п░п²п╞п╒п╛ п÷п═п·п⌠п═п░п°п°пё, п п░п  п▒п╚п⌡п· п║п п░п≈п░п²п· п▓п╚п╗п∙, п²п∙ п²п∙п║п│п╒ п·п╒п▓п∙п╒п║п╒п▓п∙п²п²п·п║п╒п≤,
+--	п▓п п⌡п╝п╖п░п╞ п⌡п╝п▒п╚п∙ п·п▒п╘п≤п∙, п║п⌡пёп╖п░п≥п²п╚п∙, п║п÷п∙п╕п≤п░п⌡п╛п²п╚п∙ п≤п⌡п≤ п÷п·п║п⌡п∙п■п·п▓п░п▓п╗п≤п∙ пёп▒п╚п╒п п≤,
+--	п▓п║п⌡п∙п■п║п╒п▓п≤п∙ п≤п║п÷п·п⌡п╛п≈п·п▓п░п²п≤п╞ п≤п⌡п≤ п²п∙п▓п·п≈п°п·п√п²п·п║п╒п≤ п≤п║п÷п·п⌡п╛п≈п·п▓п░п²п≤п╞ п÷п═п·п⌠п═п░п°п°п╚ (п▓п п⌡п╝п╖п░п╞,
+--	п²п· п²п∙ п·п⌠п═п░п²п≤п╖п≤п▓п░п╞п║п╛ п÷п·п╒п∙п═п∙п≥ п■п░п²п²п╚п╔, п≤п⌡п≤ п■п░п²п²п╚п°п≤, п║п╒п░п▓п╗п≤п°п≤ п²п∙п÷п═п░п▓п≤п⌡п╛п²п╚п°п≤, п≤п⌡п≤
+--	п÷п·п╒п∙п═п╞п°п≤ п÷п═п≤п²п∙п║п∙п²п²п╚п°п≤ п≤п≈-п≈п░ п▓п░п║ п≤п⌡п≤ п╒п═п∙п╒п╛п≤п╔ п⌡п≤п╕, п≤п⌡п≤ п·п╒п п░п≈п·п° п÷п═п·п⌠п═п░п°п°п╚ п═п░п▒п·п╒п░п╒п╛
+--	п║п·п▓п°п∙п║п╒п²п· п║ п■п═пёп⌠п≤п°п≤ п÷п═п·п⌠п═п░п°п°п░п°п≤), п■п░п√п∙ п∙п║п⌡п≤ п╒п░п п·п≥ п▓п⌡п░п■п∙п⌡п∙п╕ п≤п⌡п≤ п■п═пёп⌠п·п∙ п⌡п≤п╕п· п▒п╚п⌡п≤
+--	п≤п≈п▓п∙п╘п∙п²п╚ п· п▓п·п≈п°п·п√п²п·п║п╒п≤ п╒п░п п≤п╔ пёп▒п╚п╒п п·п▓.
 --
 
 --       Copyright (C) 2008-2012 Aleksandr Deviatkin, "Green Hill"
@@ -81,14 +81,14 @@ INSERT INTO groups (id,name) VALUES (2,'manager');
 INSERT INTO groups (id,name) VALUES (3,'user');
 INSERT INTO groups (id,name) VALUES (4,'guest');
 -- admin/admin
-INSERT INTO auth (name,login,password,email,active,gid,memo) VALUES ('- embedded admin -','admin','$1$YqBppwE5$9GaW92wOLUP0v4Au/Lfab.','admin@email',1,1,'Эту запись не стоит удалять');
+INSERT INTO auth (name,login,password,email,active,gid,memo) VALUES ('- embedded admin -','admin','$1$YqBppwE5$9GaW92wOLUP0v4Au/Lfab.','admin@email',1,1,'п╜я┌я┐ п╥п╟п©п╦я│я▄ п╫п╣ я│я┌п╬п╦я┌ я┐п╢п╟п╩я▐я┌я▄');
 
 
 
-# "Эдем" Илья Бояшов
+# "п╜п╢п╣п╪" п≤п╩я▄я▐ п▒п╬я▐я┬п╬п╡
 
 
--- группы мониторинга (лучи)
+-- пЁя─я┐п©п©я▀ п╪п╬п╫п╦я┌п╬я─п╦п╫пЁп╟ (п╩я┐я┤п╦)
 create table mgroup (
 	id integer not null,
 	active integer,
@@ -100,7 +100,7 @@ create table mgroup (
 	modtime timestamp without time zone DEFAULT now()
 );
 
--- счетчики
+-- я│я┤п╣я┌я┤п╦п╨п╦
 create table counters (
 	id integer not null,
 	name varchar,
@@ -110,8 +110,8 @@ create table counters (
 	passwd2 varchar,
 	sn integer,
 	model integer,
-	ktrans integer default 1,	-- коэффициент пересчета
-	setdate date,	-- дата установки
+	ktrans integer default 1,	-- п╨п╬я█я└я└п╦я├п╦п╣п╫я┌ п©п╣я─п╣я│я┤п╣я┌п╟
+	setdate date,	-- п╢п╟я┌п╟ я┐я│я┌п╟п╫п╬п╡п╨п╦
 	memo varchar,
 	active integer,
 	modtime timestamp default now(),
@@ -120,37 +120,38 @@ create table counters (
 	street integer,
 	house varchar,
 	owner integer,	-- users.id
-	plimit decimal DEFAULT 3.6,	-- допустимая потребляемая мощность
+	plimit decimal DEFAULT 3.6,	-- п╢п╬п©я┐я│я┌п╦п╪п╟я▐ п©п╬я┌я─п╣п╠п╩я▐п╣п╪п╟я▐ п╪п╬я┴п╫п╬я│я┌я▄
 	primary key (id)
 );
 
--- модели счетчиков
+-- п╪п╬п╢п╣п╩п╦ я│я┤п╣я┌я┤п╦п╨п╬п╡
 create table counter_type (
 	id integer not null,
 	name varchar,
 	type varchar
 );
 
--- интерфейсы
+-- п╦п╫я┌п╣я─я└п╣п╧я│я▀
 create table iface (
 	id integer not null,
 --	name varchar,
 	dev varchar
 );
 
--- текущее состояние
+-- я┌п╣п╨я┐я┴п╣п╣ я│п╬я│я┌п╬я▐п╫п╦п╣
 create table status (
 	id serial not null,
 	cid integer,
-	state integer, -- текущее состояние
-	pstate integer, -- предыдущее состояние
-	se1 decimal DEFAULT 0, -- текущие показания Т1
-	se2 decimal DEFAULT 0, -- текущие показания Т2
+	state integer, -- я┌п╣п╨я┐я┴п╣п╣ я│п╬я│я┌п╬я▐п╫п╦п╣
+	pstate integer, -- п©я─п╣п╢я▀п╢я┐я┴п╣п╣ я│п╬я│я┌п╬я▐п╫п╦п╣
+	se1 decimal DEFAULT 0, -- я┌п╣п╨я┐я┴п╦п╣ п©п╬п╨п╟п╥п╟п╫п╦я▐ п╒1
+	se2 decimal DEFAULT 0, -- я┌п╣п╨я┐я┴п╦п╣ п©п╬п╨п╟п╥п╟п╫п╦я▐ п╒2
 	lpower decimal,
 	modtime timestamp without time zone DEFAULT now(),
+	maintenance integer DEFAULT 0,
 	primary key (id)
 );
--- лог алертов
+-- п╩п╬пЁ п╟п╩п╣я─я┌п╬п╡
 create table alerts (
  id serial not null,
  atime timestamp without time zone DEFAULT now(),
@@ -162,46 +163,46 @@ create table alerts (
  primary key (id)
 );
 
--- данные
+-- п╢п╟п╫п╫я▀п╣
 create table monitor (
 	dt timestamp without time zone,
 	date integer not null,
 	counter integer not null,
-	mv1 decimal,	-- текущее напряжение ф1
-	mv2 decimal,	-- текущее напряжение ф2
-	mv3 decimal,	-- текущее напряжение ф3
-	mc1 decimal,	-- текущий ток ф1
-	mc2 decimal,	-- текущий ток ф2
-	mc3 decimal,	-- текущий ток ф3
-	mf decimal,		-- частота
-	ma1 decimal,	-- углы между фазами 1-2
-	ma2 decimal,	-- углы между фазами 1-3
-	ma3 decimal,	-- углы между фазами 2-3
-	mps decimal,	-- мощность P сумма
-	mp1 decimal,	-- мощность P ф1
-	mp2 decimal,	-- мощность P ф2
-	mp3 decimal,	-- мощность P ф3
-	mqs decimal,	-- мощность Q сумма
-	mq1 decimal,	-- мощность Q ф1
-	mq2 decimal,	-- мощность Q ф2
-	mq3 decimal,	-- мощность Q ф3
-	mss decimal,	-- мощность S сумма
-	ms1 decimal,	-- мощность S ф1
-	ms2 decimal,	-- мощность S ф2
-	ms3 decimal,	-- мощность S ф3
-	mks decimal,	-- коэфф.мощности сумма
-	mk1 decimal,	-- коэфф.мощности ф1
-	mk2 decimal,	-- коэфф.мощности ф2
-	mk3 decimal,	-- коэфф.мощности ф3
-	se1ai decimal, -- накопленная энергия Т1 A-import
-	se1ae decimal, -- накопленная энергия Т1 A-export
-	se1ri decimal, -- накопленная энергия Т1 R-import
-	se1re decimal, -- накопленная энергия Т1 R-export
-	se2ai decimal, -- накопленная энергия Т2 A-import
-	se2ae decimal, -- накопленная энергия Т2 A-export
-	se2ri decimal, -- накопленная энергия Т2 R-import
-	se2re decimal, -- накопленная энергия Т2 R-export
-	ise decimal		-- интегральная мощность
+	mv1 decimal,	-- я┌п╣п╨я┐я┴п╣п╣ п╫п╟п©я─я▐п╤п╣п╫п╦п╣ я└1
+	mv2 decimal,	-- я┌п╣п╨я┐я┴п╣п╣ п╫п╟п©я─я▐п╤п╣п╫п╦п╣ я└2
+	mv3 decimal,	-- я┌п╣п╨я┐я┴п╣п╣ п╫п╟п©я─я▐п╤п╣п╫п╦п╣ я└3
+	mc1 decimal,	-- я┌п╣п╨я┐я┴п╦п╧ я┌п╬п╨ я└1
+	mc2 decimal,	-- я┌п╣п╨я┐я┴п╦п╧ я┌п╬п╨ я└2
+	mc3 decimal,	-- я┌п╣п╨я┐я┴п╦п╧ я┌п╬п╨ я└3
+	mf decimal,		-- я┤п╟я│я┌п╬я┌п╟
+	ma1 decimal,	-- я┐пЁп╩я▀ п╪п╣п╤п╢я┐ я└п╟п╥п╟п╪п╦ 1-2
+	ma2 decimal,	-- я┐пЁп╩я▀ п╪п╣п╤п╢я┐ я└п╟п╥п╟п╪п╦ 1-3
+	ma3 decimal,	-- я┐пЁп╩я▀ п╪п╣п╤п╢я┐ я└п╟п╥п╟п╪п╦ 2-3
+	mps decimal,	-- п╪п╬я┴п╫п╬я│я┌я▄ P я│я┐п╪п╪п╟
+	mp1 decimal,	-- п╪п╬я┴п╫п╬я│я┌я▄ P я└1
+	mp2 decimal,	-- п╪п╬я┴п╫п╬я│я┌я▄ P я└2
+	mp3 decimal,	-- п╪п╬я┴п╫п╬я│я┌я▄ P я└3
+	mqs decimal,	-- п╪п╬я┴п╫п╬я│я┌я▄ Q я│я┐п╪п╪п╟
+	mq1 decimal,	-- п╪п╬я┴п╫п╬я│я┌я▄ Q я└1
+	mq2 decimal,	-- п╪п╬я┴п╫п╬я│я┌я▄ Q я└2
+	mq3 decimal,	-- п╪п╬я┴п╫п╬я│я┌я▄ Q я└3
+	mss decimal,	-- п╪п╬я┴п╫п╬я│я┌я▄ S я│я┐п╪п╪п╟
+	ms1 decimal,	-- п╪п╬я┴п╫п╬я│я┌я▄ S я└1
+	ms2 decimal,	-- п╪п╬я┴п╫п╬я│я┌я▄ S я└2
+	ms3 decimal,	-- п╪п╬я┴п╫п╬я│я┌я▄ S я└3
+	mks decimal,	-- п╨п╬я█я└я└.п╪п╬я┴п╫п╬я│я┌п╦ я│я┐п╪п╪п╟
+	mk1 decimal,	-- п╨п╬я█я└я└.п╪п╬я┴п╫п╬я│я┌п╦ я└1
+	mk2 decimal,	-- п╨п╬я█я└я└.п╪п╬я┴п╫п╬я│я┌п╦ я└2
+	mk3 decimal,	-- п╨п╬я█я└я└.п╪п╬я┴п╫п╬я│я┌п╦ я└3
+	se1ai decimal, -- п╫п╟п╨п╬п©п╩п╣п╫п╫п╟я▐ я█п╫п╣я─пЁп╦я▐ п╒1 A-import
+	se1ae decimal, -- п╫п╟п╨п╬п©п╩п╣п╫п╫п╟я▐ я█п╫п╣я─пЁп╦я▐ п╒1 A-export
+	se1ri decimal, -- п╫п╟п╨п╬п©п╩п╣п╫п╫п╟я▐ я█п╫п╣я─пЁп╦я▐ п╒1 R-import
+	se1re decimal, -- п╫п╟п╨п╬п©п╩п╣п╫п╫п╟я▐ я█п╫п╣я─пЁп╦я▐ п╒1 R-export
+	se2ai decimal, -- п╫п╟п╨п╬п©п╩п╣п╫п╫п╟я▐ я█п╫п╣я─пЁп╦я▐ п╒2 A-import
+	se2ae decimal, -- п╫п╟п╨п╬п©п╩п╣п╫п╫п╟я▐ я█п╫п╣я─пЁп╦я▐ п╒2 A-export
+	se2ri decimal, -- п╫п╟п╨п╬п©п╩п╣п╫п╫п╟я▐ я█п╫п╣я─пЁп╦я▐ п╒2 R-import
+	se2re decimal, -- п╫п╟п╨п╬п©п╩п╣п╫п╫п╟я▐ я█п╫п╣я─пЁп╦я▐ п╒2 R-export
+	ise decimal		-- п╦п╫я┌п╣пЁя─п╟п╩я▄п╫п╟я▐ п╪п╬я┴п╫п╬я│я┌я▄
 );
 CREATE INDEX monitor_date_i ON monitor (date);
 CREATE INDEX monitor_dt_i ON monitor (dt);
@@ -229,54 +230,54 @@ END;
 CREATE TRIGGER ise_stamp BEFORE INSERT ON monitor FOR EACH ROW EXECUTE PROCEDURE ise_stamp();
 
 
--- описания полей
+-- п╬п©п╦я│п╟п╫п╦я▐ п©п╬п╩п╣п╧
 create table monitor_descr (
 	id integer,
 	name varchar,
 	descr varchar
 );
 
-insert into monitor_descr (id,name,descr) values (1,'mv1','текущее напряжение ф1');
-insert into monitor_descr (id,name,descr) values (2,'mv2','текущее напряжение ф2');
-insert into monitor_descr (id,name,descr) values (3,'mv3','текущее напряжение ф3');
-insert into monitor_descr (id,name,descr) values (4,'mc1','текущий ток ф1');
-insert into monitor_descr (id,name,descr) values (5,'mc2','текущий ток ф2');
-insert into monitor_descr (id,name,descr) values (6,'mc3','текущий ток ф3');
-insert into monitor_descr (id,name,descr) values (7,'mf','частота');
-insert into monitor_descr (id,name,descr) values (8,'ma1','углы между фазами 1-2');
-insert into monitor_descr (id,name,descr) values (9,'ma2','углы между фазами 1-3');
-insert into monitor_descr (id,name,descr) values (10,'ma3','углы между фазами 2-3');
-insert into monitor_descr (id,name,descr) values (11,'mps','мощность P сумма');
-insert into monitor_descr (id,name,descr) values (12,'mp1','мощность P ф1');
-insert into monitor_descr (id,name,descr) values (13,'mp2','мощность P ф2');
-insert into monitor_descr (id,name,descr) values (14,'mp3','мощность P ф3');
-insert into monitor_descr (id,name,descr) values (15,'mqs','мощность Q сумма');
-insert into monitor_descr (id,name,descr) values (16,'mq1','мощность Q ф1');
-insert into monitor_descr (id,name,descr) values (17,'mq2','мощность Q ф2');
-insert into monitor_descr (id,name,descr) values (18,'mq3','мощность Q ф3');
-insert into monitor_descr (id,name,descr) values (19,'mss','мощность S сумма');
-insert into monitor_descr (id,name,descr) values (20,'ms1','мощность S ф1');
-insert into monitor_descr (id,name,descr) values (21,'ms2','мощность S ф2');
-insert into monitor_descr (id,name,descr) values (22,'ms3','мощность S ф3');
-insert into monitor_descr (id,name,descr) values (23,'mks','коэфф.мощности сумма');
-insert into monitor_descr (id,name,descr) values (24,'mk1','коэфф.мощности ф1');
-insert into monitor_descr (id,name,descr) values (25,'mk2','коэфф.мощности ф2');
-insert into monitor_descr (id,name,descr) values (26,'mk3','коэфф.мощности ф3');
-insert into monitor_descr (id,name,descr) values (27,'se1ai','накопленная энергия Т1 A-import');
-insert into monitor_descr (id,name,descr) values (28,'se1ae','накопленная энергия Т1 A-export');
-insert into monitor_descr (id,name,descr) values (29,'se1ri','накопленная энергия Т1 R-import');
-insert into monitor_descr (id,name,descr) values (30,'se1re','накопленная энергия Т1 R-export');
-insert into monitor_descr (id,name,descr) values (31,'se2ai','накопленная энергия Т2 A-import');
-insert into monitor_descr (id,name,descr) values (32,'se2ae','накопленная энергия Т2 A-export');
-insert into monitor_descr (id,name,descr) values (33,'se2ri','накопленная энергия Т2 R-import');
-insert into monitor_descr (id,name,descr) values (34,'se2re','накопленная энергия Т2 R-export');
-insert into monitor_descr (id,name,descr) values (35,'ise','интегральная мощность');
+insert into monitor_descr (id,name,descr) values (1,'mv1','я┌п╣п╨я┐я┴п╣п╣ п╫п╟п©я─я▐п╤п╣п╫п╦п╣ я└1');
+insert into monitor_descr (id,name,descr) values (2,'mv2','я┌п╣п╨я┐я┴п╣п╣ п╫п╟п©я─я▐п╤п╣п╫п╦п╣ я└2');
+insert into monitor_descr (id,name,descr) values (3,'mv3','я┌п╣п╨я┐я┴п╣п╣ п╫п╟п©я─я▐п╤п╣п╫п╦п╣ я└3');
+insert into monitor_descr (id,name,descr) values (4,'mc1','я┌п╣п╨я┐я┴п╦п╧ я┌п╬п╨ я└1');
+insert into monitor_descr (id,name,descr) values (5,'mc2','я┌п╣п╨я┐я┴п╦п╧ я┌п╬п╨ я└2');
+insert into monitor_descr (id,name,descr) values (6,'mc3','я┌п╣п╨я┐я┴п╦п╧ я┌п╬п╨ я└3');
+insert into monitor_descr (id,name,descr) values (7,'mf','я┤п╟я│я┌п╬я┌п╟');
+insert into monitor_descr (id,name,descr) values (8,'ma1','я┐пЁп╩я▀ п╪п╣п╤п╢я┐ я└п╟п╥п╟п╪п╦ 1-2');
+insert into monitor_descr (id,name,descr) values (9,'ma2','я┐пЁп╩я▀ п╪п╣п╤п╢я┐ я└п╟п╥п╟п╪п╦ 1-3');
+insert into monitor_descr (id,name,descr) values (10,'ma3','я┐пЁп╩я▀ п╪п╣п╤п╢я┐ я└п╟п╥п╟п╪п╦ 2-3');
+insert into monitor_descr (id,name,descr) values (11,'mps','п╪п╬я┴п╫п╬я│я┌я▄ P я│я┐п╪п╪п╟');
+insert into monitor_descr (id,name,descr) values (12,'mp1','п╪п╬я┴п╫п╬я│я┌я▄ P я└1');
+insert into monitor_descr (id,name,descr) values (13,'mp2','п╪п╬я┴п╫п╬я│я┌я▄ P я└2');
+insert into monitor_descr (id,name,descr) values (14,'mp3','п╪п╬я┴п╫п╬я│я┌я▄ P я└3');
+insert into monitor_descr (id,name,descr) values (15,'mqs','п╪п╬я┴п╫п╬я│я┌я▄ Q я│я┐п╪п╪п╟');
+insert into monitor_descr (id,name,descr) values (16,'mq1','п╪п╬я┴п╫п╬я│я┌я▄ Q я└1');
+insert into monitor_descr (id,name,descr) values (17,'mq2','п╪п╬я┴п╫п╬я│я┌я▄ Q я└2');
+insert into monitor_descr (id,name,descr) values (18,'mq3','п╪п╬я┴п╫п╬я│я┌я▄ Q я└3');
+insert into monitor_descr (id,name,descr) values (19,'mss','п╪п╬я┴п╫п╬я│я┌я▄ S я│я┐п╪п╪п╟');
+insert into monitor_descr (id,name,descr) values (20,'ms1','п╪п╬я┴п╫п╬я│я┌я▄ S я└1');
+insert into monitor_descr (id,name,descr) values (21,'ms2','п╪п╬я┴п╫п╬я│я┌я▄ S я└2');
+insert into monitor_descr (id,name,descr) values (22,'ms3','п╪п╬я┴п╫п╬я│я┌я▄ S я└3');
+insert into monitor_descr (id,name,descr) values (23,'mks','п╨п╬я█я└я└.п╪п╬я┴п╫п╬я│я┌п╦ я│я┐п╪п╪п╟');
+insert into monitor_descr (id,name,descr) values (24,'mk1','п╨п╬я█я└я└.п╪п╬я┴п╫п╬я│я┌п╦ я└1');
+insert into monitor_descr (id,name,descr) values (25,'mk2','п╨п╬я█я└я└.п╪п╬я┴п╫п╬я│я┌п╦ я└2');
+insert into monitor_descr (id,name,descr) values (26,'mk3','п╨п╬я█я└я└.п╪п╬я┴п╫п╬я│я┌п╦ я└3');
+insert into monitor_descr (id,name,descr) values (27,'se1ai','п╫п╟п╨п╬п©п╩п╣п╫п╫п╟я▐ я█п╫п╣я─пЁп╦я▐ п╒1 A-import');
+insert into monitor_descr (id,name,descr) values (28,'se1ae','п╫п╟п╨п╬п©п╩п╣п╫п╫п╟я▐ я█п╫п╣я─пЁп╦я▐ п╒1 A-export');
+insert into monitor_descr (id,name,descr) values (29,'se1ri','п╫п╟п╨п╬п©п╩п╣п╫п╫п╟я▐ я█п╫п╣я─пЁп╦я▐ п╒1 R-import');
+insert into monitor_descr (id,name,descr) values (30,'se1re','п╫п╟п╨п╬п©п╩п╣п╫п╫п╟я▐ я█п╫п╣я─пЁп╦я▐ п╒1 R-export');
+insert into monitor_descr (id,name,descr) values (31,'se2ai','п╫п╟п╨п╬п©п╩п╣п╫п╫п╟я▐ я█п╫п╣я─пЁп╦я▐ п╒2 A-import');
+insert into monitor_descr (id,name,descr) values (32,'se2ae','п╫п╟п╨п╬п©п╩п╣п╫п╫п╟я▐ я█п╫п╣я─пЁп╦я▐ п╒2 A-export');
+insert into monitor_descr (id,name,descr) values (33,'se2ri','п╫п╟п╨п╬п©п╩п╣п╫п╫п╟я▐ я█п╫п╣я─пЁп╦я▐ п╒2 R-import');
+insert into monitor_descr (id,name,descr) values (34,'se2re','п╫п╟п╨п╬п©п╩п╣п╫п╫п╟я▐ я█п╫п╣я─пЁп╦я▐ п╒2 R-export');
+insert into monitor_descr (id,name,descr) values (35,'ise','п╦п╫я┌п╣пЁя─п╟п╩я▄п╫п╟я▐ п╪п╬я┴п╫п╬я│я┌я▄');
 
 
 
 
--- Месячные расходы по счетчикам
--- (заполняется раз в месяц counter/mexpenses)
+-- п°п╣я│я▐я┤п╫я▀п╣ я─п╟я│я┘п╬п╢я▀ п©п╬ я│я┤п╣я┌я┤п╦п╨п╟п╪
+-- (п╥п╟п©п╬п╩п╫я▐п╣я┌я│я▐ я─п╟п╥ п╡ п╪п╣я│я▐я├ counter/mexpenses)
 create table mexpenses (
 	id serial not null,
 	cid integer,	-- counter id
@@ -293,7 +294,7 @@ CREATE INDEX mexpenses_counter_i ON mexpenses (cid);
 
 
 --
--- Проезды
+-- п÷я─п╬п╣п╥п╢я▀
 --
 CREATE TABLE street (
     id integer NOT NULL,
@@ -301,7 +302,7 @@ CREATE TABLE street (
 );
 
 --
--- столбы
+-- я│я┌п╬п╩п╠я▀
 --
 CREATE TABLE towers (
     id serial NOT NULL,
@@ -313,7 +314,7 @@ CREATE TABLE towers (
 
 
 --
--- Платежи
+-- п÷п╩п╟я┌п╣п╤п╦
 --
 CREATE TABLE payments (
     id serial NOT NULL,
@@ -335,7 +336,7 @@ CREATE TABLE tariff (
     id serial NOT NULL,
     t1 decimal,
     t2 decimal,
-    sdate date,           -- начало действия тарифа
+    sdate date,           -- п╫п╟я┤п╟п╩п╬ п╢п╣п╧я│я┌п╡п╦я▐ я┌п╟я─п╦я└п╟
     primary key (id)
 );
 INSERT INTO tariff (t1,t2,sdate) VALUES (4.11,1.39,'2012-07-01');
@@ -349,7 +350,7 @@ CREATE TABLE users (
 	status character varying,
 	birthday date,
 	passport character varying,
-	address character varying,	-- адрес прописки
+	address character varying,	-- п╟п╢я─п╣я│ п©я─п╬п©п╦я│п╨п╦
 	active integer,
 	memo character varying,
 	usr character varying,
