@@ -31,7 +31,7 @@ $| = 1;
 #	Copyright (C) 2008-2011 Aleksandr Deviatkin aka alid
 
 #
-# ëÏÒÒÅËÔÉÒÏ×ËÁ ŞÁÓÏ× ÓŞÅÔŞÉËÁ íÅÒËÕÒÉÊ-230
+# ĞšĞ¾Ñ€Ñ€ĞµĞºÑ‚Ğ¸Ñ€Ğ¾Ğ²ĞºĞ° Ñ‡Ğ°ÑĞ¾Ğ² ÑÑ‡ĞµÑ‚Ñ‡Ğ¸ĞºĞ° ĞœĞµÑ€ĞºÑƒÑ€Ğ¸Ğ¹-230
 # 2008-04-15 alid
 # 2011-08-02 alid
 #
@@ -47,7 +47,7 @@ my ($saddr, $passwd, $device) = (@args);
 die "Usage: $0 addr password serial-dev"	unless(defined $saddr && $passwd && $device);
 my $verb = exists $opts{v};
 my $adj = exists $opts{a};
-my $set = exists $opts{F};			# ĞÒÉÎÕÄÉÔÅÌØÎÁÑ ÕÓÔÁÎÏ×ËÁ ×ÒÅÍÅÎÉ (ÎÕÖÅÎ ĞÁÒÏÌØ ×ÔÏÒÏÇÏ ÕÒÏ×ÎÑ ÄÏÓÔÕĞÁ)
+my $set = exists $opts{F};			# Ğ¿Ñ€Ğ¸Ğ½ÑƒĞ´Ğ¸Ñ‚ĞµĞ»ÑŒĞ½Ğ°Ñ ÑƒÑÑ‚Ğ°Ğ½Ğ¾Ğ²ĞºĞ° Ğ²Ñ€ĞµĞ¼ĞµĞ½Ğ¸ (Ğ½ÑƒĞ¶ĞµĞ½ Ğ¿Ğ°Ñ€Ğ¾Ğ»ÑŒ Ğ²Ñ‚Ğ¾Ñ€Ğ¾Ğ³Ğ¾ ÑƒÑ€Ğ¾Ğ²Ğ½Ñ Ğ´Ğ¾ÑÑ‚ÑƒĞ¿Ğ°)
 my $retries = (exists $opts{r}) ? $opts{r} : 10;
 
 my $addr = sprintf("%x",$saddr);
@@ -56,7 +56,7 @@ print "Addr: [$addr] Pw: [$passwd]\n"	if $verb;
 
 my $level= $set? 2:1;
 my $STALL_DEFAULT=10; # how many seconds to wait for new input
-my $MAXLENGTH = 255;	# ÎÁÉÂÏÌØÛÁÑ ÄÌÉÎÁ ĞÁËÅÔÁ
+my $MAXLENGTH = 255;	# Ğ½Ğ°Ğ¸Ğ±Ğ¾Ğ»ÑŒÑˆĞ°Ñ Ğ´Ğ»Ğ¸Ğ½Ğ° Ğ¿Ğ°ĞºĞµÑ‚Ğ°
 
 my ($status,$cnt,@data);
 my $connect = Mercury->new($device,'M230',$addr,$passwd,$level,$retries,$verb);
@@ -81,14 +81,14 @@ $mon++;
 
 my $cmd;
 # get time from device
-#ÓÅË, ÍÉÎ, ŞÁÓ, ÄÅÎØ, ŞÉÓÌÏ, ÍÅÓÑÃ, ÇÏÄ, ÚÉÍÁ(1)/ÌÅÔÏ(0)
+#ÑĞµĞº, Ğ¼Ğ¸Ğ½, Ñ‡Ğ°Ñ, Ğ´ĞµĞ½ÑŒ, Ñ‡Ğ¸ÑĞ»Ğ¾, Ğ¼ĞµÑÑÑ†, Ğ³Ğ¾Ğ´, Ğ·Ğ¸Ğ¼Ğ°(1)/Ğ»ĞµÑ‚Ğ¾(0)
 if($verb || !$adj) {
 	$cmd = '04 00';
 	$connect->_send($cmd);
 	($status,$cnt,@data) = $connect->_recv();
 	die "[$addr] request failed: [$status]"	unless($status=~/ok/);
 	print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
-	print "20".$data[7]."-".$data[6]."-".$data[5]." ".$data[4]." ".$data[3].":".$data[2].":".$data[1]." ".(($data[8] eq '00')?'summer':'winter')."\n";
+	print "[$saddr] [x$addr] 20".$data[7]."-".$data[6]."-".$data[5]." ".$data[4]." ".$data[3].":".$data[2].":".$data[1]." ".(($data[8] eq '00')?'summer':'winter')."\n";
 }
 if($adj) {
 	print "Time correction: $hh:$mm:$ss\n"	if($verb);
@@ -96,7 +96,7 @@ if($adj) {
 	$connect->_send("$cmd $ss $mm $hh");
 	$status = $connect->isok();
 	print "$status\n"	if $verb;
-	die	"[$addr] Session failed: [$status]"	unless($status=~/ok/);
+	die	"[x$addr] Session failed: [$status]"	unless($status=~/ok/);
 }
 elsif($set) {
 	print "Time setting: $ye-$mon-$md $wd $hh:$mm:$ss\n"	if($verb);
@@ -104,7 +104,7 @@ elsif($set) {
 	$connect->_send("$cmd $ss $mm $hh $wd $md $mon $ye 0");
 	$status = $connect->isok();
 	print "$status\n"	if $verb;
-	die	"[$addr] Session failed: [$status]"	unless($status=~/ok/);
+	die	"[x$addr] Session failed: [$status]"	unless($status=~/ok/);
 }
 
 print "Session closing ... "	if $verb;
