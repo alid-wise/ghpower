@@ -31,7 +31,7 @@ $| = 1;
 #	Copyright (C) 2008-2011 Aleksandr Deviatkin aka alid
 
 #
-# ëÏÒÒÅËÔÉÒÏ×ËÁ ŞÁÓÏ× ÓŞÅÔŞÉËÁ íÅÒËÕÒÉÊ-203.2ô
+# ĞšĞ¾Ñ€Ñ€ĞµĞºÑ‚Ğ¸Ñ€Ğ¾Ğ²ĞºĞ° Ñ‡Ğ°ÑĞ¾Ğ² ÑÑ‡ĞµÑ‚Ñ‡Ğ¸ĞºĞ° ĞœĞµÑ€ĞºÑƒÑ€Ğ¸Ğ¹-203.2Ğ¢
 # 2009-03-25 alid
 # 2011-08-02 alid
 #
@@ -55,7 +55,7 @@ $addr =~ s/(\w\w)(\w\w)(\w\w)(\w\w)/$1 $2 $3 $4/;
 print "Addr: [$addr]\n"	if $verb;
 
 my $STALL_DEFAULT=2;	# how many seconds to wait for new input
-my $MAXLENGTH = 255;	# ÎÁÉÂÏÌØÛÁÑ ÄÌÉÎÁ ĞÁËÅÔÁ
+my $MAXLENGTH = 255;	# Ğ½Ğ°Ğ¸Ğ±Ğ¾Ğ»ÑŒÑˆĞ°Ñ Ğ´Ğ»Ğ¸Ğ½Ğ° Ğ¿Ğ°ĞºĞµÑ‚Ğ°
 
 my ($status,$cnt,@data);
 my $connect = Mercury->new($device,'M203',$addr,'','',$retries,$verb);
@@ -81,7 +81,7 @@ if($verb || !$adj) {
 	($status,$cnt,@data) = $connect->get('24');
 	die "[$addr] 24h request failed: [$status]"	unless($status=~/ok/);
 	print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
-	print "$year-$mons-$mday $hour:$min:$sec [".(($data[5] eq '00')? 'none':'auto')."] weekday: $dow\n";
+	print "[$saddr][x$addr] $year-$mons-$mday $hour:$min:$sec [".(($data[5] eq '00')? 'none':'auto')."] weekday: $dow\n";
 }
 if($adj) {
 	print "Time-date correction: $wd $ye-$mon-$md $hh:$mm:$ss\n"	if($verb);
@@ -94,7 +94,7 @@ if($adj) {
 	die "[$addr] 02h time correction failed: [$status][$cnt][".join(' ',@data)."]"	unless($data[4] eq $cmd);
 }
 if(defined $flag) {
-	$flag = sprintf("%02X", $flag);	# Á×ÔÏÍÁÔÉŞÅÓËÉÊ ĞÅÒÅÈÏÄ ÎÁ ÌÅÔÎÅÅ ×ÒÅÍÑ
+	$flag = sprintf("%02X", $flag);	# Ğ°Ğ²Ñ‚Ğ¾Ğ¼Ğ°Ñ‚Ğ¸Ñ‡ĞµÑĞºĞ¸Ğ¹ Ğ¿ĞµÑ€ĞµÑ…Ğ¾Ğ´ Ğ½Ğ° Ğ»ĞµÑ‚Ğ½ĞµĞµ Ğ²Ñ€ĞµĞ¼Ñ
 	my $cmd = '05';
 	($status,$cnt,@data) = $connect->get("$cmd $flag");
 	die "[$addr] 02h request failed: [$status]"	unless($status=~/ok/);
