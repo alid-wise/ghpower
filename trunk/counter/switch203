@@ -33,7 +33,7 @@ $| = 1;
 
 
 #
-# Управление реле счетчика Меркурий-203.2Т
+# пёп©я─п╟п╡п╩п╣п╫п╦п╣ я─п╣п╩п╣ я│я┤п╣я┌я┤п╦п╨п╟ п°п╣я─п╨я┐я─п╦п╧-203.2п╒
 # 2009-03-28 alid
 #
 
@@ -57,7 +57,7 @@ print "Addr: [$addr]\n"	if $verb;
 my $mbtx = "$ENV{MY}/counter/mbtx";
 my $crcu = "$ENV{MY}/counter/crc";
 my $STALL_DEFAULT=2;	# how many seconds to wait for new input
-my $MAXLENGTH = 255;	# наибольшая длина пакета
+my $MAXLENGTH = 255;	# п╫п╟п╦п╠п╬п╩я▄я┬п╟я▐ п╢п╩п╦п╫п╟ п©п╟п╨п╣я┌п╟
 
 my $port=Device::SerialPort->new("$device");
 my ($status,$cnt,@data);
@@ -69,13 +69,13 @@ if($verb) {
 	die	"[$addr] Connection failed: [$status]"	unless($status=~/ok/);
 }
 
-# Читаем текущее состояние
+# п╖п╦я┌п╟п╣п╪ я┌п╣п╨я┐я┴п╣п╣ я│п╬я│я┌п╬я▐п╫п╦п╣
 ($status,$cnt,@data) = get($device,$addr,'6d');
 die "[$addr] 6dh request failed: [$status]"	unless($status=~/ok/);
 print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
 my $RELE = $data[5];
 
-if(defined $command) {	# Задана команда
+if(defined $command) {	# п≈п╟п╢п╟п╫п╟ п╨п╬п╪п╟п╫п╢п╟
 	my $cmd;
 	if($command =~ /off|0|false/i) {
 		$cmd = 'aa';
@@ -93,7 +93,7 @@ if(defined $command) {	# Задана команда
 
 
 
-} else {	# Команда не задана - просто показать состояние
+} else {	# п п╬п╪п╟п╫п╢п╟ п╫п╣ п╥п╟п╢п╟п╫п╟ - п©я─п╬я│я┌п╬ п©п╬п╨п╟п╥п╟я┌я▄ я│п╬я│я┌п╬я▐п╫п╦п╣
 	if($RELE =~ /55/) {
 		print "[$RELE] limit\n";
 	} elsif($RELE =~ /aa/i) {
@@ -127,7 +127,7 @@ if(defined $command) {	# Задана команда
 #}
 
 ###################### subs
-# проверка связи
+# п©я─п╬п╡п╣я─п╨п╟ я│п╡я▐п╥п╦
 sub tst {
 	my ($device,$port,$addr) = @_;
 	my $cmd = '2f';
@@ -143,7 +143,7 @@ sub tst {
 }
 
 ##########################################################################
-sub isok {	# серийный номер должен совпадать с адресом
+sub isok {	# я│п╣я─п╦п╧п╫я▀п╧ п╫п╬п╪п╣я─ п╢п╬п╩п╤п╣п╫ я│п╬п╡п©п╟п╢п╟я┌я▄ я│ п╟п╢я─п╣я│п╬п╪
 	my ($device,$port,$addr) = @_;
 	my ($status,$cnt,@data) = _recv($port);
 	if($status =~ /ok/) {
@@ -154,7 +154,7 @@ sub isok {	# серийный номер должен совпадать с адресом
 	return $status;
 }
 
-# проверка crc
+# п©я─п╬п╡п╣я─п╨п╟ crc
 sub iscrc {
 	my (@data) = @_;
 	my $icrc = pop(@data).pop(@data);
