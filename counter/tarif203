@@ -31,7 +31,7 @@ $| = 1;
 #	Copyright (C) 2008-2011 Aleksandr Deviatkin aka alid
 
 #
-# Управление тарифным расписанием счетчика Меркурий-203.2Т
+# пёп©я─п╟п╡п╩п╣п╫п╦п╣ я┌п╟я─п╦я└п╫я▀п╪ я─п╟я│п©п╦я│п╟п╫п╦п╣п╪ я│я┤п╣я┌я┤п╦п╨п╟ п°п╣я─п╨я┐я─п╦п╧-203.2п╒
 # 2011-08-05 alid
 #
 
@@ -59,7 +59,7 @@ my $connect = Mercury->new($device,'M203',$addr,'','',$retries);
 $status = $connect->tst();
 die	"[$addr] Connection failed: [$status]"	unless($status=~/ok/);
 
-if($load) {	# Загрузка тарифного расписания в счетчик
+if($load) {	# п≈п╟пЁя─я┐п╥п╨п╟ я┌п╟я─п╦я└п╫п╬пЁп╬ я─п╟я│п©п╦я│п╟п╫п╦я▐ п╡ я│я┤п╣я┌я┤п╦п╨
 	my (@Data, $Mon, $Wd);
 	while(<STDIN>) {
 		chomp;
@@ -92,7 +92,7 @@ if($load) {	# Загрузка тарифного расписания в счетчик
 		($status,$cnt,@data) = $connect->get("11 $cs");
 		die "[$addr] 1h request failed: [$status]"	unless($status=~/ok/);
 	}
-} else {	# Чтение тарифного расписания из счетчика
+} else {	# п╖я┌п╣п╫п╦п╣ я┌п╟я─п╦я└п╫п╬пЁп╬ я─п╟я│п©п╦я│п╟п╫п╦я▐ п╦п╥ я│я┤п╣я┌я┤п╦п╨п╟
 	foreach my $mon (sort {$mon{$a} <=> $mon{$b}} keys %mon) {
 		print "$mon\n";
 		foreach my $wd (sort {$wday{$a} <=> $wday{$b}} keys %wday) {
