@@ -1,0 +1,284 @@
+#!/usr/bin/perl -w
+use strict;
+$| = 1;
+
+#
+#       Copyright (C) 2008-2012 Александр Девяткин, "Зелёная горка"
+#
+#       Разрешается повторное распространение и использование как в виде исходного
+#       кода, так и в двоичной форме, с изменениями или без, при соблюдении следующих
+#       условий:
+#
+#       * При повторном распространении исходного кода должно оставаться указанное
+#         выше уведомление об авторском праве, этот список условий и последующий
+#         отказ от гарантий.
+#       * При повторном распространении двоичного кода должна сохраняться указанная
+#         выше информация об авторском праве, этот список условий и последующий отказ
+#         от гарантий в документации и/или в других материалах, поставляемых при
+#         распространении.
+#       * Ни название "Зелёная горка", ни имена ее сотрудников не могут быть
+#         использованы в качестве поддержки или продвижения продуктов, основанных
+#         на этом ПО без предварительного письменного разрешения.
+#
+#       ЭТА ПРОГРАММА ПРЕДОСТАВЛЕНА ВЛАДЕЛЬЦАМИ АВТОРСКИХ ПРАВ И/ИЛИ ДРУГИМИ СТОРОНАМИ
+#	"КАК ОНА ЕСТЬ" БЕЗ КАКОГО-ЛИБО ВИДА ГАРАНТИЙ, ВЫРАЖЕННЫХ ЯВНО ИЛИ ПОДРАЗУМЕВАЕМЫХ,
+#	ВКЛЮЧАЯ, НО НЕ ОГРАНИЧИВАЯСЬ ИМИ, ПОДРАЗУМЕВАЕМЫЕ ГАРАНТИИ КОММЕРЧЕСКОЙ ЦЕННОСТИ
+#	И ПРИГОДНОСТИ ДЛЯ КОНКРЕТНОЙ ЦЕЛИ. НИ В КОЕМ СЛУЧАЕ, ЕСЛИ НЕ ТРЕБУЕТСЯ
+#	СООТВЕТСТВУЮЩИМ ЗАКОНОМ, ИЛИ НЕ УСТАНОВЛЕНО В УСТНОЙ ФОРМЕ, НИ ОДИН ВЛАДЕЛЕЦ
+#	АВТОРСКИХ ПРАВ И НИ ОДНО ДРУГОЕ ЛИЦО, КОТОРОЕ МОЖЕТ ИЗМЕНЯТЬ И/ИЛИ ПОВТОРНО
+#	РАСПРОСТРАНЯТЬ ПРОГРАММУ, КАК БЫЛО СКАЗАНО ВЫШЕ, НЕ НЕСЁТ ОТВЕТСТВЕННОСТИ,
+#	ВКЛЮЧАЯ ЛЮБЫЕ ОБЩИЕ, СЛУЧАЙНЫЕ, СПЕЦИАЛЬНЫЕ ИЛИ ПОСЛЕДОВАВШИЕ УБЫТКИ,
+#	ВСЛЕДСТВИЕ ИСПОЛЬЗОВАНИЯ ИЛИ НЕВОЗМОЖНОСТИ ИСПОЛЬЗОВАНИЯ ПРОГРАММЫ (ВКЛЮЧАЯ,
+#	НО НЕ ОГРАНИЧИВАЯСЬ ПОТЕРЕЙ ДАННЫХ, ИЛИ ДАННЫМИ, СТАВШИМИ НЕПРАВИЛЬНЫМИ, ИЛИ
+#	ПОТЕРЯМИ ПРИНЕСЕННЫМИ ИЗ-ЗА ВАС ИЛИ ТРЕТЬИХ ЛИЦ, ИЛИ ОТКАЗОМ ПРОГРАММЫ РАБОТАТЬ
+#	СОВМЕСТНО С ДРУГИМИ ПРОГРАММАМИ), ДАЖЕ ЕСЛИ ТАКОЙ ВЛАДЕЛЕЦ ИЛИ ДРУГОЕ ЛИЦО БЫЛИ
+#	ИЗВЕЩЕНЫ О ВОЗМОЖНОСТИ ТАКИХ УБЫТКОВ.
+#
+
+#       Copyright (C) 2008-2012 Aleksandr Deviatkin, "Green Hill"
+#
+#       Redistribution and use in source and binary forms, with or without
+#       modification, are permitted provided that the following conditions are
+#       met:
+#       
+#       * Redistributions of source code must retain the above copyright
+#         notice, this list of conditions and the following disclaimer.
+#       * Redistributions in binary form must reproduce the above
+#         copyright notice, this list of conditions and the following disclaimer
+#         in the documentation and/or other materials provided with the
+#         distribution.
+#       * Neither the name of the Green Hill nor the names of its
+#         contributors may be used to endorse or promote products derived from
+#         this software without specific prior written permission.
+#       
+#       THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+#       "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+#       LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+#       A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+#       OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#       SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+#       LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+#       DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+#       THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#       (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#       OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+#
+# Сбор данных со счетчиков
+# 2014-07-09 alid
+#
+
+use DBI;
+use Carp;
+use Time::Local;
+use lib "$ENV{MY}/counter";
+use Lock;
+use POSIX;
+
+my (@args, %opts);
+foreach(@ARGV){
+   if(/^\-(\S)(.*)/){	$opts{$1} = $2;	} else {	push @args, $_;	}
+}
+my ($database) = (@args);
+$database ||= 'ghpower';
+my $verb = exists $opts{v};
+my $plim = $opts{m} || 100;				# количество порожденных процессов
+my $Timeout = $opts{T} || 300;			# для группы
+my $retries = $opts{r} || 1;			# для счетчика
+
+my $MAINTENANCE = 288;					# *5мин. - счетчик обслуживания
+
+# Глобальная блокировка процессом поиска интерфейсов port_locator
+# 2014-05-14 alid
+my $plock = '/tmp/port_locator.lock';
+my $Plock = Lock->new($plock,1);
+exit 1	if($Plock->get());
+#
+my $dbh = DBI->connect("dbi:Pg:dbname=$database","","",{AutoCommit => 1})	or die;
+
+# список групп
+my $sth = $dbh->prepare("SELECT A.id,A.name,A.memo,A.if_id,B.dev,A.modtime,A.rank,A.bid FROM mgroup A INNER JOIN iface B ON A.if_id=B.id WHERE A.active=1");
+$sth->execute()	or die;
+my $MGr; my %Bal;
+while(my $r = $sth->fetchrow_hashref) {
+	$MGr->{$r->{id}} = $r;
+	$Bal{$r->{bid}}++	if($r->{bid});	# список балансных счетчиков
+}
+$sth->finish;
+$dbh->disconnect;
+
+my (%pids,$cps);
+$SIG{INT} = sub { die; };
+$SIG{CHLD} = \&reaper;
+
+use Data::Dumper;
+#print Dumper $MGr;
+
+foreach my $mgr (values %{$MGr}) {
+		my $child;
+		unless($child = fork) {
+			die "Cat't fork: $!"	unless defined $child;
+			collector($mgr);
+		}
+		$pids{$child}++;
+		$cps++;
+	# ждем освобождения очереди
+	while(%pids) {
+		last	if($cps < $plim);
+	}
+}
+while(%pids) {}
+
+print time()." collector: completed in ".(time() - $^T)." sec\n" if($verb);
+
+# отслеживаем потомков
+sub reaper {
+	while((my $pid = waitpid(-1, &WNOHANG)) > 0) {
+		if(exists $pids{$pid}) {
+			delete $pids{$pid};
+			print "finished [$pid][$?]\n"	if($verb);
+			$cps--;
+		}
+	}
+	$SIG{CHLD} = \&reaper;
+}
+
+##################################################################
+# Процесс обрабатывает счетчики группы
+sub collector {
+	my ($mgrp) = @_;
+	exit(1)	unless($mgrp->{id});
+	my $mgid = $mgrp->{id};
+	$SIG{CHLD} = '';
+	$SIG{ALRM} = sub {die "timeout"};
+
+	alarm($Timeout);
+	my $cget203 = "$ENV{MY}counter/mon203";
+	my $cget230 = "$ENV{MY}counter/mon230";
+	my $charting = "$ENV{MY}/counter/line-graph $database $mgid";
+	my $adjtime230 = "$ENV{MY}counter/adjtime -a";
+	my $adjtime203 = "$ENV{MY}counter/adjtime203 -a";
+
+	my $lock = Lock->new("/tmp/counter.collector.$mgid.lock",1);
+	die "collector: Locked for mgroup $mgid ($mgrp->{name})"	if($lock->set);
+
+	my $dbh = DBI->connect("dbi:Pg:dbname=$database","","",{AutoCommit => 1})	or die;
+	# список счетчиков
+	my $sth = $dbh->prepare("select counters.id,counters.name,counters.addr,counters.passwd,iface.dev,counters.ktrans,counter_type.type,status.id as status_id,status.state,status.pstate,status.maintenance from counters inner join mgroup on mgroup.id=counters.mgroup inner join iface on mgroup.if_id=iface.id inner join counter_type on model=counter_type.id left outer join status on counters.id=status.cid where counters.active=1 and counters.mgroup=? order by counters.id");
+	$sth->execute($mgid)	or die;
+	my $List;
+	while(my $row = $sth->fetchrow_hashref) {
+		push @$List, $row;
+	}
+	$sth->finish;
+
+	my $sins = $dbh->prepare("insert into status (cid,state,pstate,se1,se2,lpower,maintenance,modtime) values (?,?,?,?,?,?,0,now())");
+	my $supd = $dbh->prepare("update status set state=?,pstate=?,se1=?,se2=?,lpower=?,maintenance=?,modtime=now() where id=?");
+	my $ins1 = $dbh->prepare("insert into monitor (dt,date,counter,mv1,mc1,mf,mps,mss,se1ai,se2ai) values (?,?,?,?,?,?,?,?,?,?) returning ise");
+	my $ins2 = $dbh->prepare("insert into monitor (dt,date,counter,mv1,mv2,mv3,mc1,mc2,mc3,mf,ma1,ma2,ma3,mps,mp1,mp2,mp3,mqs,mq1,mq2,mq3,mss,ms1,ms2,ms3,mks,mk1,mk2,mk3,se1ai,se1ae,se1ri,se1re,se2ai,se2ae,se2ri,se2re) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) returning ise");
+	my $maintenance_done = 0;
+
+	# вот тут
+	foreach my $counter (@$List) {
+		print "get: ".$counter->{addr}." ".$counter->{id}	if $verb;
+		my $err = 0;
+		my $Data;
+		my ($addr,$mv1,$mv2,$mv3,$mc1,$mc2,$mc3,$mf,$ma1,$ma2,$ma3,$mps,$mp1,$mp2,$mp3,$mqs,$mq1,$mq2,$mq3,$mss,$ms1,$ms2,$ms3,$mks,$mk1,$mk2,$mk3,$se1ai,$se1ae,$se1ri,$se1re,$se2ai,$se2ae,$se2ri,$se2re);
+		map {$_=0;} ($addr,$mv1,$mv2,$mv3,$mc1,$mc2,$mc3,$mf,$ma1,$ma2,$ma3,$mps,$mp1,$mp2,$mp3,$mqs,$mq1,$mq2,$mq3,$mss,$ms1,$ms2,$ms3,$mks,$mk1,$mk2,$mk3,$se1ai,$se1ae,$se1ri,$se1re,$se2ai,$se2ae,$se2ri,$se2re);
+		my $time = time();
+		my $tm = Now();
+		my $lpower = 0;
+
+		# Коррекция часов счетчика нужна?
+		my $maintenance_do = 0;
+		my $maintenance_cnt = $MAINTENANCE;
+		if(!$counter->{maintenance} && !$maintenance_done) {
+			$maintenance_done++;	# только один счетчик из группы; остальные - в следующий раз
+			$maintenance_do++;
+		} else {
+			if($counter->{maintenance}) {
+				$counter->{maintenance}--;
+				$maintenance_cnt = $counter->{maintenance};
+			} else {
+				$maintenance_cnt = 0;
+			}
+		}
+
+		# Для балансных счетчиков - больше попыток
+		my $retr_opt = (exists $Bal{$counter->{id}}) ? "-r".($retries * 3) : "-r$retries";
+		if($counter->{type} =~ /M203/) {
+			print " M203 $retr_opt\n"	if $verb;
+			eval{ $Data = `$cget203 $counter->{addr} $counter->{dev} $retr_opt`; };
+			chomp $Data;
+			$Data =~ s/,/\./g;
+			($addr, $mv1,$mc1,$mf,$mps,$mss,$se1ai,$se2ai) = split(";",$Data);
+			if($addr && $addr eq $counter->{addr}) {
+				map { $_ = ($_=~/null/i) ? 0 : $_; } ($mv1,$mc1,$mf,$mps,$mss,$se1ai,$se2ai);
+				$ins1->execute($tm,$time,$counter->{id},$mv1,$mc1,$mf,$mps,$mss,$se1ai,$se2ai)	or die;
+				$lpower = $ins1->fetch()->[0];
+				$ins1->finish;
+#			$dbh->do("insert into monitor (dt,date,counter,mv1,mc1,mf,mps,mss,se1ai,se2ai) values ('$tm',$time,$counter->{id},$mv1,$mc1,$mf,$mps,$mss,$se1ai,$se2ai)")	or die;
+			} else {
+				$err++;
+				print "Error reading from: ".$counter->{addr}." (1f)\n"	if($verb);
+			}
+			# Коррекция часов
+			if($maintenance_do) {
+				eval{ system("$adjtime203 ".$counter->{addr}." ".$counter->{dev}." ".($verb ? '-v':'')); };
+			}
+		}
+		elsif($counter->{type} =~ /M230/) {
+			print " M230 $retr_opt\n"	if $verb;
+			eval{ $Data = `$cget230 $counter->{addr} $counter->{passwd} $counter->{dev} $counter->{ktrans} $retr_opt`; };
+			chomp $Data;
+			$Data =~ s/,/\./g;
+			($addr,$mv1,$mv2,$mv3,$mc1,$mc2,$mc3,$mf,$ma1,$ma2,$ma3,$mps,$mp1,$mp2,$mp3,$mqs,$mq1,$mq2,$mq3,$mss,$ms1,$ms2,$ms3,$mks,$mk1,$mk2,$mk3,$se1ai,$se1ae,$se1ri,$se1re,$se2ai,$se2ae,$se2ri,$se2re) = split(";",$Data);
+			if($addr && $addr eq $counter->{addr}) {
+				map { $_ = ($_=~/null/i) ? 0 : $_; } ($mv1,$mv2,$mv3,$mc1,$mc2,$mc3,$mf,$ma1,$ma2,$ma3,$mps,$mp1,$mp2,$mp3,$mqs,$mq1,$mq2,$mq3,$mss,$ms1,$ms2,$ms3,$mks,$mk1,$mk2,$mk3,$se1ai,$se1ae,$se1ri,$se1re,$se2ai,$se2ae,$se2ri,$se2re);
+				$ins2->execute($tm,$time,$counter->{id},$mv1,$mv2,$mv3,$mc1,$mc2,$mc3,$mf,$ma1,$ma2,$ma3,$mps,$mp1,$mp2,$mp3,$mqs,$mq1,$mq2,$mq3,$mss,$ms1,$ms2,$ms3,$mks,$mk1,$mk2,$mk3,$se1ai,$se1ae,$se1ri,$se1re,$se2ai,$se2ae,$se2ri,$se2re)	or die;
+				$lpower = $ins2->fetch()->[0];
+				$ins2->finish;
+#		$dbh->do("insert into monitor (dt,date,counter,mv1,mv2,mv3,mc1,mc2,mc3,mf,ma1,ma2,ma3,mps,mp1,mp2,mp3,mqs,mq1,mq2,mq3,mss,ms1,ms2,ms3,mks,mk1,mk2,mk3,se1ai,se1ae,se1ri,se1re,se2ai,se2ae,se2ri,se2re) values ('$tm',$time,$counter->{id},$mv1,$mv2,$mv3,$mc1,$mc2,$mc3,$mf,$ma1,$ma2,$ma3,$mps,$mp1,$mp2,$mp3,$mqs,$mq1,$mq2,$mq3,$mss,$ms1,$ms2,$ms3,$mks,$mk1,$mk2,$mk3,$se1ai,$se1ae,$se1ri,$se1re,$se2ai,$se2ae,$se2ri,$se2re)")	or die;
+			} else {
+				$err++;
+				print "Error reading from: ".$counter->{addr}." (3f)\n"	if($verb);
+			}
+			if($maintenance_do) {
+				eval{ system("$adjtime230 ".$counter->{addr}." ".$counter->{passwd}." ".$counter->{dev}." ".($verb ? '-v':'').""); };
+			}
+		} else {
+			print " ERROR: unknown device type [".$counter->{type}."]\n"	if $verb;
+			next;
+		}
+
+		# Запись состояния счетчика
+		$counter->{pstate} = $counter->{state} || 0;
+		$counter->{state} = $err;
+		if($counter->{"status_id"}) {
+			$supd->execute($counter->{state},$counter->{pstate},$se1ai,$se2ai,$lpower,$maintenance_cnt,$counter->{"status_id"});
+		} else {
+			$sins->execute($counter->{id},$counter->{state},$counter->{pstate},$se1ai,$se2ai,$lpower);
+		}
+		print "done: ".$counter->{addr}."\n"	if $verb;
+	}
+
+	$dbh->disconnect;
+	$lock->clear;
+	# Обновление графиков
+	eval{ `$charting`; };
+
+	alarm(0);
+	exit(0);
+}
+
+
+sub Now {
+        my ($stamp, %opts) = @_;
+        $stamp = time()         unless defined $stamp;
+        my ($sec, $min, $hour, $mday, $mon, $year) = localtime( $stamp );
+        return $opts{iso} ?
+                sprintf("%.4d-%.2d-%.2d %.2d:%.2d:%.2d", $year+1900, $mon+1, $mday, $hour, $min, $sec) :
+                sprintf("%.2d.%.2d.%.4d %.2d:%.2d:%.2d", $mday, $mon+1, $year+1900, $hour, $min, $sec) ;
+}
+
