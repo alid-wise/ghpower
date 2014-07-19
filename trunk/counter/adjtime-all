@@ -31,7 +31,7 @@ $| = 1;
 #	Copyright (C) 2008,2009 Aleksandr Deviatkin aka alid
 
 #
-# ëÏÒÒÅËÃÉÑ ÞÁÓÏ× ÓÞÅÔÞÉËÏ×
+# ÐšÐ¾Ñ€Ñ€ÐµÐºÑ†Ð¸Ñ Ñ‡Ð°ÑÐ¾Ð² ÑÑ‡ÐµÑ‚Ñ‡Ð¸ÐºÐ¾Ð²
 # 2008-04-20 alid
 #
 
@@ -45,19 +45,24 @@ foreach(@ARGV){
    if(/^\-(\S)(.*)/){	$opts{$1} = $2;	} else {	push @args, $_;	}
 }
 my $verb = exists $opts{v};
-my $force = exists $opts{f};	# ÉÇÎÏÒÉÒÏ×ÁÔØ ÏÔÓÕÔÓÔ×ÉÅ ÆÌÁÇÁ mgroup.active
+my $force = exists $opts{f};	# Ð¸Ð³Ð½Ð¾Ñ€Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ Ð¾Ñ‚ÑÑƒÑ‚ÑÑ‚Ð²Ð¸Ðµ Ñ„Ð»Ð°Ð³Ð° mgroup.active
 my ($database,$mgid,$flag) = (@args);
 die "Usage: $0 database mgroup_id"	unless($database);
 $mgid ||= 1;
-$flag ||= 0;	# ÎÅ ÐÅÒÅÈÏÄÉÔØ ÎÁ ÌÅÔÎÅÅ ×ÒÅÍÑ (ÔÏÌØËÏ ÄÌÑ í203)
-
-my $action230 = "$ENV{MY}counter/adjtime -a";
-my $action203 = "$ENV{MY}counter/adjtime203 -a";
+$flag ||= 0;	# Ð½Ðµ Ð¿ÐµÑ€ÐµÑ…Ð¾Ð´Ð¸Ñ‚ÑŒ Ð½Ð° Ð»ÐµÑ‚Ð½ÐµÐµ Ð²Ñ€ÐµÐ¼Ñ (Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð´Ð»Ñ Ðœ203)
+my $mode = '';	# a - Ð¿Ð¾Ð´ÑÑ‚Ñ€Ð¾Ð¹ÐºÐ° Ñ‡Ð°ÑÐ¾Ð², F - ÑƒÑÑ‚Ð°Ð½Ð¾Ð²ÐºÐ° Ñ‡Ð°ÑÐ¾Ð², Ð¸Ð½Ð°Ñ‡Ðµ - Ð¿Ñ€Ð¾ÑÑ‚Ð¾ Ð¿Ð¾ÐºÐ°Ð·Ð°Ñ‚ÑŒ Ð²Ñ€ÐµÐ¼Ñ
+if($opts{M} && $opts{M} eq 'a') {
+	$mode = '-a';
+} elsif($opts{M} && $opts{M} eq 'F') {
+	$mode = '-F';
+}
+my $action230 = "$ENV{MY}counter/adjtime $mode";
+my $action203 = "$ENV{MY}counter/adjtime203 $mode";
 
 my $dbh = DBI->connect("dbi:Pg:dbname=$database","","",{AutoCommit => 0})	or die;
 
-# ÓÐÉÓÏË ÓÞÅÔÞÉËÏ×
-my $sth = $dbh->prepare("select counters.id,counters.name,counters.addr,counters.passwd,iface.dev,counters.ktrans,counter_type.type,status.id as status_id,status.state,status.pstate from counters inner join mgroup on mgroup.id=counters.mgroup inner join iface on mgroup.if_id=iface.id inner join counter_type on model=counter_type.id left outer join status on counters.id=status.cid where counters.active=1 and counters.mgroup=? ".($force? "":"and mgroup.active=1")." order by counters.id");
+# ÑÐ¿Ð¸ÑÐ¾Ðº ÑÑ‡ÐµÑ‚Ñ‡Ð¸ÐºÐ¾Ð²
+my $sth = $dbh->prepare("select counters.id,counters.name,counters.addr,counters.passwd,counters.passwd2,iface.dev,counters.ktrans,counter_type.type,status.id as status_id,status.state,status.pstate from counters inner join mgroup on mgroup.id=counters.mgroup inner join iface on mgroup.if_id=iface.id inner join counter_type on model=counter_type.id left outer join status on counters.id=status.cid where counters.active=1 and counters.mgroup=? ".($force? "":"and mgroup.active=1")." order by counters.id");
 
 $sth->execute($mgid)	or die;
 my $List;
@@ -67,14 +72,14 @@ while(my $row = $sth->fetchrow_hashref) {
 $sth->finish;
 $dbh->disconnect;
 
-# ×ÏÔ ÔÕÔ
+# Ð²Ð¾Ñ‚ Ñ‚ÑƒÑ‚
 foreach my $counter (@$List) {
 	print "set: ".$counter->{addr}." ".$counter->{type}."..."	if $verb;
 	if($counter->{type} =~ /M203/) {
 		system("$action203 ".$counter->{addr}." ".$counter->{dev}." ".($verb ? '-v':'')." $flag");
 	}
 	elsif($counter->{type} =~ /M230/) {
-		system("$action230 ".$counter->{addr}." ".$counter->{passwd}." ".$counter->{dev}." ".($verb ? '-v':'')."");
+		system("$action230 ".$counter->{addr}." ".(($mode =~ /F/)? $counter->{passwd2} : $counter->{passwd})." ".$counter->{dev}." ".($verb ? '-v':'')."");
 	} else {
 		print " ERROR: unknown device type [".$counter->{type}."]\n"	if $verb;
 		next;
