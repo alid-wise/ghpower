@@ -84,7 +84,7 @@ if($ARGS{submit}) {
 				$Err{i_balance}++;
 		}
 		
-		if($ARGS{i_date} =~ /(\d{1,2})\-(\d{1,2})\-(\d{4})/) {
+		if($ARGS{i_date} =~ /(\d{1,2})[\-\.](\d{1,2})[\-\.](\d{4})/) {
 			$p_date = sprintf("%d-%02d-%02d",$3,$2,$1);
 		} else {
 			$Err{i_date}++;
@@ -93,6 +93,9 @@ if($ARGS{submit}) {
 		my $E = $m->comp("lib.msn:getcounter_date", dbh=>$dbh, id=>$cid, date=>$p_date, nocache=>1);
 		$Err{i_date}++	unless($E->{se1ai} && $E->{se2ai});
 		unless(%Err) {
+
+			# Проверить на дубли!!!!!!
+
 			$ins->execute($auth->{id},$cid,$p_date,$ARGS{i_t1} || 0,$ARGS{i_t2} || 0, $E->{se1ai}, $E->{se2ai} ,$p_balance,$p_balance,1,$p_date);
 
 			$m->out('<script type="text/javascript">parent.location.reload();</script>');
