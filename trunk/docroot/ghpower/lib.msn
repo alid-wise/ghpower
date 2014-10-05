@@ -156,10 +156,15 @@ unless($nocache) {
 	return $rv	if($cached);
 }
 my $ret = undef;
-my $sth = $dbh->prepare("select * from tariff order by sdate desc limit 1");
+my $sth = $dbh->prepare("select *,coalesce(sdate<now()) as legal from tariff order by sdate desc limit 20");
 $sth->execute();
 while(my $r = $sth->fetchrow_hashref) {
-	$ret = $r;
+	unless($ret->{C}) {
+		if($r->{legal}) {
+			$ret->{C} = $r;	# текущий тариф
+		}
+	}
+	$ret->{$r->{id}} = $r;
 }
 $sth->finish;
 $ret = {}	unless $ret;
@@ -307,3 +312,98 @@ return $ret;
 </%method>
 
 
+<%method getcounter_date>
+<%doc>
+	Показания счетчика на дату
+</%doc>
+<%args>
+	$dbh
+	$id
+	$nocache => 1
+	$date
+</%args>
+<%init>
+use utf8;
+unless($nocache) {
+	my ($rv, $cached) = $m->cache_self(
+		expire_in => '1 hour',
+		busy_lock => '5sec',
+		ttl => '5minutes',
+		key => "getcounter_day_$id"."_$date",
+		expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
+	);
+	return $rv	if($cached);
+}
+return undef	if(!$id || !($date =~ /^\d{4}\-\d{2}\-\d{2}$/));
+my $ret = undef;
+my $sth = $dbh->prepare("SELECT date,counter,se1ai,se2ai,ise,dt FROM monitor WHERE counter=? AND dt>? ORDER BY date LIMIT 1");
+$sth->execute($id,$date);
+while(my $r = $sth->fetchrow_hashref) {
+		$ret = $r;
+}
+$sth->finish;
+$ret = {}	unless $ret;
+return $ret;
+</%init>
+</%method>
+
+
+
+<%method pretty_date>
+<%doc>
+	Преобразование даты из YYYY-MM-DD в DD-MM-YYYY
+</%doc>
+<%args>
+	$date
+</%args>
+<%init>
+use utf8;
+if($date =~ /(\d{4})\-(\d{2})\-(\d{2})/) {
+	return sprintf("%02d.%02d.%d",$3,$2,$1);
+}
+return undef;
+</%init>
+</%method>
+
+
+<%method now>
+<%doc>
+	Текущая дата
+</%doc>
+<%args>
+	$nocache => 0
+</%args>
+<%init>
+use utf8;
+unless($nocache) {
+	my ($rv, $cached) = $m->cache_self(
+		expire_in => '1 hour',
+		busy_lock => '5sec',
+		ttl => '5minutes',
+		key => "now",
+		expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
+	);
+	return $rv	if($cached);
+}
+use Date::Manip;
+my $ret = undef;
+$ret->{today} = UnixDate("today","%Y-%m-%d");
+$ret->{pretty} = UnixDate("today","%d.%m.%Y");
+$ret = {}	unless $ret;
+return $ret;
+</%init>
+</%method>
+
+<%method pretty>
+<%doc>
+	Преобразование числа в читаемый формат
+</%doc>
+<%args>
+	$value
+</%args>
+<%init>
+use utf8;
+$value =~ s/\./\,/g;
+return $value;
+</%init>
+</%method>
