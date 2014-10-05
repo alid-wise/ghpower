@@ -318,12 +318,14 @@ CREATE TABLE towers (
 --
 CREATE TABLE payments (
     id serial NOT NULL,
+    auth integer,
     cid integer,
     date date,
     prev1 decimal,
     prev2 decimal,
     current1 decimal,
     current2 decimal,
+    mdate date,
     amount decimal,
     balance decimal,
     modtime timestamp without time zone DEFAULT now() NOT NULL,
@@ -334,6 +336,7 @@ CREATE INDEX payments_cid_i ON payments (cid);
 
 CREATE TABLE tariff (
     id serial NOT NULL,
+    auth integer,
     t1 decimal,
     t2 decimal,
     sdate date,           -- начало действия тарифа
