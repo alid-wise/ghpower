@@ -220,7 +220,8 @@ addnull:function(d,m,y){
 	if (d<10)d0='0';
 	if (m<10)m0='0';
 
-	return ''+d0+d+'-'+m0+m+'-'+y;
+	return ''+d0+d+'.'+m0+m+'.'+y;
+//	return ''+d0+d+'-'+m0+m+'-'+y;
 }
 }
 
