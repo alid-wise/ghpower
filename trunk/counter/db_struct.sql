@@ -339,7 +339,9 @@ CREATE TABLE tariff (
     auth integer,
     t1 decimal,
     t2 decimal,
+    k decimal,
     sdate date,           -- начало действия тарифа
+    modtime timestamp without time zone DEFAULT now() NOT NULL,
     primary key (id)
 );
 INSERT INTO tariff (t1,t2,sdate) VALUES (4.11,1.39,'2012-07-01');
