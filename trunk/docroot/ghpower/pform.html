@@ -67,8 +67,8 @@ unless($p_id) {	# первый платеж
 } else {
 	$Usr->{flow1} = sprintf("%.02f", $Usr->{se1} - $Usr->{p_se1});
 	$Usr->{flow2} = sprintf("%.02f", $Usr->{se2} - $Usr->{p_se2});
-	# Сумма "К оплате" Добавить коэффициент
-	$Usr->{cost} = $Usr->{flow1} * $T->{C}->{t1} + $Usr->{flow2} * $T->{C}->{t2};
+	# Сумма "К оплате"
+	$Usr->{cost} = ($Usr->{flow1} * $T->{C}->{t1} + $Usr->{flow2} * $T->{C}->{t2}) * $T->{C}->{k};
 	$Usr->{topay} = $Usr->{cost} - $Usr->{p_balance};
 }
 
