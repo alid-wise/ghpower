@@ -95,9 +95,13 @@ if($ARGS{submit}) {
 		unless(%Err) {
 
 			# Проверить на дубли!!!!!!
-
+			my $ex = $dbh->prepare("SELECT id FROM payments WHERE auth=? AND cid=? AND date=? AND amount=? AND balance=? AND init=1 AND mdate=?");
+			$ex->execute($auth->{id},$cid,$p_date,$p_balance,$p_balance,$p_date);
+			my ($ex_id) = $ex->fetchrow_array;
+			$ex->finish;
+			unless($ex_id) {
 			$ins->execute($auth->{id},$cid,$p_date,$ARGS{i_t1} || 0,$ARGS{i_t2} || 0, $E->{se1ai}, $E->{se2ai} ,$p_balance,$p_balance,1,$p_date);
-
+			}
 			$m->out('<script type="text/javascript">parent.location.reload();</script>');
 			return;
 
