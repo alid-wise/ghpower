@@ -46,15 +46,20 @@ my %Err;
 
 if($ARGS{submit}) {
 
-	my ($sdate,$t1,$t2,$k);
+	my ($sdate,$t0,$t1,$t2,$k);
 
 	if($ARGS{sdate} =~ /(\d{1,2})[\-\.](\d{1,2})[\-\.](\d{4})/) {
 		$sdate = sprintf("%d-%02d-%02d",$3,$2,$1);
 	} else {
 		$Err{sdate}++;
 	}
-	map { $_ =~ s/\s//g; } ( $ARGS{t1}, $ARGS{t2}, $ARGS{k} );
+	map { $_ =~ s/\s//g; } ( $ARGS{t0}, $ARGS{t1}, $ARGS{t2}, $ARGS{k} );
 
+	if($ARGS{t0} =~ /(\d+)[\.\,]*(\d*)/) {
+		$t0 = $1.($2 ? ".$2":"");
+	} else  {
+		$Err{t0}++;
+	}
 	if($ARGS{t1} =~ /(\d+)[\.\,]*(\d*)/) {
 		$t1 = $1.($2 ? ".$2":"");
 	} else  {
@@ -81,9 +86,9 @@ if($ARGS{submit}) {
 			$m->clear_buffer;
 			$m->redirect($self);
 		} else {
-			my $upd = $dbh->prepare("update tariff set auth=$auth->{id},modtime=now(),sdate=?,t1=?,t2=?,k=? where id=?");
+			my $upd = $dbh->prepare("update tariff set auth=$auth->{id},modtime=now(),sdate=?,t0=?,t1=?,t2=?,k=? where id=?");
 			unless(%Err) {
-				$upd->execute($sdate,$t1,$t2,$k,$id);
+				$upd->execute($sdate,$t0,$t1,$t2,$k,$id);
 #				undef $id;
 				$r->status_line('');
 				$m->clear_buffer;
@@ -92,9 +97,9 @@ if($ARGS{submit}) {
 		}
 
 	} else { # Новая запись
-		my $ins = $dbh->prepare("insert into tariff (auth,sdate,t1,t2,k) values ($auth->{id},?,?,?,?)");
+		my $ins = $dbh->prepare("insert into tariff (auth,sdate,t0,t1,t2,k) values ($auth->{id},?,?,?,?,?)");
 		unless(%Err) {
-			$ins->execute($sdate,$t1,$t2,$k);
+			$ins->execute($sdate,$t0,$t1,$t2,$k);
 #			undef $ARGS{add_new};
 			$r->status_line('');
 			$m->clear_buffer;
@@ -120,7 +125,7 @@ my $T = $m->comp("lib.msn:tariff", dbh=>$dbh, nocache=>1);
 
 <form method=POST>
 <table border="1">
-<tr><td colspan="4" align="right"><nobr>
+<tr><td colspan="5" align="right"><nobr>
 %if(!$ARGS{add_new} && !$id) {
 <input type="submit" name="add_new" value="+" title="добавить новый тариф">
 %}
@@ -128,6 +133,7 @@ my $T = $m->comp("lib.msn:tariff", dbh=>$dbh, nocache=>1);
 %if($id || $ARGS{add_new}) {
 
 <tr><td><div style=color:<% $Err{sdate} ? "red":"black"%>>Дата начала:</div></td><td colspan="3"><input type="text" name="sdate" value="<% $ARGS{sdate} || $m->comp("lib.msn:pretty_date",date=>$T->{$id}->{sdate}) || "dd.mm.yyyy"%>" onfocus="this.select();_Calendar.lcs(this)" onclick="event.cancelBubble=true;this.select();_Calendar.lcs(this)"></td></tr>
+<tr><td><div style=color:<% $Err{t1} ? "red":"black"%>>Один:</div></td><td colspan="3"><input type="text" name="t0" value="<% $ARGS{t0} || $m->comp("lib.msn:pretty",value=>sprintf("%0.2f",$T->{$id}->{t0})) || ""%>"></td></tr>
 <tr><td><div style=color:<% $Err{t1} ? "red":"black"%>>День:</div></td><td colspan="3"><input type="text" name="t1" value="<% $ARGS{t1} || $m->comp("lib.msn:pretty",value=>sprintf("%0.2f",$T->{$id}->{t1})) || ""%>"></td></tr>
 <tr><td><div style=color:<% $Err{t2} ? "red":"black"%>>Ночь:</div></td><td colspan="3"><input type="text" name="t2" value="<% $ARGS{t2} || $m->comp("lib.msn:pretty",value=>sprintf("%0.2f",$T->{$id}->{t2})) || ""%>"></td></tr>
 <tr><td><div style=color:<% $Err{k} ? "red":"black"%>>Коэффициент:</div></td><td colspan="3"><input type="text" name="k" value="<% $ARGS{k} || $m->comp("lib.msn:pretty",value=>sprintf("%0.2f",$T->{$id}->{k})) || ""%>"></td></tr>
@@ -144,12 +150,13 @@ my $T = $m->comp("lib.msn:tariff", dbh=>$dbh, nocache=>1);
 %}
 </form>
 
-<tr><th>Дата</th><th>День</th><th>Ночь</th><th>Коэффициент</th></tr>
+<tr><th>Дата</th><th>Один</th><th>День</th><th>Ночь</th><th>Коэффициент</th></tr>
 %foreach my $tid (sort { $T->{$b}->{sdate} cmp $T->{$a}->{sdate}} keys %{$T}) {
 %	next if $tid ne 'C' && $T->{$tid}->{id} ==  $T->{C}->{id};
 %	my $color = $tid eq 'C' ? "green" : "black";
 <tr>
 <td><div style=color:<%$color%>><a href="?id=<% $T->{$tid}->{id}%>"><% $m->comp("lib.msn:pretty_date",date=>$T->{$tid}->{sdate}) %></a></div></td>
+<td align="right"><div style=color:<%$color%>><b><% $m->comp("lib.msn:pretty", value=>sprintf("%0.2f",$T->{$tid}->{t0})) %></b></div></td>
 <td align="right"><div style=color:<%$color%>><b><% $m->comp("lib.msn:pretty", value=>sprintf("%0.2f",$T->{$tid}->{t1})) %></b></div></td>
 <td align="right"><div style=color:<%$color%>><b><% $m->comp("lib.msn:pretty", value=>sprintf("%0.2f",$T->{$tid}->{t2})) %></b></div></td>
 <td align="right"><div style=color:<%$color%>><b><% $m->comp("lib.msn:pretty", value=>sprintf("%0.2f",$T->{$tid}->{k})) %></b></div></td>
