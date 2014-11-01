@@ -348,6 +348,31 @@ return $ret;
 </%method>
 
 
+<%method getcost_simple>
+<%doc>
+	Стоимость потраченного электричества
+	без учета изменения тарифов
+</%doc>
+<%args>
+	$dbh
+	$flow1
+	$flow2
+	$mode => 2
+</%args>
+<%init>
+use utf8;
+# Текущий тариф
+my $T = $m->comp("lib.msn:tariff", dbh=>$dbh, nocache=>0);
+my $ret = undef;
+if($mode eq "1") {	# Однотарифник
+	$ret = (($flow1 + $flow2) * $T->{C}->{t0}) * $T->{C}->{k};
+} else {	# Двухтарифник
+	$ret = ($flow1 * $T->{C}->{t1} + $flow2 * $T->{C}->{t2}) * $T->{C}->{k};
+}
+return $ret;
+</%init>
+</%method>
+
 
 <%method pretty_date>
 <%doc>
