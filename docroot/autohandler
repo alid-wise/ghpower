@@ -19,9 +19,9 @@ $sth->finish;
 </%init>
 <html>
 <head>
-%#        <meta http-equiv=Content-Type content="text/html;charset=KOI8-R">
+	<meta http-equiv=Content-Type content="text/html;charset=UTF8">
 	<meta http-equiv=Pragma Content="no-cache">
-        <title>Green Hill</title>
+	<title>Green Hill</title>
 	<LINK REL="stylesheet" TYPE="text/css" HREF="/ghpower.css">
 </head>
 <body>
