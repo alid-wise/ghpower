@@ -22,19 +22,16 @@ H3   { font-family: Verdana, Arial, Helvetica; font-size:12pt}
 
 A:link { color: blue; }
 
-
 A:visited { color: purple; }
-
 
 A:active { color: brown; } 
 
-
 A:hover { color: green; }
-
 
 .error { color: red; }
 
-
 .error input { color: red; }
 
+.onemode { background: #FFA500; }
+.initpay { background: #98FB98; }
 
