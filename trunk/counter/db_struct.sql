@@ -321,6 +321,8 @@ CREATE TABLE payments (
     auth integer,
     cid integer,
     date date,
+	init integer,	-- 1-первая запись; 2-первая запись, но показаний КС на эту дату нет
+	mode integer DEFAULT 2,
     prev1 decimal,
     prev2 decimal,
     current1 decimal,
@@ -337,6 +339,7 @@ CREATE INDEX payments_cid_i ON payments (cid);
 CREATE TABLE tariff (
     id serial NOT NULL,
     auth integer,
+    t0 decimal,
     t1 decimal,
     t2 decimal,
     k decimal,
