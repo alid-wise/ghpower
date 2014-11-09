@@ -34,4 +34,5 @@ A:hover { color: green; }
 
 .onemode { background: #FFA500; }
 .initpay { background: #98FB98; }
-
+.badinitpay { background: #FF0000; }
+.inactive { background: #9C9C9C; }
