@@ -336,7 +336,7 @@ unless($nocache) {
 }
 return undef	if(!$id || !($date =~ /^\d{4}\-\d{2}\-\d{2}$/));
 my $ret = undef;
-my $sth = $dbh->prepare("SELECT date,counter,se1ai,se2ai,ise,dt FROM monitor WHERE counter=? AND dt>? ORDER BY date LIMIT 1");
+my $sth = $dbh->prepare("SELECT CAST(dt AS date) AS date,counter,se1ai,se2ai,ise,dt FROM monitor WHERE counter=? AND dt>? ORDER BY date LIMIT 1");
 $sth->execute($id,$date);
 while(my $r = $sth->fetchrow_hashref) {
 		$ret = $r;
@@ -363,13 +363,17 @@ return $ret;
 use utf8;
 # Текущий тариф
 my $T = $m->comp("lib.msn:tariff", dbh=>$dbh, nocache=>0);
-my $ret = undef;
+my ($ret,$ret1,$ret2) = (undef,undef,undef);
 if($mode eq "1") {	# Однотарифник
 	$ret = (($flow1 + $flow2) * $T->{C}->{t0}) * $T->{C}->{k};
+	$ret1 = ($flow1 * $T->{C}->{t0}) * $T->{C}->{k};
+	$ret2 = ($flow2 * $T->{C}->{t0}) * $T->{C}->{k};
 } else {	# Двухтарифник
 	$ret = ($flow1 * $T->{C}->{t1} + $flow2 * $T->{C}->{t2}) * $T->{C}->{k};
+	$ret1 = ($flow1 * $T->{C}->{t1}) * $T->{C}->{k};
+	$ret2 = ($flow2 * $T->{C}->{t2}) * $T->{C}->{k};
 }
-return $ret;
+return ($ret,$ret1,$ret2);
 </%init>
 </%method>
 
@@ -428,6 +432,7 @@ return $ret;
 </%args>
 <%init>
 use utf8;
+$value = sprintf("%0.2f", $value);
 $value =~ s/\./\,/g;
 return $value;
 </%init>
