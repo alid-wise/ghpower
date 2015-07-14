@@ -83,6 +83,11 @@ INSERT INTO groups (id,name) VALUES (4,'guest');
 -- admin/admin
 INSERT INTO auth (name,login,password,email,active,gid,memo) VALUES ('- embedded admin -','admin','$1$YqBppwE5$9GaW92wOLUP0v4Au/Lfab.','admin@email',1,1,'Эту запись не стоит удалять');
 
+
+
+# "Эдем" Илья Бояшов
+
+
 -- группы мониторинга (лучи)
 create table mgroup (
 	id integer not null,
@@ -323,8 +328,10 @@ CREATE TABLE payments (
     current1 decimal,
     current2 decimal,
     mdate date,
+    cost decimal,
     amount decimal,
     balance decimal,
+	memo text,
     modtime timestamp without time zone DEFAULT now() NOT NULL,
     primary key (id)
 );
@@ -346,7 +353,8 @@ INSERT INTO tariff (t1,t2,sdate) VALUES (4.11,1.39,'2012-07-01');
 
 
 CREATE TABLE users (
-	id integer NOT NULL,
+	id serial NOT NULL,
+	auth integer,
 	fname character varying(255),
 	mname character varying(255),
 	lname character varying(255),
@@ -356,8 +364,47 @@ CREATE TABLE users (
 	address character varying,	-- адрес прописки
 	active integer,
 	memo character varying,
-	usr character varying,
 	modtime timestamp without time zone DEFAULT now(),
 	primary key (id)
 );
+
+CREATE TABLE phones (
+	id serial NOT NULL,
+	auth integer,
+	userid integer NOT NULL,
+	phone character varying(255),
+	typeid integer NOT NULL default 0,
+--	active integer NOT NULL default 1,
+--	memo character varying,
+	modtime timestamp without time zone DEFAULT now(),
+	primary key (id)
+);
+
+CREATE TABLE sms_log (
+	id serial NOT NULL,
+	auth integer,
+	dt timestamp without time zone DEFAULT now(),
+	cid integer NOT NULL,
+	userid integer NOT NULL,
+	phone character varying(255),
+	msg character varying,
+	msg_id bigint,
+	active smallint NOT NULL default 0,
+	status smallint,
+	descr character varying,
+	posted timestamp without time zone,
+	updates timestamp without time zone,
+	parts smallint,
+	cost numeric,
+	modtime timestamp without time zone DEFAULT now(),
+	primary key (id)
+);
+CREATE INDEX sms_log_dt_i ON sms_log (dt);
+CREATE INDEX sms_log_userid_i ON sms_log (userid);
+CREATE INDEX sms_log_cid_i ON sms_log (cid);
+
+
+
+
+
 
