@@ -1,0 +1,380 @@
+<%args>
+	$dbh
+	$auth
+	$uid => undef
+	$order => undef
+	$showall => undef
+</%args>
+<%init>
+use Date::Manip;
+use POSIX;
+use locale;
+#setlocale(&LC_COLLATE, 'ru_RU.KOI8-R');
+use utf8;
+
+if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# admin или manager
+	$r->status_line('');
+	$m->clear_buffer;
+	$m->abort(404);
+}
+
+map { s/\D//g; $_ = 0 if($_ > 10000) } ($uid, $showall);
+
+if($ARGS{add_new}) {	# Добавляется новый человек
+	map {s/\'//g; } ($ARGS{lname},$ARGS{fname},$ARGS{mname});
+	map { $_='' unless defined $_ ;} ($ARGS{lname},$ARGS{fname},$ARGS{mname});
+	if($ARGS{lname} || $ARGS{fname} || $ARGS{mname}) {
+		my $ins = $dbh->prepare("insert into users (lname,fname,mname,active,auth) values (?,?,?,1,?)");
+		$ins->execute($ARGS{lname},$ARGS{fname},$ARGS{mname},$auth->{id});
+	}
+}
+
+my ($List, $OK);
+my @updates;
+my %Err;
+my $sth;
+
+if($uid) {	# человек
+
+	$sth = $dbh->prepare("select * from users where id=?");
+	$sth->execute($uid);
+	$List = $sth->fetchrow_hashref;
+	$sth->finish;
+	push @updates, $List->{modtime};
+
+	# Телефоны
+	$sth = $dbh->prepare("select * from phones where userid=?");
+	$sth->execute($uid);
+	my $i = 0;
+	while(my $r = $sth->fetchrow_hashref) {
+		push @{$List->{phones}}, $r;
+		push @updates, $r->{modtime};
+		$i++;
+	}
+	$sth->finish;
+	# Добавленные телефоны
+	my @PhA;
+	my $j=0;
+	foreach((ref $ARGS{phn} eq 'ARRAY') ? @{$ARGS{phn}} : $ARGS{phn}) {
+		if($i == $j) {
+			my %h;
+			$h{userid} = $uid;
+			$h{phone} = $_;
+			$h{typeid} = (ref $ARGS{pht} eq 'ARRAY') ? $ARGS{pht}->[$i] : $ARGS{pht};
+			$h{add} = $ARGS{"ph.$i"} ? 1:0;
+			push @PhA, \%h;
+			$i++;
+		}
+		$j++;
+	}
+
+	foreach(@PhA) { push @{$List->{phones}}, $_; }
+	
+	if($ARGS{add_ph}) {	# Поле для добавления телефона
+		my %h = (userid=>$uid, typeid=>1, phone=>'');
+		push @{$List->{phones}}, \%h;
+	}
+
+
+	# емейлы
+	$sth = $dbh->prepare("select * from emails where userid=?");
+	$sth->execute($uid);
+	$i = 0;
+	while(my $r = $sth->fetchrow_hashref) {
+		push @{$List->{emails}}, $r;
+		push @updates, $r->{modtime};
+		$i++;
+	}
+	$sth->finish;
+	# Добавленные email
+	my @EmA;
+	$j=0;
+	foreach((ref $ARGS{email} eq 'ARRAY') ? @{$ARGS{email}} : $ARGS{email} || ()) {
+		if($i == $j) {
+			my %h;
+			$h{userid} = $uid;
+			$h{email} = $_;
+			$h{add} = $ARGS{"em.$i"} ? 1:0;
+			push @EmA, \%h;
+			$i++;
+		}
+		$j++;
+	}
+	foreach(@EmA) { push @{$List->{emails}}, $_; }
+
+	if($ARGS{add_em}) {	# Поле для добавления email
+		my %h = (userid=>$uid, email=>'');
+		push @{$List->{emails}}, \%h;
+	}
+
+	if($ARGS{submit}) {
+		my $cuser;
+		if($ARGS{birthday}) {
+			my $date = UnixDate(ParseDate($ARGS{birthday}),"%Y-%m-%d");
+			if($date) {
+				if($date ne $List->{birthday}) {
+					$List->{birthday} = $date;
+					$cuser++;
+				}
+			} else {
+				undef $ARGS{accept};
+				$Err{birthday} = 1;
+			}
+
+		} elsif($List->{birthday}) {
+			undef $List->{birthday};
+			$cuser++;
+		}
+
+		map {s/\'//g;} ($ARGS{lname},$ARGS{fname},$ARGS{mname},$ARGS{status},$ARGS{passport},$ARGS{address},$ARGS{memo});
+		map { if($List->{$_} ne $ARGS{$_}) { $List->{$_} = $ARGS{$_}; $cuser++; }; } ('lname','fname','mname','status','passport','address','memo');
+
+		if($ARGS{accept}) {	# Save it
+			if($ARGS{remove}) {
+				$dbh->do("update users set active=0, modtime=now(),auth=".$auth->{id}." where id=$uid");
+			} else {
+
+				my ($upd,$ins,$del);
+				if($cuser) {
+					my $upd = $dbh->prepare("update users set lname=?,fname=?,mname=?,status=?,passport=?,address=?,memo=?,birthday=?,modtime=now(),auth=? where id=?");
+					$upd->execute($List->{lname},$List->{fname},$List->{mname},$List->{status},$List->{passport},$List->{address},$List->{memo},$List->{birthday},$auth->{id}, $List->{id});
+				}
+
+				$upd = $dbh->prepare("update phones set phone=?, typeid=?, modtime=now(),auth=? where id=?");
+				$ins = $dbh->prepare("insert into phones (userid,phone,typeid,auth) values (?,?,?,$auth->{id})");
+				$del = $dbh->prepare("delete from phones where id=?");
+				my $i = 0;
+				foreach my $phone (@{$List->{phones}}) {
+					my $nphone = (ref $ARGS{phn} eq 'ARRAY') ? $ARGS{phn}->[$i] : $ARGS{phn};
+					$nphone =~ s/\'//g;
+					my $ntype = (ref $ARGS{pht} eq 'ARRAY') ? $ARGS{pht}->[$i] : $ARGS{pht};
+					$ntype =~ s/\D//g; $ntype ||= 0;
+					if($phone->{id}) {	# старая запись
+						unless($ARGS{"ph.".$i}) {	# сняли отметку - запись надо удалить
+							$del->execute($phone->{id});
+						} else {	# возможно, что-то изменилось
+							if((defined $phone->{phone} && defined $nphone && ($phone->{phone} ne $nphone)) || (defined $ntype && ($phone->{typeid} ne $ntype))) {
+								$upd->execute($nphone,$ntype,$auth->{id},$phone->{id});
+							}
+						}
+					} else {	# такой записи нет в базе - новая
+						if($ARGS{"ph.".$i}) {
+							$ins->execute($uid,$nphone,$ntype);
+						}
+					}
+					$i++;
+				}
+
+				$upd = $dbh->prepare("update emails set email=?, modtime=now(),auth=? where id=?");
+				$ins = $dbh->prepare("insert into emails (userid,email,auth) values (?,?,$auth->{id})");
+				$del = $dbh->prepare("delete from emails where id=?");
+				$i = 0;
+				foreach my $email (@{$List->{emails}}) {
+					my $nemail = (ref $ARGS{email} eq 'ARRAY') ? $ARGS{email}->[$i] : $ARGS{email};
+					$nemail =~ s/\'//g;
+					if($email->{id}) {	# старая запись
+						unless($ARGS{"em.".$i}) {	# сняли отметку - запись надо удалить
+							$del->execute($email->{id});
+						} else {	# возможно, изменился email
+							if(defined $email->{email} && defined $nemail && ($email->{email} ne $nemail)) {
+								$upd->execute($nemail,$auth->{id},$email->{id});
+							}
+						}
+					} else {	# такой записи нет в базе - новая
+						if($ARGS{"em.".$i}) {
+							$ins->execute($uid,$nemail);
+						}
+					}
+					$i++;
+				}
+			}
+			$dbh->commit;
+			$OK++;
+		}
+	}
+
+
+} else {	# Полный список
+
+
+	# Телефоны
+	my $Ph;
+	$sth = $dbh->prepare("select * from phones");
+	$sth->execute();
+	while(my $r = $sth->fetchrow_hashref) {
+		push @{$Ph->{$r->{userid}}}, $r->{phone};
+	}
+	$sth->finish;
+
+	# emails
+	my $eM;
+	$sth = $dbh->prepare("select * from emails");
+	$sth->execute();
+	while(my $r = $sth->fetchrow_hashref) {
+		push @{$eM->{$r->{userid}}}, $r->{email};
+	}
+	$sth->finish;
+
+	$sth = $dbh->prepare("select id,fname,mname,lname,active from users ".($showall ? "":"where active=1 ")."order by lname,fname,mname");
+	$sth->execute();
+	while(my $r = $sth->fetchrow_hashref) {
+#		foreach my $own (values %{$Owners}) {
+#			push @{$r->{pl}}, "<b><a href=index.html?uid=1000000000000&pid=".$own->{pid}.">".$S{$Parcels->{$own->{pid}}->{street}}.".-".$Parcels->{$own->{pid}}->{house}."</a></b>"	if($r->{id} == $own->{uid});
+#		}
+#		foreach my $hh (values %{$Householders}) {
+#			push @{$r->{pl}}, "<a href=index.html?uid=1000000000000&pid=".$hh->{pid}.">".$S{$Parcels->{$hh->{pid}}->{street}}.".-".$Parcels->{$hh->{pid}}->{house}."</a>"	if($r->{id} == $hh->{uid});
+#		}
+		$r->{phones} = $Ph->{$r->{id}};
+		$r->{emails} = $eM->{$r->{id}};
+		push @{$List}, $r;
+	}
+	$sth->finish;
+}
+
+</%init>
+%if($OK) {
+<p>Запись сохранена</p>
+<p><a href="user.html">Вернуться в список</a></p>
+%} elsif($uid) {
+%#<pre>
+%#<% Dumper $List %>
+%#<% Dumper $ARGS{email} %>
+%#</pre>
+<form name=main method="POST">
+<table border=1 width=100%>
+<tr>
+<td>
+
+<table border=1>
+<tr><td><b>Фамилия:</b></td>
+<td><input type="text" name="lname" value="<% $ARGS{lname} || $List->{lname} %>"></td>
+</tr>
+<tr><td><b>Имя:</b></td>
+<td><input type="text" name="fname" value="<% $ARGS{fname} || $List->{fname} %>"></td>
+</tr>
+<tr><td><b>Отчество:</b></td>
+<td><input type="text" name="mname" value="<% $ARGS{mname} || $List->{mname} %>"></td>
+</tr>
+<tr><td><% $Err{birthday} ? '<font color="red">':'' %>Дата рождения:<% $Err{birthday} ? '</font>':'' %></td>
+<td><input type="text" name="birthday" value="<% $ARGS{birthday} || $List->{birthday} %>"></td>
+</tr>
+<tr><td>Соц.статус:</td>
+<td><input type="text" name="status" value="<% $ARGS{status} || $List->{status} %>"></td>
+</tr>
+<tr><td>Паспорт:</td>
+<td><input type="text" name="passport" value="<% $ARGS{passport} || $List->{passport} %>"></td>
+</tr>
+</tr>
+<tr><td>Адрес:</td>
+<td><input type="text" name="address" value="<% $ARGS{address} || $List->{address} %>"></td>
+</tr>
+<tr><td valign=top>Примечания:</td>
+<td><textarea name="memo" cols="50" rows="5"><% $ARGS{memo} || $List->{memo} %></textarea></td>
+</tr>
+</table>
+<p><b>Телефоны</b></p>
+<table border=0>
+%my $i = 0;
+%foreach my $phone (@{$List->{phones}}) {
+<tr>
+<td><input type="checkbox" name="ph.<%$i%>" <% $ARGS{cont} ? ($ARGS{"ph.$i"} ? "checked" : ((!(defined $phone->{add}) && !(defined $phone->{id}))?"checked":"")) : "checked" %> ></td>
+<td><input type="text" name="phn" value="<% ((ref $ARGS{phn} eq 'ARRAY') ? $ARGS{phn}->[$i] : (!$i ? $ARGS{phn} : "") ) || $phone->{phone} %>"></td>
+<td><select name="pht">
+%#%	foreach my $ti (sort keys %Pt) {
+%#<option name="pht" value="<% $ti %>" <% ($ARGS{cont} ? ((ref $ARGS{pht} eq 'ARRAY') ? $ARGS{pht}->[$i] : (!$i ? $ARGS{pht} : $phone->{typeid})) : $phone->{typeid}) eq $ti ? "selected":"" %> ><% $Pt{$ti} %></option>
+%#%	}
+</select></td>
+</tr>
+%$i++;
+%}
+<tr><td></td><td></td><td><input type=submit nocheck=1 name=add_ph value="  +  "></td></tr>
+</table>
+<p><b>Эл.почта</b></p>
+<table border=0>
+%$i = 0;
+%foreach my $email (@{$List->{emails}}) {
+<tr>
+<td><input type="checkbox" name="em.<%$i%>" <% $ARGS{cont} ? ($ARGS{"em.$i"} ? "checked" : ((!(defined $email->{add}) && !(defined $email->{id}))?"checked":"")) : "checked" %> ></td>
+<td><input type="text" name="email" value="<% ((ref $ARGS{email} eq 'ARRAY') ? $ARGS{email}->[$i] : (!$i ? $ARGS{email} : "") ) || $email->{email} %>"></td>
+<td></td>
+</tr>
+%$i++;
+%}
+<tr><td></td><td></td><td><input type=submit nocheck=1 name=add_em value="  +  "></td></tr>
+</table>
+</td><td valign=top>
+
+%# Связи
+<table border=0>
+%foreach(@{$List->{ow}}) {
+<tr><td><% $_ %></td><td>&nbsp;(влад.)</td></tr>
+%}
+%foreach(@{$List->{pl}}) {
+<tr><td><% $_ %></td><td></td></tr>
+%}
+</table>
+
+</td></tr>
+<tr><td colspan=2>
+
+<table border=0 width="100%"><tr>
+<td align="right"><input type="checkbox" name="remove"><i>удалить запись</i></td>
+<td align="right"><input type="checkbox" name="accept">Разрешить запись изменений</td>
+<td><input type="submit" name="submit" value="Записать изменения"></td>
+<td><a href="<% $ARGS{pid} ? "index.html?pid=$ARGS{pid}":"user.html" %>"><input type="button" name="cancel" value="Отмена" onclick="document.location='<% $ARGS{pid} ? "index.html?pid=$ARGS{pid}":"user.html" %>'"></a></td>
+</tr></table>
+
+%foreach my $modtime (sort {$b cmp $a} @updates) { # modtime сделать по самой свежей записи
+%	$modtime =~ s/\..*$//;
+<p align="right"><small>Последние изменения: <%$modtime%></small></p>
+%last;}
+</td>
+</tr>
+</table>
+<input type="hidden" name="cont" value="653784">
+%if($ARGS{add_new} || $ARGS{frst}) {
+<input type="hidden" name="uid" value="<%$uid%>">
+<input type="hidden" name="frst" value="AFTS">
+%}
+</form>
+
+%} else {
+%	my $cnt = 1;
+<table border=0>
+<tr>
+<td><a href="index.html">Счетчики</a></td>
+<td>&nbsp;&nbsp;&nbsp;</td>
+<td><a href="#add_new">Добавить персону</a></td>
+</tr>
+</table>
+<br>
+<h1>Персоны</h1>
+<table border=1>
+%	foreach my $user (@$List) {
+<tr>
+<td><div <% $user->{active} ? "" : "style=\"text-decoration: line-through\"" %>><%$cnt%>.<div></td>
+<td><a href="?uid=<% $user->{id} %>"><%$user->{lname} || "---"%></a></td>
+<td><%$user->{fname}%>
+<%$user->{mname}%></td>
+<td><% $user->{pl} ? join "; ", @{$user->{pl}} : "" %></td>
+<td><% (ref $user->{phones} eq 'ARRAY') ? (join ", ", @{$user->{phones}}) : $user->{phones} || "" %></td>
+<td><% (ref $user->{emails} eq 'ARRAY') ? (join ", ", @{$user->{emails}}) : $user->{emails} || "" %></td>
+</tr>
+%	$cnt++;
+%	}
+</table>
+<form name=main method="POST">
+<h3><a name="add_new">Новая персона:</a></h3>
+<table border=1>
+<tr><th>Фамилия</th><th>Имя</th><th>Отчество</th><th></th></tr>
+<tr>
+<td><input type="text" name="lname" value=""></td>
+<td><input type="text" name="fname" value=""></td>
+<td><input type="text" name="mname" value=""></td>
+<td><input type="submit" name="add_new" value=" Добавить "></td>
+</tr>
+</table>
+</form>
+%}
+
+
