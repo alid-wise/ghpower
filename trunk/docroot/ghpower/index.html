@@ -122,7 +122,7 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 }
 </%init>
 <pre>
-<%Dumper $auth%>
+%#<%Dumper $auth%>
 </pre>
 
 
@@ -266,6 +266,7 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 <a href="pays.html">Платежи</a>&nbsp;
 %}
 %if($auth->{gid} eq 1) {
+<a href="user.html">users</a>&nbsp;
 <a href="auth.html">authors</a>
 %}
 </p>
@@ -286,7 +287,7 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 <input type="submit" name="sel" value="Выбрать">
 </form>
 
-<h2>Текушие показания счетчиков</h2>
+<h2>Текущие показания счетчиков</h2>
 <p><%sprintf("%4d-%02d-%02d %02d:%02d:%02d",$year+1900,$mon+1,$mday,$hour,$min,$sec)%></p>
 
 %if($auth->{gid} eq 1) {
