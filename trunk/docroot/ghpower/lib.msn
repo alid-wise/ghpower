@@ -336,7 +336,8 @@ unless($nocache) {
 }
 return undef	if(!$id || !($date =~ /^\d{4}\-\d{2}\-\d{2}$/));
 my $ret = undef;
-my $sth = $dbh->prepare("SELECT CAST(dt AS date) AS date,counter,se1ai,se2ai,ise,dt FROM monitor WHERE counter=? AND dt>? ORDER BY date LIMIT 1");
+#my $sth = $dbh->prepare("SELECT CAST(dt AS date) AS date,counter,se1ai,se2ai,ise,dt FROM monitor WHERE counter=? AND dt>? ORDER BY date LIMIT 1");
+my $sth = $dbh->prepare("SELECT date AS date,cid AS counter,se1 AS se1ai,se2 AS se2ai,date AS dt FROM daily WHERE cid=? AND date>=? ORDER BY date LIMIT 1");
 $sth->execute($id,$date);
 while(my $r = $sth->fetchrow_hashref) {
 		$ret = $r;
@@ -347,6 +348,41 @@ return $ret;
 </%init>
 </%method>
 
+
+<%method getcounter_last>
+<%doc>
+	Последние показания счетчика, дата
+</%doc>
+<%args>
+	$dbh
+	$id
+	$nocache => 1
+</%args>
+<%init>
+use utf8;
+unless($nocache) {
+	my ($rv, $cached) = $m->cache_self(
+		expire_in => '1 hour',
+		busy_lock => '5sec',
+		ttl => '5minutes',
+		key => "getcounter_last_$id",
+		expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
+	);
+	return $rv	if($cached);
+}
+return undef	unless($id);
+my $ret = undef;
+my $sth = $dbh->prepare("SELECT id,date,cid,se1,se2 FROM daily WHERE cid=? ORDER BY date DESC LIMIT 1");
+$sth->execute($id);
+while(my $r = $sth->fetchrow_hashref) {
+		map { s/\./,/; } ($r->{se1}, $r->{se2});
+		$ret = $r;
+}
+$sth->finish;
+$ret = {}	unless $ret;
+return $ret;
+</%init>
+</%method>
 
 <%method getcost_simple>
 <%doc>
