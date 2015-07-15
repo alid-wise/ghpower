@@ -28,6 +28,7 @@ A:active { color: brown; }
 
 A:hover { color: green; }
 
+.bold { font-weight: bold; }
 .error { color: red; }
 
 .error input { color: red; }
