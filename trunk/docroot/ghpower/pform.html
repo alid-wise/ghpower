@@ -40,7 +40,7 @@ my $L = $m->comp("lib.msn:cflistload", dbh=>$dbh, nocache=>0);
 
 my ($Usr, $C, $List);
 my %Err;
-my ($p_id,$p_date,$p_prev1,$p_prev2,$p_current1,$p_current2,$p_amount,$p_balance,$p_init,$p_modtime,$t_mode);
+my ($p_id,$p_date,$p_prev1,$p_prev2,$p_current1,$p_current2,$p_amount,$p_balance,$p_init,$p_modtime,$t_mode,$memo);
 
 foreach(keys %$L) {
 	my @items = @{$L->{$_}->{items}};
@@ -53,23 +53,27 @@ foreach(keys %$L) {
 }
 
 # Последняя оплата
-my $gp = $dbh->prepare("SELECT id,date,prev1,prev2,current1,current2,amount,balance,init,modtime,mode FROM payments WHERE cid=? ORDER BY modtime DESC LIMIT 1");
+my $gp = $dbh->prepare("SELECT id,date,prev1,prev2,current1,current2,amount,balance,init,modtime,mode,memo FROM payments WHERE cid=? ORDER BY modtime DESC LIMIT 1");
 $gp->execute($cid);
-($p_id,$Usr->{p_date},$p_prev1,$p_prev2,$Usr->{p_se1},$Usr->{p_se2},$p_amount,$Usr->{p_balance},$p_init,$p_modtime,$t_mode) = $gp->fetchrow_array;
+($p_id,$Usr->{p_date},$p_prev1,$p_prev2,$Usr->{p_se1},$Usr->{p_se2},$p_amount,$Usr->{p_balance},$p_init,$p_modtime,$t_mode,$memo) = $gp->fetchrow_array;
 $gp->finish;
 
 # Последние показания счетчика
-$C = $m->comp("lib.msn:lastcounter", dbh=>$dbh, id=>$Usr->{id}, nocache=>1);
+#$C = $m->comp("lib.msn:lastcounter", dbh=>$dbh, id=>$Usr->{id}, nocache=>1);
+$C = $m->comp("lib.msn:getcounter_last", dbh=>$dbh, id=>$Usr->{id}, nocache=>1);
+$C->{t1}=$C->{se1}; $C->{t2}=$C->{se2}; $C->{tm}=$C->{date};
 map {s/\,/\./} ($C->{t1},$C->{t2});
+$Usr->{se1}=$C->{t1};
+$Usr->{se2}=$C->{t2};
 
 #unless($p_id) {	# первый платеж
 if(!$p_id || ($p_init eq 2)) {	# первый платеж или инициализация с неправильной датой
 
 #	$Usr->{cost} = (($C->{t1} - $ARGS{i_1}) * $T->{C}->{t1} + ($C->{t2} - $ARGS{i_t2}) * $T->{C}->{t2});
-	($Usr->{cost},$Usr->{cost1},$Usr->{cost2}) = $m->comp("lib.msn:getcost_simple", dbh=>$dbh, flow1=>($C->{t1} - $ARGS{i_1}), flow2=>($C->{t2} - $ARGS{i_t2}), mode=>$t_mode);
+###	($Usr->{cost},$Usr->{cost1},$Usr->{cost2}) = $m->comp("lib.msn:getcost_simple", dbh=>$dbh, flow1=>($C->{t1} - $ARGS{i_t1}), flow2=>($C->{t2} - $ARGS{i_t2}), mode=>$t_mode);
 	# Первая дата, на которую есть показания КС - в качестве подсказки
-	$ARGS{i_date} = $m->comp("lib.msn:pretty_date", date=>$Usr->{p_date})	if($p_id);
-
+	$ARGS{i_date} = $m->comp("lib.msn:pretty_date", date=>$Usr->{p_date})	if($p_id && !$ARGS{submit});
+	$ARGS{init} = 1;
 
 } else {
 	$Usr->{flow1} = sprintf("%.02f", $Usr->{se1} - $Usr->{p_se1});
@@ -84,12 +88,14 @@ if(!$p_id || ($p_init eq 2)) {	# первый платеж или инициал
 #		$Usr->{cost} = ($Usr->{flow1} * $T->{C}->{t1} + $Usr->{flow2} * $T->{C}->{t2}) * $T->{C}->{k};
 #	}
 	$Usr->{topay} = $Usr->{cost} - $Usr->{p_balance};
+	$Usr->{rest} = $Usr->{p_balance} - $Usr->{cost};
+	$Usr->{rest} = 0	if($Usr->{rest} < 0);
 }
 
 if($ARGS{submit}) {
 	map { $_ =~ s/\,/\./g; } ( $ARGS{i_balance}, $ARGS{i_t1}, $ARGS{i_t2} );
-
-	my $ins = $dbh->prepare("INSERT INTO payments (auth,cid,date,prev1,prev2,current1,current2,amount,balance,init,mdate,mode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
+	$memo = $dbh->quote($ARGS{memo});
+	my $ins = $dbh->prepare("INSERT INTO payments (auth,cid,date,prev1,prev2,current1,current2,amount,cost,balance,init,mdate,mode,memo) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 	if($ARGS{init}) {	# начальная точка
 		$p_balance = $ARGS{i_balance} || 0;
 		my $init = 1;
@@ -106,7 +112,6 @@ if($ARGS{submit}) {
 		}
 		# Показания контрольного счетчика на эту дату
 		my $E = $m->comp("lib.msn:getcounter_date", dbh=>$dbh, id=>$cid, date=>$p_date, nocache=>1);
-
 		unless($E->{date} eq  $p_date) {	# Нет показаний счетчика на указанную дату
 			# Ищем бдижайшую в бОльшую сторону
 			if($E->{date} =~ m/\d{4}\-\d{2}\-\d{2}/) {	# Нашли - предлагаем в качестве даты инициализации
@@ -117,14 +122,8 @@ if($ARGS{submit}) {
 
 			$Err{i_date}++;
 
-
 			}
-
-
-
 		}
-
-
 
 		unless(%Err) {
 
@@ -134,7 +133,7 @@ if($ARGS{submit}) {
 			my ($ex_id) = $ex->fetchrow_array;
 			$ex->finish;
 			unless($ex_id) {
-				$ins->execute($auth->{id},$cid,$p_date,$ARGS{i_t1} || 0,$ARGS{i_t2} || 0, $E->{se1ai}, $E->{se2ai} ,$p_balance,$p_balance,$init,$p_date,$ARGS{t_mode});
+				$ins->execute($auth->{id},$cid,$p_date,$ARGS{i_t1} || 0,$ARGS{i_t2} || 0, $E->{se1ai}, $E->{se2ai} ,$p_balance,0,$p_balance,$init,$p_date,$ARGS{t_mode},$memo);
 				if($init eq 1) {
 					$dbh->do("DELETE FROM payments WHERE auth=".$auth->{id}." AND cid=$cid AND init=2");
 				}
@@ -155,7 +154,7 @@ if($ARGS{submit}) {
 		$amount =~ s/\s//g;
 		if($amount =~ /^(\d+)\.*(\d){0,2}$/) {
 			my ($ctm) = ($C->{tm} =~ /(\d{4}\-\d{2}\-\d{2})/);
-			$ins->execute($auth->{id},$cid,$Today->{today},$Usr->{p_se1},$Usr->{p_se2},$Usr->{se1},$Usr->{se2},$amount,$amount - $Usr->{cost} + $Usr->{p_balance},0,$ctm, $t_mode);
+			$ins->execute($auth->{id},$cid,$Today->{today},$Usr->{p_se1},$Usr->{p_se2},$Usr->{se1},$Usr->{se2},$amount,$Usr->{cost},$amount - $Usr->{cost} + $Usr->{p_balance},0,$ctm, $t_mode, $memo);
 			$m->out('<script type="text/javascript">parent.location.href = parent.location.href;</script>');
 			$m->out('<script type="text/javascript">parent.location.reload();</script>');
 			return;
@@ -171,18 +170,13 @@ if($ARGS{submit}) {
 
 } else {
 
-#if($id) {
-
-#} else {	# будем показывать историю платежей
-	my $ls = $dbh->prepare("SELECT id,date,prev1,prev2,current1,current2,amount,balance,modtime,mode,init FROM payments WHERE cid=? ORDER BY modtime DESC");
+	# будем показывать историю платежей
+	my $ls = $dbh->prepare("SELECT id,date,prev1,prev2,current1,current2,amount,balance,modtime,mode,init,memo FROM payments WHERE cid=? ORDER BY modtime DESC");
 	$ls->execute($cid);
 	while(my $r = $ls->fetchrow_hashref) {
 		push @$List, $r;
 	}
 	$ls->finish;
-#}
-
-
 }
 </%init>
 <script src="calendar.js" type="text/javascript"></script>
@@ -222,12 +216,17 @@ if($ARGS{submit}) {
 <tr><td align="right" colspan="2">Расход:</td><td align="right"><% $m->comp("lib.msn:pretty", value=>$Usr->{flow1}) %></td><td align="right"><% $m->comp("lib.msn:pretty", value=>$Usr->{flow2}) %></td></tr>
 <tr><td align="right" colspan="2">Стоимость:</td><td align="right"><% $m->comp("lib.msn:pretty", value=> $Usr->{cost1}) %></td><td align="right"><% $m->comp("lib.msn:pretty", value=> $Usr->{cost2}) %></td></tr>
 <tr><td align="right" colspan="2">Общая стоимость:</td><td colspan="2" align="right"><% $m->comp("lib.msn:pretty", value=> $Usr->{cost}) %></td></tr>
-<tr><td align="right" colspan="2">Остаток:</td><td colspan="2" align="right"><% $m->comp("lib.msn:pretty", value=> $Usr->{p_balance}) %></td></tr>
+<tr><td align="right" colspan="2">Остаток:</td><td colspan="2" align="right"><% $m->comp("lib.msn:pretty", value=> $Usr->{rest}) %></td></tr>
 <tr><td align="right" colspan="2">К оплате:</td><td colspan="2" align="right"><b><%  $m->comp("lib.msn:pretty", value=>($Usr->{topay} > 0)? $Usr->{topay} : "0") %></b></td></tr>
 <tr><td align="right" colspan="2"><div style=color:<% $Err{amount} ? "red":"black"%>>Сумма платежа:</div></td><td colspan="2"><input type="text" name="amount" value="<%$ARGS{amount} || ''%>"></td></tr>
 %}
+<tr><td align="right" colspan="2">Примечания:</td><td colspan="2"><input type="text" name="memo" value="<%$ARGS{memo} || ""%>"></td></tr>
 <tr><td colspan="4" align="right"><input type="submit" name="submit" value="Сохранить"></td></tr>
 </table>
+
+<% $t_mode eq '1' ? "<p class=\"onemode\">Прим.: Однотарифная схема</p>":"" %>
+<% $p_init eq '2' ? "<p class=\"error\">Прим.: Инициировано для первой даты, на которую есть показания счетчика.<br>Подтвердите это (кнопка \"Сохранить\"), либо укажите правильную дату.</p>":"" %>
+
 </form>
 
 
@@ -236,7 +235,7 @@ if($ARGS{submit}) {
 <h3>История платежей</h3>
 <table border="1">
 
-<tr><th><i>Дата</i></th><th><i>Тариф-1</i></th><th><i>Тариф-2</i></th><th><i>Остаток</i></th><th><i>Сумма платежа</i></th></tr>
+<tr><th><i>Дата</i></th><th><i>Тариф-1</i></th><th><i>Тариф-2</i></th><th><i>Остаток</i></th><th><i>Сумма платежа</i></th><th><i>Примечания</i></th></tr>
 %	foreach my $row (@$List) {
 <tr>
 <td <% $row->{init} ? "class=\"initpay\"":"" %> ><% $m->comp("lib.msn:pretty_date", date=>$row->{date}) %></td>
@@ -244,6 +243,7 @@ if($ARGS{submit}) {
 <td align="right"><% $m->comp("lib.msn:pretty", value=>$row->{current2}) %></td>
 <td align="right"><% $m->comp("lib.msn:pretty", value=>$row->{balance}) %></td>
 <td align="right"><% $m->comp("lib.msn:pretty", value=>$row->{amount}) %></td>
+<td align="right" title="<%$row->{memo}%>"><% $row->{memo} %></td>
 </tr>
 %	}
 </table>
