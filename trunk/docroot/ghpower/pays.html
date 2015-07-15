@@ -44,9 +44,12 @@ foreach(keys %$L) {
 		$gp->finish;
 		if($p_id) {	# платеж был
 			$item->{p_date} = $p_date;
-			my $C = $m->comp("lib.msn:lastcounter", dbh=>$dbh, id=>$item->{id}, nocache=>1);
-			map {s/\,/\./} ($C->{t1},$C->{t2});
-			my ($c_date,$c1,$c2) = ($C->{tm},$C->{t1},$C->{t2});
+#			my $C = $m->comp("lib.msn:lastcounter", dbh=>$dbh, id=>$item->{id}, nocache=>1);
+			my $C = $m->comp("lib.msn:getcounter_last", dbh=>$dbh, id=>$item->{id}, nocache=>1);
+#			map {s/\,/\./} ($C->{t1},$C->{t2});
+			map {s/\,/\./} ($C->{se1},$C->{se2});
+#			my ($c_date,$c1,$c2) = ($C->{tm},$C->{t1},$C->{t2});
+			my ($c_date,$c1,$c2) = ($C->{date},$C->{se1},$C->{se2});
 			my $flow1 = sprintf("%.02f", $c1 - $p_current1);
 			my $flow2 = sprintf("%.02f", $c2 - $p_current2);
 
@@ -67,8 +70,35 @@ foreach(keys %$L) {
 
 	}
 }
-
-
+# Экспорт csv
+if($ARGS{export}) {
+	$m->autoflush(0);
+	$m->clear_buffer;
+#$r->send_cgi_header("Content-Type: text/plain\n\n");
+#	$r->content_type('text/csv');
+#	$r->content_type('application/vnd.ms-excel');
+	$r->headers_out->add('Content-Type','text/csv');
+	$r->headers_out->add('Content-disposition',"attachment;  filename=payments.csv"); 
+	$r->send_http_header();
+	foreach my $street_id (sort { $a <=> $b } keys %$List) {
+		my $items = $List->{$street_id};
+		foreach my $house (sort {$a<=>$b} keys %$items) {
+			$m->out($items->{$house}->{id});
+			$m->out(';');
+			$m->out($S->{$street_id}->{name});
+			$m->out(';');
+			$m->out($house);
+			$m->out(';');
+			$m->out($Owners->{$items->{$house}->{owner}}->{lname});
+			$m->out(';');
+			$m->out($m->comp("lib.msn:pretty", value=>$items->{$house}->{balance}));
+			$m->out(';');
+			$m->out($m->comp("lib.msn:pretty_date", date=>$items->{$house}->{p_date}));
+			$m->out("\n");
+		}
+	} # street
+	$m->abort('OK');
+}
 </%init>
 <pre>
 %#<%Dumper $List%>
@@ -90,7 +120,7 @@ foreach(keys %$L) {
 </style>
 <iframe name="pform" id="pform" align="right" frameborder="0" width="70%" style:"position:fixed;">iframe не поддерживается</iframe>
 
-<p><a href="tarifs.html" target="pform">Тарифы</a></td></p>
+<p><nobr><a href="tarifs.html" target="pform">Тарифы</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="?export=1">Экспорт</a></nobr></p>
 
 <table border="1">
 %my $total;
