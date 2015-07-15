@@ -33,11 +33,17 @@ if($h) {
 }
 
 my $Data;
-my $sth = $dbh->prepare("select dt,se1ai,se2ai from monitor where counter=? and extract(hour from dt)=0 and extract(minute from dt)=0 and dt>? order by dt desc");
+#my $sth = $dbh->prepare("select dt,se1ai,se2ai from monitor where counter=? and extract(hour from dt)=0 and extract(minute from dt)<5 and dt>? order by dt desc");
+#$sth->execute($id,$date);
+#while(my $row = $sth->fetchrow_hashref) {
+#	$row->{dt} =~ s/\s.+$//;
+#	map { $_ =sprintf("%0.3f",$_); s/\./\,/;} ($row->{se1ai},$row->{se2ai});
+#	push @$Data, $row;
+#}
+my $sth = $dbh->prepare("SELECT date,se1,se2 FROM daily WHERE cid=? and date>? order by date desc");
 $sth->execute($id,$date);
 while(my $row = $sth->fetchrow_hashref) {
-	$row->{dt} =~ s/\s.+$//;
-	map { $_ =sprintf("%0.3f",$_); s/\./\,/;} ($row->{se1ai},$row->{se2ai});
+	map { $_ =sprintf("%0.3f",$_); s/\./\,/;} ($row->{se1},$row->{se2});
 	push @$Data, $row;
 }
 </%init>
@@ -54,9 +60,9 @@ while(my $row = $sth->fetchrow_hashref) {
 <tr><th>Дата</th><th>&nbsp;Тариф-1&nbsp;</th><th>&nbsp;Тариф-2&nbsp;</th></tr>
 %foreach my $row (@$Data) {
 <tr>
-<td><b><% $row->{dt} %></b></td>
-<td align="right"><%$row->{se1ai}%></td>
-<td align="right"><%$row->{se2ai}%></td>
+<td><b><% $row->{date} %></b></td>
+<td align="right"><%$row->{se1}%></td>
+<td align="right"><%$row->{se2}%></td>
 </tr>
 %}
 </table>
