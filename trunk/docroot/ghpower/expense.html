@@ -13,7 +13,7 @@
 use Data::Dumper;
 use POSIX;
 use Date::Manip;
-use locale;
+#use locale;
 #setlocale(&LC_COLLATE, 'ru_RU.KOI8-R');
 use utf8;
 
@@ -176,7 +176,7 @@ if($id) {
 <td><b><% $List->{$mgid}->{name}%></b></td>
 <td colspan="4"><% $List->{$mgid}->{memo}%></td>
 </tr>
-%	my $i=1; my $total=0;
+%	my $i=1; my $total=0; my ($dsum,$nsum) = (0,0);
 %	foreach my $item (sort { $S->{$a->{street}}->{name} cmp $S->{$b->{street}}->{name} || $a->{house} <=> $b->{house}} @{$List->{$mgid}->{items}}) {
 %		if($filter2) {
 %			next	if($filter2 eq '1' && $item->{active} ne '1');
@@ -200,7 +200,17 @@ if($id) {
 
 </tr>
 %	$i++;
+%	my $vol = $MExpenses->{$item->{id}}->{exp1}; $vol =~ s/\,/\./; $dsum += $vol;
+%	   $vol = $MExpenses->{$item->{id}}->{exp2}; $vol =~ s/\,/\./; $nsum += $vol;
 %	}
+<tr>
+<td></td>
+<td></td>
+<td><b>Сумма:</b></td>
+% map { $_ =~ s/\./\,/; } ($dsum, $nsum);
+<td class="bold" align="right"><%$dsum%></td>
+<td class="bold" align="right"><%$nsum%></td>
+</tr>
 %}
 </table>
 
