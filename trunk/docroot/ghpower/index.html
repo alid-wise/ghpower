@@ -121,12 +121,9 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 
 }
 </%init>
-<pre>
+%#<pre>
 %#<%Dumper $auth%>
-</pre>
-
-
-
+%#</pre>
 %if($OK) {
 <h3>Запись сохранена</h3>
 <p><a href="index.html">Home</a></p>
@@ -261,15 +258,23 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 <iframe name="ping" id="ping" align="right" frameborder="0" width="50%" style:"position:fixed;">iframe не поддерживается</iframe>
 %}
 
-<p><a href="/">Home</a>&nbsp;<a href="expense.html">Расходы</a>&nbsp;
+<div class="masthead">
+	<ul class="nav nav-pills pull-left">
+		<li class="active"><a href="/">Home</a></li>
+		<li><a href="expense.html">Расходы</a></li>
 %if($auth->{gid} < 3) {
-<a href="pays.html">Платежи</a>&nbsp;
+		<li><a href="pays.html">Платежи</a></li>
 %}
 %if($auth->{gid} eq 1) {
-<a href="user.html">users</a>&nbsp;
-<a href="auth.html">authors</a>
+		<li><a href="user.html">Персоны</a></li>
+		<li><a href="auth.html">authors</a></li>
 %}
-</p>
+	</ul>
+%#	<h3 class="muted">GHPower</h3>
+</div>
+<hr>
+
+<p><br></p>
 <form name="filter" method="POST">
 <select name="filter">
 <option value="0">-- все группы --</option>
@@ -283,8 +288,10 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 <option value="1" <%$filter2 eq '1' ? "selected":""%>>-- активные --</option>
 <option value="2" <%$filter2 eq '2' ? "selected":""%>>-- неактивные --</option>
 </select>
+<label class="checkbox">
 <input type="checkbox" name="showdel" <%$showdel ? "checked":""%>>Показывать удаленные
-<input type="submit" name="sel" value="Выбрать">
+</label>
+<input class="btn" type="submit" name="sel" value="Выбрать">
 </form>
 
 <h2>Текущие показания счетчиков</h2>
@@ -294,11 +301,11 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 <p>gid: [<%$filter%>]</p>
 
 <form method="POST">
-<p><input type="submit" name="add_new" value="Добавить счетчик">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p><input class="btn" type="submit" name="add_new" value="Добавить счетчик">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
 </form>
 %}
 
-<table border="1">
+<table border="1" class="table-condensed">
 %foreach my $mgid (sort {$List->{$a}->{rank} <=> $List->{$b}->{rank}} keys %$List) {
 %	next if $filter &&  !($mgid == $filter);
 %	next unless $List->{$mgid}->{items};

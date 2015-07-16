@@ -6,7 +6,7 @@
 <%init>
 use Data::Dumper;
 use POSIX;
-use locale;
+#use locale;
 #setlocale(&LC_COLLATE, 'ru_RU.KOI8-R');
 use utf8;
 
@@ -72,14 +72,10 @@ foreach(keys %$L) {
 }
 # Экспорт csv
 if($ARGS{export}) {
-	$m->autoflush(0);
 	$m->clear_buffer;
-#$r->send_cgi_header("Content-Type: text/plain\n\n");
 #	$r->content_type('text/csv');
-#	$r->content_type('application/vnd.ms-excel');
-	$r->headers_out->add('Content-Type','text/csv');
+	$r->content_type('application/octet-stream');
 	$r->headers_out->add('Content-disposition',"attachment;  filename=payments.csv"); 
-	$r->send_http_header();
 	foreach my $street_id (sort { $a <=> $b } keys %$List) {
 		my $items = $List->{$street_id};
 		foreach my $house (sort {$a<=>$b} keys %$items) {
@@ -96,14 +92,10 @@ if($ARGS{export}) {
 			$m->out($m->comp("lib.msn:pretty_date", date=>$items->{$house}->{p_date}));
 			$m->out("\n");
 		}
-	} # street
-	$m->abort('OK');
+	}
+	$m->abort;
 }
 </%init>
-<pre>
-%#<%Dumper $List%>
-</pre>
-
 <style type="text/css">
 	#pform
 		{
@@ -120,9 +112,21 @@ if($ARGS{export}) {
 </style>
 <iframe name="pform" id="pform" align="right" frameborder="0" width="70%" style:"position:fixed;">iframe не поддерживается</iframe>
 
-<p><nobr><a href="tarifs.html" target="pform">Тарифы</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="?export=1">Экспорт</a></nobr></p>
+<div class="masthead">
+	<ul class="nav nav-pills pull-left">
+		<li class="active"><a href="/">Home</a></li>
+		<li><a href="index.html">Список счетчиков</a></li>
+		<li><a href="tarifs.html" target="pform">Тарифы</a></li>
+		<li><a href="?export=1">Экспорт</a></li>
+	</ul>
+%#	<h3 class="muted">GHPower</h3>
+</div>
+<hr>
+<p><br></p>
 
-<table border="1">
+%#<p><nobr><a href="tarifs.html" target="pform">Тарифы</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="?export=1">Экспорт</a></nobr></p>
+<h2>Платежи</h2>
+<table border="1" class="table-condensed">
 %my $total;
 %foreach my $street_id (sort { $a <=> $b } keys %$List) {
 %	my $items = $List->{$street_id};
@@ -133,7 +137,7 @@ if($ARGS{export}) {
 %	$localsum += $items->{$house}->{balance};
 <tr>
 <td align="right" <% $items->{$house}->{active} ? ($items->{$house}->{mode} eq '1' ? "class=\"onemode\"":"") : "class=\"inactive\"" %>><b><%$house%></b></td>
-<td><a href="pform.html?cid=<%$items->{$house}->{id}%>" target="pform"><%$Owners->{$items->{$house}->{owner}}->{lname} || "null"%></a></td>
+<td><a href="pform.html?cid=<%$items->{$house}->{id}%>" target="pform"><%$Owners->{$items->{$house}->{owner}}->{lname} || "-"%></a></td>
 <td align="right"><div style=color:<%$items->{$house}->{balance} <0 ? "red":"green"%>><% $items->{$house}->{balance} ?  $m->comp("lib.msn:pretty", value=>$items->{$house}->{balance}) : ""%></div></td>
 <td align="right" <% $items->{$house}->{init} eq '2' ? "class=\"badinitpay\"":"" %>><%  $m->comp("lib.msn:pretty_date", date=>$items->{$house}->{p_date})%></td>
 %#<td align="right"><a href="pform.html?list=1&id=<%$items->{$house}->{id}%>" target="pform">H</a>&nbsp;<a href="pform.html?id=<%$items->{$house}->{id}%>" target="pform">A</a></td>

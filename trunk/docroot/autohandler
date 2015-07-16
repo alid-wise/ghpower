@@ -13,21 +13,18 @@ if($sth->execute($ENV{REMOTE_USER})) {
 	$auth = ($sth->fetchrow_hashref);
 }
 $sth->finish;
-#$r->header_out('Content-Type' => 'text/html; charset=KOI8-R');
-#$r->send_cgi_header("Pragma: no-cache\n");
-#$r->send_cgi_header("Cache-control: no-cache,max-age=0,must-revalidate\n\n");
 </%init>
 <html>
 <head>
-	<meta http-equiv=Content-Type content="text/html;charset=UTF8">
+	<meta http-equiv=Content-Type content="text/html;charset=UTF-8">
 	<meta http-equiv=Pragma Content="no-cache">
 	<title>Green Hill</title>
 	<link href="/css/bootstrap.css" rel="stylesheet">
-%#	<LINK REL="stylesheet" TYPE="text/css" HREF="/ghpower.css">
+%#	<script src="/js/jquery.js"></script>
+%#	<script src="/js/bootstrap.js"></script>
+	<LINK REL="stylesheet" TYPE="text/css" HREF="/ghpower.css">
 </head>
 <body>
-<script src="/js/jquery.js"></script>
-<script src="/js/bootstrap.js"></script>
 <% $m->call_next( dbh=>$dbh, auth=>$auth)%>
 </body>
 </html>
