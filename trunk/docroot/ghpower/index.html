@@ -343,7 +343,7 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 <a href="ping.html?id=<%$item->{id}%>" target="ping">ping</a>
 %}
 </td>
-<td><img src="images/<% defined $item->{state} ? ($item->{state} ? "critical.png":"recovery.png") : "warning.png" %>"></td>
+<td><img src="/images/<% defined $item->{state} ? ($item->{state} ? "critical.png":"recovery.png") : "warning.png" %>"></td>
 
 </tr>
 %	$i++;
