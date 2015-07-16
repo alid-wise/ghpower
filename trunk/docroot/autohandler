@@ -23,11 +23,11 @@ $sth->finish;
 	<meta http-equiv=Pragma Content="no-cache">
 	<title>Green Hill</title>
 	<link href="/css/bootstrap.css" rel="stylesheet">
-%#	<script src="/js/jquery.js"></script>
-%#	<script src="/js/bootstrap.js"></script>
-	<LINK REL="stylesheet" TYPE="text/css" HREF="/ghpower.css">
+%#	<LINK REL="stylesheet" TYPE="text/css" HREF="/ghpower.css">
 </head>
 <body>
+<script src="/js/jquery.js"></script>
+<script src="/js/bootstrap.js"></script>
 <% $m->call_next( dbh=>$dbh, auth=>$auth)%>
 </body>
 </html>
