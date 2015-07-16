@@ -8,7 +8,7 @@
 <%init>
 use Date::Manip;
 use POSIX;
-use locale;
+#use locale;
 #setlocale(&LC_COLLATE, 'ru_RU.KOI8-R');
 use utf8;
 
@@ -342,7 +342,7 @@ if($uid) {	# человек
 %	my $cnt = 1;
 <table border=0>
 <tr>
-<td><a href="index.html">Счетчики</a></td>
+<td><a href="index.html">Список счетчиков</a></td>
 <td>&nbsp;&nbsp;&nbsp;</td>
 <td><a href="#add_new">Добавить персону</a></td>
 </tr>
