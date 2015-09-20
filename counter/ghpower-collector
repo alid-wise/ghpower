@@ -187,7 +187,7 @@ sub collector {
 		my ($addr,$mv1,$mv2,$mv3,$mc1,$mc2,$mc3,$mf,$ma1,$ma2,$ma3,$mps,$mp1,$mp2,$mp3,$mqs,$mq1,$mq2,$mq3,$mss,$ms1,$ms2,$ms3,$mks,$mk1,$mk2,$mk3,$se1ai,$se1ae,$se1ri,$se1re,$se2ai,$se2ae,$se2ri,$se2re);
 		map {$_=0;} ($addr,$mv1,$mv2,$mv3,$mc1,$mc2,$mc3,$mf,$ma1,$ma2,$ma3,$mps,$mp1,$mp2,$mp3,$mqs,$mq1,$mq2,$mq3,$mss,$ms1,$ms2,$ms3,$mks,$mk1,$mk2,$mk3,$se1ai,$se1ae,$se1ri,$se1re,$se2ai,$se2ae,$se2ri,$se2re);
 		my $time = time();
-		my $tm = Now();
+		my $tm = Now(undef,iso=>1);
 		my $lpower = 0;
 
 		# Коррекция часов счетчика нужна?
