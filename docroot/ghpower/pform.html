@@ -6,11 +6,8 @@
 #	$list => undef
 </%args>
 <%init>
-use Data::Dumper;
+#use Data::Dumper;
 use POSIX;
-use locale;
-#setlocale(&LC_COLLATE, 'ru_RU.KOI8-R');
-use utf8;
 
 if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# admin или manager
 	$r->status_line('');
@@ -94,7 +91,8 @@ if(!$p_id || ($p_init eq 2)) {	# первый платеж или инициал
 
 if($ARGS{submit}) {
 	map { $_ =~ s/\,/\./g; } ( $ARGS{i_balance}, $ARGS{i_t1}, $ARGS{i_t2} );
-	$memo = $dbh->quote($ARGS{memo});
+#	$memo = $dbh->quote($ARGS{memo});
+	$memo = $ARGS{memo};
 	my $ins = $dbh->prepare("INSERT INTO payments (auth,cid,date,prev1,prev2,current1,current2,amount,cost,balance,init,mdate,mode,memo) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 	if($ARGS{init}) {	# начальная точка
 		$p_balance = $ARGS{i_balance} || 0;

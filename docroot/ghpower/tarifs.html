@@ -6,9 +6,6 @@
 <%init>
 #use Data::Dumper;
 use POSIX;
-use locale;
-#setlocale(&LC_COLLATE, 'ru_RU.KOI8-R');
-use utf8;
 
 if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# admin или manager
 	$r->status_line('');

@@ -8,7 +8,7 @@
 	$nocache => 0
 </%args>
 <%init>
-use utf8;
+
 unless($nocache) {
 	my ($rv, $cached) = $m->cache_self(
 		expire_in => '1 hour',
@@ -42,7 +42,7 @@ return $ret;
 	$nocache => 0
 </%args>
 <%init>
-use utf8;
+
 unless($nocache) {
 	my ($rv, $cached) = $m->cache_self(
 		expire_in => '1 hour',
@@ -82,7 +82,7 @@ return $ret;
 	$nocache => 0
 </%args>
 <%init>
-use utf8;
+
 unless($nocache) {
 	my ($rv, $cached) = $m->cache_self(
 		expire_in => '1 hour',
@@ -115,7 +115,7 @@ return $ret;
 	$id
 </%args>
 <%init>
-use utf8;
+
 my $ret = undef;
 my $sth = $dbh->prepare("SELECT a.id as id,a.name as name,a.addr as addr,a.mgroup as gid,a.passwd as passwd,a.model as model,b.type as type,d.dev AS iface,d.id AS if
              FROM counters a INNER JOIN counter_type b ON a.model=b.id INNER JOIN mgroup c ON a.mgroup=c.id INNER JOIN iface d ON c.if_id=d.id WHERE a.id=? LIMIT 1"
@@ -144,7 +144,7 @@ return $ret;
 	$nocache => 0
 </%args>
 <%init>
-use utf8;
+
 unless($nocache) {
 	my ($rv, $cached) = $m->cache_self(
 		expire_in => '1 hour',
@@ -184,7 +184,7 @@ return $ret;
 	$nocache => 1
 </%args>
 <%init>
-use utf8;
+
 unless($nocache) {
 	my ($rv, $cached) = $m->cache_self(
 		expire_in => '1 hour',
@@ -232,7 +232,7 @@ return $ret;
 	$nocache => 1
 </%args>
 <%init>
-use utf8;
+
 $ymon = UnixDate("1 month ago","%Y-%m")	unless($ymon);
 unless($nocache) {
 	my ($rv, $cached) = $m->cache_self(
@@ -284,7 +284,7 @@ return $ret;
 	$nocache => 0
 </%args>
 <%init>
-use utf8;
+
 unless($nocache) {
 	my ($rv, $cached) = $m->cache_self(
 		expire_in => '1 hour',
@@ -323,7 +323,7 @@ return $ret;
 	$date
 </%args>
 <%init>
-use utf8;
+
 unless($nocache) {
 	my ($rv, $cached) = $m->cache_self(
 		expire_in => '1 hour',
@@ -359,7 +359,7 @@ return $ret;
 	$nocache => 1
 </%args>
 <%init>
-use utf8;
+
 unless($nocache) {
 	my ($rv, $cached) = $m->cache_self(
 		expire_in => '1 hour',
@@ -396,7 +396,7 @@ return $ret;
 	$mode => 2
 </%args>
 <%init>
-use utf8;
+
 # Текущий тариф
 my $T = $m->comp("lib.msn:tariff", dbh=>$dbh, nocache=>0);
 my ($ret,$ret1,$ret2) = (undef,undef,undef);
@@ -422,7 +422,7 @@ return ($ret,$ret1,$ret2);
 	$date
 </%args>
 <%init>
-use utf8;
+
 if($date =~ /(\d{4})\-(\d{2})\-(\d{2})/) {
 	return sprintf("%02d.%02d.%d",$3,$2,$1);
 }
@@ -439,7 +439,7 @@ return undef;
 	$nocache => 0
 </%args>
 <%init>
-use utf8;
+
 unless($nocache) {
 	my ($rv, $cached) = $m->cache_self(
 		expire_in => '1 hour',
@@ -467,7 +467,7 @@ return $ret;
 	$value
 </%args>
 <%init>
-use utf8;
+
 $value = sprintf("%0.2f", $value);
 $value =~ s/\./\,/g;
 return $value;
