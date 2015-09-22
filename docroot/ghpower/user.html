@@ -8,9 +8,6 @@
 <%init>
 use Date::Manip;
 use POSIX;
-#use locale;
-#setlocale(&LC_COLLATE, 'ru_RU.KOI8-R');
-use utf8;
 
 if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# admin или manager
 	$r->status_line('');
@@ -240,7 +237,7 @@ if($uid) {	# человек
 %#<% Dumper $List %>
 %#<% Dumper $ARGS{email} %>
 %#</pre>
-<form name=main method="POST">
+<form name=main method="POST" accept-charset="UTF-8" enctype="multipart/form-data>
 <table border=1 width=100%>
 <tr>
 <td>
@@ -363,7 +360,7 @@ if($uid) {	# человек
 %	$cnt++;
 %	}
 </table>
-<form name=main method="POST">
+<form name=main method="POST" accept-charset="UTF-8" enctype="multipart/form-data>
 <h3><a name="add_new">Новая персона:</a></h3>
 <table border=1>
 <tr><th>Фамилия</th><th>Имя</th><th>Отчество</th><th></th></tr>
