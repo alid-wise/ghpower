@@ -66,6 +66,8 @@
 $|=1;
 use DBI;
 use strict;
+use utf8;
+use open qw(:std :utf8);
 
 #
 # Проверка тарифного расписания
