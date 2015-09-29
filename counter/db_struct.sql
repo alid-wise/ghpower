@@ -83,11 +83,6 @@ INSERT INTO groups (id,name) VALUES (4,'guest');
 -- admin/admin
 INSERT INTO auth (name,login,password,email,active,gid,memo) VALUES ('- embedded admin -','admin','$1$YqBppwE5$9GaW92wOLUP0v4Au/Lfab.','admin@email',1,1,'Эту запись не стоит удалять');
 
-
-
-# "Эдем" Илья Бояшов
-
-
 -- группы мониторинга (лучи)
 create table mgroup (
 	id integer not null,
