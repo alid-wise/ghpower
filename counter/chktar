@@ -108,7 +108,7 @@ while(my $r = $sth->fetchrow_hashref) {
 $sth->finish;
 
 $sth = $dbh->prepare("select counters.id,counters.name,counters.addr,counters.passwd,counters.ktrans,counter_type.type,status.id as status_id,status.state,status.pstate,counters.sn,counters.setdate,towers.name as tname,street.name as sname,counters.house from counters left outer join counter_type on model=counter_type.id left outer join status on counters.id=status.cid left outer join towers on towers.id=counters.tower_id left outer join street on street.id=counters.street where counters.mgroup=? and counters.active=1");
-my $se = $dbh->prepare("select date,se1ai,se2ai from monitor where counter=? order by date desc limit 300");
+my $se = $dbh->prepare("select date,se1ai,se2ai from ONLY monitor where counter=? order by date desc limit 300");
 
 foreach my $mg (@$Glist) {
 	unless($quiet) {
