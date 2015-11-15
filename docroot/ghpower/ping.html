@@ -8,6 +8,11 @@
 	$ping => undef
 </%args>
 <%init>
+if($ARGS{cancel}) {
+	$r->status_line('');
+	$m->clear_buffer;
+	$m->abort(200);
+}
 if($auth->{gid} > 2) {	# только admin и manager
 	$r->status_line('');
 	$m->clear_buffer;
@@ -53,6 +58,7 @@ if($ping) {
 }
 </%init>
 <form method="POST" action="ping.html">
+<input class="close" type="submit" name="cancel" value="X">
 <table border="0">
 <tr>
 <td valign="top"><textarea name="memo" cols="30" rows="6"><%$data%></textarea></td>
