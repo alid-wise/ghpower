@@ -41,10 +41,10 @@ $sth->finish;
 
 if($ping) {
 	if($type eq 1) {
-		open PING, "$ENV{MY}/counter/ping -r1 -v $sn $If->{$if}->{dev} |";
+		open PING, "MY=$ENV{MY} $ENV{MY}/counter/ping -r1 -v $sn $If->{$if}->{dev} |";
 	}
 	elsif($type eq 2) {
-		open PING, "$ENV{MY}/counter/ping -v -r1 -3 $sn $If->{$if}->{dev} |";
+		open PING, "MY=$ENV{MY} $ENV{MY}/counter/ping -v -r1 -3 $sn $If->{$if}->{dev} |";
 	}
 	while(<PING>) {
 		$data .= $_;
