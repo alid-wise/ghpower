@@ -398,7 +398,17 @@ CREATE INDEX sms_log_dt_i ON sms_log (dt);
 CREATE INDEX sms_log_userid_i ON sms_log (userid);
 CREATE INDEX sms_log_cid_i ON sms_log (cid);
 
-
+-- Альтернативный вариант списка персон (vCard)
+CREATE TABLE contacts (
+	id serial NOT NULL,
+	addressbookid int,
+	active integer default 1,
+	fullname varchar,
+	carddata varchar,
+	uri varchar,
+	modtime timestamp without time zone DEFAULT now(),
+	primary key (id)
+);
 
 
 
