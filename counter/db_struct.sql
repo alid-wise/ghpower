@@ -401,11 +401,12 @@ CREATE INDEX sms_log_cid_i ON sms_log (cid);
 -- Альтернативный вариант списка персон (vCard)
 CREATE TABLE contacts (
 	id serial NOT NULL,
-	addressbookid int,
 	active integer default 1,
 	fullname varchar,
 	carddata varchar,
 	uri varchar,
+	etag varchar,
+	uid varchar,
 	modtime timestamp without time zone DEFAULT now(),
 	primary key (id)
 );
