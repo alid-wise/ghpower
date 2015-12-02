@@ -400,17 +400,20 @@ CREATE INDEX sms_log_cid_i ON sms_log (cid);
 
 -- Альтернативный вариант списка персон (vCard)
 CREATE TABLE contacts (
-	id serial NOT NULL,
-	active integer default 1,
-	fullname varchar,
-	carddata varchar,
-	uri varchar,
-	etag varchar,
-	uid varchar,
-	modtime timestamp without time zone DEFAULT now(),
-	primary key (id)
+        id serial NOT NULL,
+        uid varchar,
+        active integer default 1,
+        fullname varchar,
+        carddata varchar,
+        uri varchar,
+        etag varchar,
+        modtime timestamp without time zone DEFAULT now(),
+        primary key (uid)
 );
+-- example:
+INSERT INTO contacts (uid,fullname,carddata) VALUES ('489b1350-46e4-69e4-49bd-3fd47b26e237','Admin','FN:Admin');
 
+update contacts set id=cast(substring(carddata,'\WID:(\d+)') as int);
 
 
 
