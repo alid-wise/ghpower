@@ -17,7 +17,8 @@ if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# admin или manager
 my $S = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'street', nocache=>0);
 # Текущий тариф
 #my $T = $m->comp("lib.msn:tariff", dbh=>$dbh, nocache=>0);
-my $Owners = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'users', nocache=>0);
+#my $Owners = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'users', nocache=>0);
+my $Owners = $m->comp("lib.msn:ownerlist", dbh=>$dbh, nocache=>0);
 
 # Счетчики
 my $L = $m->comp("lib.msn:cflistload", dbh=>$dbh, nocache=>0);
