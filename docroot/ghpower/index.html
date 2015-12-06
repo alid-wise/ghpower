@@ -8,7 +8,7 @@
 	$showdel => undef
 </%args>
 <%init>
-#use Data::Dumper;
+use Data::Dumper;
 use POSIX;
 
 #if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# только admin и manager
@@ -33,7 +33,7 @@ my $sth;
 # Проезды (улицы)
 my $S = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'street', nocache=>0);
 # Люди
-my $Owners = $m->comp("lib.msn:userlist", dbh=>$dbh, nocache=>0);
+my $Owners = $m->comp("lib.msn:ownerlist", dbh=>$dbh, nocache=>1);
 # Столбы
 my $Towers = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'towers', nocache=>0);
 # Типы счетчиков
@@ -67,8 +67,8 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 		$OK++;
 	} else {
 		my $active = $ARGS{active}? 1:0;
-		map { $ARGS{$_} =~ s/\D//g; $ARGS{$_} ||= 0 } ('addr','mgroup','sn','model','tower_id','year','street','owner');
-		map { $ARGS{$_} = 0 if($ARGS{$_} > 2000000000) } ('addr','mgroup','sn','model','tower_id','year','street','owner');
+		map { $ARGS{$_} =~ s/\D//g; $ARGS{$_} ||= 0 } ('addr','mgroup','sn','model','tower_id','year','street');
+		map { $ARGS{$_} = 0 if($ARGS{$_} > 2000000000) } ('addr','mgroup','sn','model','tower_id','year','street');
 		$ARGS{plimit} =~ s/\,/\./g;
 		$ARGS{plimit} =~ s/[^0-9\.]//g;
 		$ARGS{plimit} = 3.6	if(!$ARGS{plimit} or $ARGS{plimit} == 0 or $ARGS{plimit} > 10000);
@@ -191,7 +191,7 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 <option></option>
 %	foreach my $uid (sort {$Owners->{$a}->{lname} cmp $Owners->{$b}->{lname}} keys %$Owners) {
 %		next	unless($Owners->{$uid}->{lname});
-<option value="<%$uid%>" <% ((!$ARGS{submit} ? $Usr->{owner} : $ARGS{owner}) eq $uid)? "selected":"" %>><%$Owners->{$uid}->{name} || $Owners->{$uid}->{lname}%></option>
+<option value="<%$uid%>" <% ((!$ARGS{submit} ? $Usr->{owner} : $ARGS{owner}) eq $uid)? "selected":"" %>><%$Owners->{$uid}->{fullname} || $Owners->{$uid}->{name} || $Owners->{$uid}->{lname}%></option>
 %	}
 </select>
 </td>
@@ -263,7 +263,7 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 		<li><a href="pays.html">Платежи</a></li>
 %}
 %if($auth->{gid} eq 1) {
-		<li><a href="user.html">Персоны</a></li>
+%#		<li><a href="user.html">Персоны</a></li>
 		<li><a href="auth.html">authors</a></li>
 %}
 	</ul>
@@ -364,7 +364,8 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 
 <pre>
 %#<% Dumper $Usr %>
-%#<% Dumper %ARGS %>
+<% Dumper %ARGS %>
+<% Dumper $Owners %>
 </pre>
 
 
