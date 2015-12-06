@@ -35,6 +35,7 @@ return $ret;
 <%method userlist>
 <%doc>
 	Список людей
+	(deprecated)
 </%doc>
 <%args>
 	$dbh
@@ -70,6 +71,51 @@ $ret = {}	unless $ret;
 return $ret;
 </%init>
 </%method>
+
+<%method ownerlist>
+<%doc>
+	Список людей
+	vCards from owners
+</%doc>
+<%args>
+	$dbh
+	$nocache => 0
+</%args>
+<%init>
+
+unless($nocache) {
+	my ($rv, $cached) = $m->cache_self(
+		expire_in => '1 hour',
+		busy_lock => '5sec',
+		ttl => '5minutes',
+		key => "owners",
+		expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
+	);
+	return $rv	if($cached);
+}
+my $ret = undef;
+my $sth = $dbh->prepare("select uid,fullname from contacts where active=1");
+$sth->execute();
+while(my $r = $sth->fetchrow_hashref) {
+	my ($lname,$fname,$mname) = split(" ",$r->{fullname});
+	if($fname =~ /^(.){1}/) {
+		$r->{name} = $lname." $1.";
+		if($mname =~ /^(.)/) {
+			$r->{name} .= "$1.";
+		}
+	}
+	$r->{lname} = $lname || "";
+	$ret->{$r->{uid}} = $r;
+}
+$sth->finish;
+$ret = {}	unless $ret;
+return $ret;
+</%init>
+</%method>
+
+
+
+
 
 
 
