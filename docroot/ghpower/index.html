@@ -8,7 +8,7 @@
 	$showdel => undef
 </%args>
 <%init>
-use Data::Dumper;
+#use Data::Dumper;
 use POSIX;
 
 #if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# только admin и manager
@@ -364,8 +364,8 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 
 <pre>
 %#<% Dumper $Usr %>
-<% Dumper %ARGS %>
-<% Dumper $Owners %>
+%#<% Dumper %ARGS %>
+%#<% Dumper $Owners %>
 </pre>
 
 
