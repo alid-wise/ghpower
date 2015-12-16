@@ -22,8 +22,8 @@ $r->content_type(q{text/html; charset=utf-8});
 	<meta http-equiv=Pragma Content="no-cache">
 	<title>Green Hill</title>
 	<link href="/css/bootstrap.css" rel="stylesheet">
-%#	<script src="/js/jquery.js"></script>
-%#	<script src="/js/bootstrap.js"></script>
+	<script type='text/javascript' src="/js/jquery.min.js"></script>
+	<script type='text/javascript' src="/js/bootstrap.min.js"></script>
 	<LINK REL="stylesheet" TYPE="text/css" HREF="/ghpower.css">
 </head>
 <body>
