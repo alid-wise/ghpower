@@ -30,7 +30,7 @@ A:hover { color: green; }
 
 .bold { font-weight: bold; }
 .error { color: red; }
-
+.redbold { color: red; font-weight: bold; }
 .error input { color: red; }
 
 .onemode { background: #FFA500; }

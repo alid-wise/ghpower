@@ -292,7 +292,7 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 </form>
 
 <h2>Текущие показания счетчиков</h2>
-<p><%sprintf("%4d-%02d-%02d %02d:%02d:%02d",$year+1900,$mon+1,$mday,$hour,$min,$sec)%></p>
+<p><div id="lastime"><%sprintf("%4d-%02d-%02d %02d:%02d:%02d",$year+1900,$mon+1,$mday,$hour,$min,$sec)%></div></p>
 
 %if($auth->{gid} eq 1) {
 <p>gid: [<%$filter%>]</p>
@@ -301,11 +301,12 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 <p><input class="btn" type="submit" name="add_new" value="Добавить счетчик">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
 </form>
 %}
-
-<table border="1" class="table-condensed">
+%my @mgids;
+<table border="1" class="table-condensed" id="fullist">
 %foreach my $mgid (sort {$List->{$a}->{rank} <=> $List->{$b}->{rank}} keys %$List) {
 %	next if $filter &&  !($mgid == $filter);
 %	next unless $List->{$mgid}->{items};
+%	push @mgids,$mgid;
 <tr>
 <td><input type="checkbox" name="mgid_<%$mgid%>" <% ($ARGS{"mgid_".$mgid} || $List->{mgid}->{active}) ? "checked":""%> disabled></td>
 <td><b><% $List->{$mgid}->{name}%></b></td>
@@ -318,7 +319,7 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 %			next	if($filter2 eq '2' && $item->{active});
 %		}
 %		next	if($item->{active} < 0 && !$showdel);
-<tr>
+<tr id="<%$item->{id}%>">
 <td align="center"><%$i%>.</td>
 <td align="right"><a href="?id=<%$item->{id}%>"><%$item->{addr} ? $item->{addr} : "---"%></a> (<%$item->{sn}%>)</td>
 %	my $parcel;
@@ -334,30 +335,120 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 %#<td align="right"><a href="energy.html?id=<%$item->{id}%><%$filter ? "&filter=$filter":""%>"><%$LastCounter->{$item->{id}}->{t1}%></a></td>
 %#<td align="right"><a href="energy.html?id=<%$item->{id}%><%$filter ? "&filter=$filter":""%>"><%$LastCounter->{$item->{id}}->{t2}%></a></td>
 
-<td align="right"><%$LastCounter->{$item->{id}}->{t1}%></td>
-<td align="right"><%$LastCounter->{$item->{id}}->{t2}%></td>
+<td id="t1_<%$item->{id}%>" align="right"><%$LastCounter->{$item->{id}}->{t1}%></td>
+<td id="t2_<%$item->{id}%>"align="right"><%$LastCounter->{$item->{id}}->{t2}%></td>
 
-%my $mark = ($LastCounter->{$item->{id}}->{lpower} > $item->{plimit}) ? "style=color:red;font-weight:bold":"";
-<td align="right"><a href="energy.html?id=<%$item->{id}%><%$filter ? "&filter=$filter":""%>"><div <%$mark%>> <%$LastCounter->{$item->{id}}->{lpower} ? $LastCounter->{$item->{id}}->{lpower} : "_"%></div></a></td>
+%my $mark = ($LastCounter->{$item->{id}}->{lpower} > $item->{plimit}) ? "class=redbold":"";
+<td align="right"><a href="energy.html?id=<%$item->{id}%><%$filter ? "&filter=$filter":""%>"><div id="p_<%$item->{id}%>" <%$mark%>> <%$LastCounter->{$item->{id}}->{lpower} ? $LastCounter->{$item->{id}}->{lpower} : "_"%></div></a></td>
 % my $lpow = $LastCounter->{$item->{id}}->{lpower}; $lpow =~ s/\,/\./;
 % $total += $lpow;
-<td><input type="checkbox" name="id_<%$item->{id}%>" <% ($ARGS{"id_".$item->{id}} || $item->{active}) ? "checked":""%> disabled></td>
+<td bgcolor="<% defined $item->{state} ? ($item->{state} ? "red":"green") : "yellow" %>"><input type="checkbox" name="id_<%$item->{id}%>" <% ($ARGS{"id_".$item->{id}} || $item->{active}) ? "checked":""%> disabled></td>
 <td>
 %if($auth->{gid} eq 1) {
 <a href="ping.html?id=<%$item->{id}%>" target="ping">ping</a>
 %}
 </td>
-<td><img src="/images/<% defined $item->{state} ? ($item->{state} ? "critical.png":"recovery.png") : "warning.png" %>"></td>
-
+%#<td bgcolor="<% defined $item->{state} ? ($item->{state} ? "red":"green") : "yellow" %>"/>
+<td />
 </tr>
 %	$i++;
 %	}
 % $total=~s/\./\,/;
-<tr><td colspan=7 align=right>Сумма:</td><td align=right><b><%$total%></b></td><td colspan=3></td></tr>
+<tr><td colspan=7 align=right>Сумма:</td><td align=right><div id="mgid_<%$mgid%>" class="bold"><%$total%></div></td><td colspan=3></td></tr>
 %}
 </table>
 
-%}
+%# Динамическое обновление
+<script type=text/javascript>
+%# Последние показания счетчика
+function show(par) {
+	var cmd = JSON.stringify({ 
+							method: 'lastcounter', 
+							version: 1.1,
+							params: {id:par}
+						});
+	 $.ajax({
+		data: cmd,
+   		success: function(data,status,jqxhr){
+			var data = JSON.parse(jqxhr.responseText);
+		   	$("#p_"+par).html(data.result.lpower);
+		   	$("#t1_"+par).html(data.result.t1);
+		   	$("#t2_"+par).html(data.result.t2);
+		   	if(data.result.over > 0) {
+				$("#p_"+par).css('color','red').css('font-weight','bold');
+		   	} else {
+		   		$("#p_"+par).css('color','').css('font-weight','');
+		   	}
+		}
+	});
+}
+
+function showData() {
+	$("#fullist tr").each(function(){
+		if(this.id) {
+			show(this.id);
+		}
+	});
+}
+%# Время последнего обновления данных на сервере
+function showlastime() {
+	var cmd = JSON.stringify({ 
+							method: 'lastime', 
+							version: 1.1,
+						});
+	 $.ajax({
+		data: cmd,
+   		success: function(data,status,jqxhr){
+			var data = JSON.parse(jqxhr.responseText);
+		   	$("#lastime").html(data.result.lastime);
+		}
+	});
+}
+%# Текущая сумма мощностей по лучу
+function showSum(par) {
+	var cmd = JSON.stringify({ 
+							method: 'grsum', 
+							version: 1.1,
+							params: {gid:par}
+						});
+	 $.ajax({
+		data: cmd,
+   		success: function(data,status,jqxhr){
+			var data = JSON.parse(jqxhr.responseText);
+		   	$("#mgid_"+par).html(data.result.lpsum);
+		}
+	});
+}
+
+function showSumAll() {
+	var mgids = [<% join ",", @mgids %>];
+	mgids.forEach(function(item, i, arr) {
+		showSum(item);
+	});
+}
+
+%# Планируем запуски
+$(document).ready(function() {
+
+	$.ajaxSetup({
+		url: "/ghpower/api/",
+		type: "POST",
+		dataType: "json",
+		cache: false,
+		headers: {'Content-type': 'application/json'},
+		//   global: false //
+	});
+
+	setInterval('showData()',300000);
+	showData();
+	setInterval('showlastime()',300000);
+	showlastime();
+	setInterval('showSumAll()',300000);
+	showSumAll();
+});
+</script>
+
+%} # полный список
 
 
 
