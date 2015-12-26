@@ -116,6 +116,7 @@ create table counters (
 	house varchar,
 	owner integer,	-- users.id
 	plimit decimal DEFAULT 3.6,	-- допустимая потребляемая мощность
+	subscr integer default 0,	-- подписка владельца на алерты
 	primary key (id)
 );
 
