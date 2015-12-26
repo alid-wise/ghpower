@@ -68,6 +68,7 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 		$OK++;
 	} else {
 		my $active = $ARGS{active}? 1:0;
+		my $subscr = $ARGS{subscr}? 1:0;
 		map { $ARGS{$_} =~ s/\D//g; $ARGS{$_} ||= 0 } ('addr','mgroup','sn','model','tower_id','year','street');
 		map { $ARGS{$_} = 0 if($ARGS{$_} > 2000000000) } ('addr','mgroup','sn','model','tower_id','year','street');
 		$ARGS{plimit} =~ s/\,/\./g;
@@ -79,17 +80,18 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 		unless(%Err) {
 			if($Usr) {	# Обновление
 				my $chg = ($active ne $Usr->{active})? 1:0;
+				$chg++	if($subscr ne $Usr->{subscr})? 1:0;
 				map {$chg++ if($ARGS{$_} ne $Usr->{$_})} ('name','addr','mgroup','sn','model','setdate','memo','tower_id','year','street','house','owner','plimit');
 				if($chg) {	# есть изменения
-					my $upd = $dbh->prepare("update counters set name=?,addr=?,mgroup=?,sn=?,model=?,setdate=?,memo=?,active=?,tower_id=?,year=?,street=?,house=?,owner=?,modtime=now(),plimit=? where id=?");
-					$upd->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{street},$ARGS{house},$ARGS{owner},$ARGS{plimit},$id);
+					my $upd = $dbh->prepare("update counters set name=?,addr=?,mgroup=?,sn=?,model=?,setdate=?,memo=?,active=?,tower_id=?,year=?,street=?,house=?,owner=?,modtime=now(),plimit=?,subscr=? where id=?");
+					$upd->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{street},$ARGS{house},$ARGS{owner},$ARGS{plimit},$subscr,$id);
 				}
 			} else {	# Новая запись
 
 				my ($passwd1,$passwd2) = ('','');
 				if($Ctypes->{$ARGS{model}}->{type} eq 'M230') { ($passwd1,$passwd2) = ('111111','222222'); }
-				my $ins = $dbh->prepare("insert into counters (name,addr,mgroup,sn,model,setdate,memo,active,tower_id,year,street,house,owner,passwd,passwd2,modtime,plimit) values (?,?,?,?,?,?,?,?,?,?,?,?,?,\'$passwd1\',\'$passwd2\',now(),?)");
-				$ins->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{street},$ARGS{house},$ARGS{owner},$ARGS{plimit});
+				my $ins = $dbh->prepare("insert into counters (name,addr,mgroup,sn,model,setdate,memo,active,tower_id,year,street,house,owner,passwd,passwd2,modtime,plimit,subscr) values (?,?,?,?,?,?,?,?,?,?,?,?,?,\'$passwd1\',\'$passwd2\',now(),?,?)");
+				$ins->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{street},$ARGS{house},$ARGS{owner},$ARGS{plimit},$subscr);
 			}
 			undef $id;
 			undef $ARGS{"add_new"};
@@ -107,14 +109,7 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 
 if(!$ARGS{"add_new"} && !$id && !$OK) {
 	# Счетчики полный список
-#	$sth = $dbh->prepare("select counters.id,counters.name,counters.addr,counters.mgroup,counters.passwd,counters.sn,counters.model,counters.setdate,counters.memo,counters.active,counters.modtime,counters.passwd2,counters.ktrans,counters.tower_id,counters.year,counters.street,counters.house,status.id as status_id,status.state,status.pstate,status.se1,status.se2,status.modtime as status_modtime from counters left outer join status on status.cid=counters.id");
-#	$sth->execute();
-#	while(my $r = $sth->fetchrow_hashref) {
-#		push @{$List->{$r->{mgroup}}->{items}}, $r;
-#	}
-#	$sth->finish;
-
-	my $L = $m->comp("lib.msn:cflistload", dbh=>$dbh, nocache=>1);
+	my $L = $m->comp("lib.msn:cflistload", dbh=>$dbh, nocache=>1, showdel=>$showdel);
 	foreach(keys %$L) { $List->{$_}->{items} = $L->{$_}->{items}; }
 
 }
@@ -123,8 +118,13 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 %#<%Dumper $auth%>
 %#</pre>
 %if($OK) {
-<h3>Запись сохранена</h3>
+<h3 id="resok">Запись сохранена</h3>
 <p><a href="index.html">Home</a></p>
+<script type=text/javascript>
+$(document).ready(function() {
+	$("#resok").fadeOut(1200, function() {document.location = "index.html"; });
+});
+</script>
 %} elsif($id || $ARGS{"add_new"}) {
 <form method="POST">
 <input type="hidden" name="add_new" value="<%$ARGS{"add_new"}%>">
@@ -215,6 +215,10 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 <td><input type="text" name="plimit" value="<%$ARGS{plimit} || (!$ARGS{plimit} ? $Usr->{plimit} : "")%>" <% ($auth->{gid} >1) ? "disabled":"" %>></td>
 </tr>
 <tr>
+<td>Подписка:</td>
+<td><input type="checkbox" name="subscr" <% $ARGS{subscr} || (!$ARGS{submit} ? $Usr->{subscr} : "") ? "checked":""%><% ($auth->{gid} >1) ? "disabled":"" %>>&nbsp;&nbsp;отправлять владельцу информацию о статусе</td>
+</tr>
+<tr>
 <td>Примечания:</td>
 <td><textarea name="memo" cols="30" rows="2" <% ($auth->{gid} >1) ? "disabled":"" %>><%$ARGS{memo} || (!$ARGS{submit} ? $Usr->{memo} : "")%></textarea></td>
 </tr>
@@ -293,7 +297,7 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 </form>
 
 <h2>Текущие показания счетчиков</h2>
-<p><div id="lastime"><%sprintf("%4d-%02d-%02d %02d:%02d:%02d",$year+1900,$mon+1,$mday,$hour,$min,$sec)%></div></p>
+<p><div id="lastime"><% $m->comp("lib.msn:lastime", dbh=>$dbh)->{lastime} %></div></p>
 
 %if($auth->{gid} eq 1) {
 <p>gid: [<%$filter%>]</p>
@@ -313,7 +317,7 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 <td><b><% $List->{$mgid}->{name}%></b></td>
 <td colspan="9"><% $List->{$mgid}->{memo}%></td>
 </tr>
-%	my $i=1; my $total=0;
+%	my $i=1;
 %	foreach my $item (sort { $S->{$a->{street}}->{name} cmp $S->{$b->{street}}->{name} || $a->{house} <=> $b->{house}} @{$List->{$mgid}->{items}}) {
 %		if($filter2) {
 %			next	if($filter2 eq '1' && $item->{active} ne '1');
@@ -341,8 +345,6 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 
 %my $mark = ($LastCounter->{$item->{id}}->{lpower} > $item->{plimit}) ? "class=redbold":"";
 <td align="right"><a href="energy.html?id=<%$item->{id}%><%$filter ? "&filter=$filter":""%>"><div id="p_<%$item->{id}%>" <%$mark%>> <%$LastCounter->{$item->{id}}->{lpower} ? $LastCounter->{$item->{id}}->{lpower} : "_"%></div></a></td>
-% my $lpow = $LastCounter->{$item->{id}}->{lpower}; $lpow =~ s/\,/\./;
-% $total += $lpow;
 <td bgcolor="<% defined $item->{state} ? ($item->{state} ? "red":"green") : "yellow" %>"><input type="checkbox" name="id_<%$item->{id}%>" <% ($ARGS{"id_".$item->{id}} || $item->{active}) ? "checked":""%> disabled></td>
 <td>
 %if($auth->{gid} eq 1) {
@@ -350,12 +352,11 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 %}
 </td>
 %#<td bgcolor="<% defined $item->{state} ? ($item->{state} ? "red":"green") : "yellow" %>"/>
-<td />
+<td><input type="checkbox" name="subscr_<%$item->{id}%>" <% ($ARGS{"subscr_".$item->{id}} || $item->{subscr}) ? "checked":""%> disabled></td>
 </tr>
 %	$i++;
 %	}
-% $total=~s/\./\,/;
-<tr><td colspan=7 align=right>Сумма:</td><td align=right><div id="mgid_<%$mgid%>" class="bold"><%$total%></div></td><td colspan=3></td></tr>
+<tr><td colspan=7 align=right>Сумма:</td><td align=right><div id="mgid_<%$mgid%>" class="bold"><% $m->comp("lib.msn:grsum", dbh=>$dbh, gid=>$mgid)->{lpsum} %></div></td><td colspan=3></td></tr>
 %}
 </table>
 
@@ -459,7 +460,7 @@ $(document).ready(function() {
 <pre>
 %#<% Dumper $Usr %>
 %#<% Dumper %ARGS %>
-%#<% Dumper $Owners %>
+%#<% Dumper $LastCounter %>
 </pre>
 
 

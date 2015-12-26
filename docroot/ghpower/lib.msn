@@ -126,9 +126,9 @@ return $ret;
 <%args>
 	$dbh
 	$nocache => 0
+	$showdel => 0
 </%args>
 <%init>
-
 unless($nocache) {
 	my ($rv, $cached) = $m->cache_self(
 		expire_in => '1 hour',
@@ -140,7 +140,7 @@ unless($nocache) {
 	return $rv	if($cached);
 }
 my $ret = undef;
-my $sth = $dbh->prepare("select counters.id,counters.name,counters.addr,counters.mgroup,counters.passwd,counters.sn,counters.model,counters.setdate,counters.memo,counters.active,counters.modtime,counters.passwd2,counters.ktrans,counters.tower_id,counters.year,counters.street,counters.house,counters.owner,counters.plimit,status.id as status_id,status.state,status.pstate,status.se1,status.se2,status.modtime as status_modtime from counters left outer join status on status.cid=counters.id");
+my $sth = $dbh->prepare("select A.id,A.name,A.addr,A.mgroup,A.passwd,A.sn,A.model,A.setdate,A.memo,A.active,A.modtime,A.passwd2,A.ktrans,A.tower_id,A.year,A.street,A.house,A.owner,A.plimit,A.subscr,B.id as status_id,B.state,B.pstate,B.se1,B.se2,B.modtime as status_modtime from counters A left outer join status B on B.cid=A.id".((!$showdel) ? " where not (A.active < 0)":""));
 $sth->execute();
 while(my $r = $sth->fetchrow_hashref) {
 		push @{$ret->{$r->{mgroup}}->{items}}, $r;
@@ -230,7 +230,6 @@ return $ret;
 	$nocache => 1
 </%args>
 <%init>
-
 unless($nocache) {
 	my ($rv, $cached) = $m->cache_self(
 		expire_in => '1 hour',
@@ -244,28 +243,64 @@ unless($nocache) {
 my $ret = undef;
 my $sth;
 if($id) {
-	$sth = $dbh->prepare("select modtime AS tm,se1 AS t1,se2 AS t2, lpower from status where cid=? order by modtime desc LIMIT 1");
+	$sth = $dbh->prepare("select A.modtime AS tm,A.se1 AS t1,A.se2 AS t2, A.lpower, A.lpower>B.plimit AS over,A.state from status A inner join counters B on A.cid=B.id where A.cid=? order by A.modtime desc LIMIT  1");
 	$sth->execute($id);
 	while(my $r = $sth->fetchrow_hashref) {
-		$r->{lpower} = sprintf("%0.2f", $r->{lpower});
+		$r->{t1} = sprintf("%0.2f",$r->{t1});
+		$r->{t2} = sprintf("%0.2f",$r->{t2});
+		$r->{lpower} = sprintf("%0.2f",$r->{lpower});
 		map { s/\./,/; } ($r->{t1}, $r->{t2}, $r->{lpower});
 		$ret = $r;
 	}
 } else {	# Полный список
-	$sth = $dbh->prepare("select modtime AS tm,se1 AS t1,se2 AS t2, cid, lpower from status where state=0");
+	$sth = $dbh->prepare("select A.modtime AS tm,A.se1 AS t1,A.se2 AS t2, A.cid, A.lpower, A.lpower>B.plimit AS over,A.state from status A inner join counters B on A.cid=B.id where A.state=0");
 	$sth->execute();
 	while(my $r = $sth->fetchrow_hashref) {
-		$r->{lpower} = sprintf("%0.2f", $r->{lpower});
+		$r->{t1} = sprintf("%0.2f",$r->{t1});
+		$r->{t2} = sprintf("%0.2f",$r->{t2});
+		$r->{lpower} = sprintf("%0.2f",$r->{lpower});
 		map { s/\./,/; } ($r->{t1}, $r->{t2}, $r->{lpower});
 		$ret->{$r->{cid}} = $r;
 	}
 }
-
 $sth->finish;
 $ret = {}	unless $ret;
 return $ret;
 </%init>
 </%method>
+
+
+<%method grsum>
+<%doc>
+	Текущая сумма по лучу
+</%doc>
+<%args>
+	$dbh
+	$gid
+	$nocache => 1
+</%args>
+<%init>
+unless($nocache) {
+	my ($rv, $cached) = $m->cache_self(
+		expire_in => '1 hour',
+		busy_lock => '5sec',
+		ttl => '5minutes',
+		key => "grsum_".$gid,
+		expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
+	);
+	return $rv	if($cached);
+}
+my $sth = $dbh->prepare("select sum(lpower) as lpsum from status where cid in (select id from counters where mgroup=? and active=1)");
+$sth->execute($gid);
+my $ret = $sth->fetchrow_hashref;
+$sth->finish;
+$ret->{lpsum} = sprintf("%0.2f",$ret->{lpsum});
+$ret->{lpsum} =~ s/\./,/;
+$ret = {}	unless $ret;
+return $ret;
+</%init>
+</%method>
+
 
 <%method mexpenses>
 <%doc>
@@ -278,7 +313,6 @@ return $ret;
 	$nocache => 1
 </%args>
 <%init>
-
 $ymon = UnixDate("1 month ago","%Y-%m")	unless($ymon);
 unless($nocache) {
 	my ($rv, $cached) = $m->cache_self(
@@ -312,7 +346,6 @@ if($cid) {
 		$ret->{$r->{cid}} = $r;
 	}
 }
-
 $sth->finish;
 $ret = {}	unless $ret;
 return $ret;
@@ -330,7 +363,6 @@ return $ret;
 	$nocache => 0
 </%args>
 <%init>
-
 unless($nocache) {
 	my ($rv, $cached) = $m->cache_self(
 		expire_in => '1 hour',
@@ -405,7 +437,6 @@ return $ret;
 	$nocache => 1
 </%args>
 <%init>
-
 unless($nocache) {
 	my ($rv, $cached) = $m->cache_self(
 		expire_in => '1 hour',
@@ -485,7 +516,6 @@ return undef;
 	$nocache => 0
 </%args>
 <%init>
-
 unless($nocache) {
 	my ($rv, $cached) = $m->cache_self(
 		expire_in => '1 hour',
@@ -505,6 +535,35 @@ return $ret;
 </%init>
 </%method>
 
+<%method lastime>
+<%doc>
+	Время последнего обновления данных
+</%doc>
+<%args>
+	$dbh
+	$nocache => 1
+</%args>
+<%init>
+unless($nocache) {
+	my ($rv, $cached) = $m->cache_self(
+		expire_in => '1 hour',
+		busy_lock => '5sec',
+		ttl => '5minutes',
+		key => "lastime",
+		expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
+	);
+	return $rv	if($cached);
+}
+my $sth = $dbh->prepare("select modtime as lastime from status order by modtime desc limit 1");
+$sth->execute();
+my $ret = $sth->fetchrow_hashref;
+$sth->finish;
+$ret->{lastime} =~ s/\.\d*$//;
+$ret = {}	unless $ret;
+return $ret;
+</%init>
+</%method>
+
 <%method pretty>
 <%doc>
 	Преобразование числа в читаемый формат
@@ -519,3 +578,4 @@ $value =~ s/\./\,/g;
 return $value;
 </%init>
 </%method>
+
