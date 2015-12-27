@@ -40,7 +40,7 @@ my $Towers = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'towers', nocache=>0)
 # Типы счетчиков
 my $Ctypes = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'counter_type', nocache=>0);
 # Текущие показания счетчиков
-my $LastCounter = $m->comp("lib.msn:lastcounter", dbh=>$dbh, id=>0, nocache=>0);
+my $LastCounter = $m->comp("lib.msn:lastcounter", dbh=>$dbh, id=>0, nocache=>1);
 
 my ($List, $Usr);
 # Группы
@@ -343,7 +343,7 @@ $(document).ready(function() {
 <td id="t1_<%$item->{id}%>" align="right"><%$LastCounter->{$item->{id}}->{t1}%></td>
 <td id="t2_<%$item->{id}%>"align="right"><%$LastCounter->{$item->{id}}->{t2}%></td>
 
-%my $mark = ($LastCounter->{$item->{id}}->{lpower} > $item->{plimit}) ? "class=redbold":"";
+%my $mark = ($LastCounter->{$item->{id}}->{over}) ? "class=redbold":"";
 <td align="right"><a href="energy.html?id=<%$item->{id}%><%$filter ? "&filter=$filter":""%>"><div id="p_<%$item->{id}%>" <%$mark%>> <%$LastCounter->{$item->{id}}->{lpower} ? $LastCounter->{$item->{id}}->{lpower} : "_"%></div></a></td>
 <td bgcolor="<% defined $item->{state} ? ($item->{state} ? "red":"green") : "yellow" %>"><input type="checkbox" name="id_<%$item->{id}%>" <% ($ARGS{"id_".$item->{id}} || $item->{active}) ? "checked":""%> disabled></td>
 <td>
