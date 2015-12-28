@@ -65,8 +65,11 @@
 
 $|=1;
 use DBI;
-use Time::Local;
+#use Time::Local;
+use utf8;
 use strict;
+use lib "$ENV{MY}/lib/";
+use GHPowerUtils;
 
 #
 # Генерация алертов
@@ -77,7 +80,7 @@ my (@args, %opts);
 foreach(@ARGV){
 	if(/^\-(\S)(\S*)/) { $opts{$1} = $2; } else {  push @args, $_; }
 }
-my ($database) = (@args);
+my ($database,$emails) = (@args);
 die "Usage: $0 database"		unless($database);
 my $verb = exists $opts{v};
 my $pgport = 5432;
@@ -112,9 +115,15 @@ sub alert {
 		$event = "CLEAR";
 
 	}
-# Тут надо будет в самом деле отправить алерт (почта, смс ?)
-#print 	"$event [$modtime]: $model,$addr,$sn,$street,$house,$mgroup,$tower\n";
-
+	# Тут надо будет в самом деле отправить алерт (почта, смс ?)
+	print 	"$event [$modtime]: $model,$addr,$sn,$street,$house,$mgroup,$tower\n"	if($verb);
+	if($emails) {
+		print "Sending alert to: $emails\n"	if($verb);
+		my $subj = "$event: Unavailable device";
+		my $body = "$event: Unavailable device\n";
+		$body .= "Model: $model\nSerial: $sn\nAddress: $addr\nGroup: $mgroup\nTower: $tower\n$street, $house\n";
+		SendMail("GHPower Alerter",$emails,$subj,$body);
+	}
 
 }
 
