@@ -66,10 +66,14 @@
 $|=1;
 use DBI;
 use Time::Local;
+use utf8;
+use open qw(:std :utf8);
 use strict;
+use lib "$ENV{MY}/lib/";
+use GHPowerUtils;
 
 #
-# Проверка превышения порога додустимой мощности
+# Проверка превышения порога допустимой мощности
 # 2013-10-25 alid
 #
 
@@ -77,7 +81,7 @@ my (@args, %opts);
 foreach(@ARGV){
 	if(/^\-(\S)(\S*)/) { $opts{$1} = $2; } else {  push @args, $_; }
 }
-my ($database, $limit) = (@args);
+my ($database, $limit, $emails) = (@args);
 die "Usage: $0 database limit"		unless($database);
 my $verb = exists $opts{v};
 my $pgport = 5432;
@@ -93,7 +97,7 @@ $sth->finish;
 $ise = sprintf("%.f",$ise);
 if($ise > $limit) {
 	# Ищем превышение по всем счетчикам
-	my $cntr = $dbh->prepare("select A.id,A.mgroup,A.mgroup,A.house,B.name as street,C.lname as owner,A.plimit,A.ktrans from counters A left outer join street B on B.id=A.street left outer join users C on A.owner=C.id where A.active=1");
+	my $cntr = $dbh->prepare("select A.id,A.mgroup,A.mgroup,A.house,B.name as street,C.fullname as owner,A.plimit,A.ktrans from counters A left outer join street B on B.id=A.street left outer join contacts C on A.owner=C.uid where A.active=1");
 	$cntr->execute();
 	my $List = "Нарушители:\n";
 	while(my $r = $cntr->fetchrow_hashref) {
@@ -109,14 +113,13 @@ if($ise > $limit) {
 	}
 	$cntr->finish;
 
-	if($verb) {
+	if($verb || !$emails) {
 		print "Subject: Alert from ghpower: the limit is exceeded ($ise)\n";
 		print "Превышена потребляемая мощность: $ise kWA (при пороге $limit kWA)\n$List\n";
 	} else {
-		open SND, "| ssmtp aleksandr.deviatkin\@gmail.com";
-		print SND "Subject: Alert from ghpower: the limit is exceeded ($ise)\n";
-		print SND "Превышена потребляемая мощность: $ise kWA (при пороге $limit kWA)\n$List\n";
-		close SND;
+		my $subj = "Alert from ghpower: the limit is exceeded ($ise)\n";
+		my $body = "Превышена потребляемая мощность: $ise kWA (при пороге $limit kWA)\n$List\n";
+		SendMail("GHPower checklimit",$emails,$subj,$body);
 	}
 }
 
