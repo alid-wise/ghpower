@@ -69,7 +69,7 @@ use DBI;
 use LWP::UserAgent;
 use XML::Simple;
 #use open qw(:std :utf8);
-#use Data::Dumper;
+use Data::Dumper;
 
 #
 # Синхронизация списков с carddav
@@ -137,8 +137,11 @@ $fl->finish;
 my ($total,$mod,$news,$dels,$ers) = (0,0,0,0,0);
 foreach my $vcard (@{$Data->{response}}) {
 	if($vcard->{propstat}->{status} =~ /OK$/) {
-		my ($xuid) = ($vcard->{propstat}->{prop}->{'VC:address-data'} =~ /^UID\:([\w\-]*)$/m);
-		$xuid =~ s/\r//g;
+
+		$vcard->{propstat}->{prop}->{'VC:address-data'} =~ s/\r//g;
+		$vcard->{propstat}->{prop}->{'VC:address-data'} =~ s/\n//g;
+		$vcard->{propstat}->{prop}->{'VC:address-data'} =~ s/\s//g;
+		my ($xuid) = ($vcard->{propstat}->{prop}->{'VC:address-data'} =~ /(\w{8}\-\w{4}\-\w{4}\-\w{4}\-\w{12})/);
 		$sth->execute($xuid);
 		my ($active,$fullname,$carddata,$uri,$etag,$uid) = $sth->fetchrow_array;
 		$sth->finish;
@@ -147,7 +150,7 @@ foreach my $vcard (@{$Data->{response}}) {
 
 		if($uid) {
 			if($vcard->{propstat}->{prop}->{getetag} ne $etag) {	# Updated vcard
-				my ($fullname,$carddata,$uid) = getvcard($vcard->{href});
+				my ($fullname,$carddata) = getvcard($vcard->{href});
 				if($uid) {
 					print "UPDATE: $fullname href=".$vcard->{href}." uid=$uid\n"	if($verb);
 #print "IsUTF: ".utf8::is_utf8($carddata)."\n\n";
@@ -161,7 +164,7 @@ foreach my $vcard (@{$Data->{response}}) {
 			delete $Fl{$uid};	# не будем удалять эту запись
 
 		} else {	# New vcard
-			my ($fullname,$carddata,$uid) = getvcard($vcard->{href});
+			my ($fullname,$carddata) = getvcard($vcard->{href});
 			if($uid) {
 				print "NEW: $fullname href=".$vcard->{href}."\n"	if($verb);
 				$ins->execute($fullname,$carddata,$vcard->{href},$vcard->{propstat}->{prop}->{getetag},$uid);
@@ -198,12 +201,12 @@ sub getvcard {
 	if ($res->is_success) {
 		my ($fullname) = ($res->decoded_content =~ /^FN\:(.*)$/m);
 		$fullname =~ s/\r//g;
-		my ($uid) = ($res->decoded_content =~ /^UID\:(.*)$/m);
-		$uid =~ s/\r//g;
+#		my ($uid) = ($res->decoded_content =~ /^UID\:(.*)$/m);
+#		$uid =~ s/\r//g;
 #print $res->content;
 #print "$fullname\n";
 
-		return($fullname,$res->decoded_content,$uid);
+		return($fullname,$res->decoded_content);
 
 	} else {
         print "Error: " . $res->status_line . "\n";
