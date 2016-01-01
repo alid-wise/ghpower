@@ -112,13 +112,12 @@ if($ise > $limit) {
 		}
 	}
 	$cntr->finish;
+	my $subj = "Alert from ghpower: the limit is exceeded ($ise)";
+	my $body = "Превышена потребляемая мощность: $ise kWA (при пороге $limit kWA)\n$List\n";
 
 	if($verb || !$emails) {
-		print "Subject: Alert from ghpower: the limit is exceeded ($ise)\n";
-		print "Превышена потребляемая мощность: $ise kWA (при пороге $limit kWA)\n$List\n";
+		print "$subj\n$body\n[$emails]\n";
 	} else {
-		my $subj = "Alert from ghpower: the limit is exceeded ($ise)\n";
-		my $body = "Превышена потребляемая мощность: $ise kWA (при пороге $limit kWA)\n$List\n";
 		SendMail("GHPower checklimit",$emails,$subj,$body);
 	}
 }
