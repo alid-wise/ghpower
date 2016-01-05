@@ -21,7 +21,8 @@ sub SendMail {
         }
 
         my $ctype = $opts{content} || 'text/plain';
-        open XMAIL, "| /usr/local/sbin/sendmail -t -fbounce\@nomail.com"   or croak "Can't open sendmail: $!";
+#        open XMAIL, "| /usr/local/sbin/sendmail -t -fbounce\@nomail.com"   or croak "Can't open sendmail: $!";
+        open XMAIL, "| /usr/local/sbin/sendmail -t"   or croak "Can't open sendmail: $!";
         my $xheaders = $opts{xheaders} || '';
         $xheaders .= "\n"       if $xheaders && $xheaders !~ /\n$/;
         Encode::_utf8_off($body);
