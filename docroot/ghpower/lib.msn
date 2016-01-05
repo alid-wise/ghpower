@@ -163,7 +163,7 @@ return $ret;
 <%init>
 
 my $ret = undef;
-my $sth = $dbh->prepare("SELECT A.id as id,A.name as name,A.addr as addr,A.mgroup as gid,A.passwd as passwd,A.model as model,A.plimit,A.memo,A.active,A.modtime,A.year,A.house,A.sn,A.setdate,B.name AS model,B.type as type,D.dev AS iface,D.id AS if,E.name AS street, F.name AS tower FROM counters A INNER JOIN counter_type b ON a.model=b.id INNER JOIN mgroup c ON a.mgroup=c.id INNER JOIN iface D ON c.if_id=d.id LEFT OUTER JOIN street E ON E.id=A.street LEFT OUTER JOIN towers F ON F.id=A.tower_id WHERE a.id=? LIMIT 1"
+my $sth = $dbh->prepare("SELECT A.id as id,A.name as name,A.addr as addr,A.mgroup as mgroup,A.mgroup as gid,A.passwd as passwd,A.model as model,A.plimit,A.memo,A.active,A.modtime,A.year,A.house,A.sn,A.setdate,B.name AS model,B.type as type,D.dev AS iface,D.id AS if,E.name AS street, F.name AS tower FROM counters A INNER JOIN counter_type b ON a.model=b.id INNER JOIN mgroup c ON a.mgroup=c.id INNER JOIN iface D ON c.if_id=d.id LEFT OUTER JOIN street E ON E.id=A.street LEFT OUTER JOIN towers F ON F.id=A.tower_id WHERE a.id=? LIMIT 1"
 );
 
 $sth->execute($id);
