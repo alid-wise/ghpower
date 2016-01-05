@@ -37,12 +37,9 @@ unless($TM+86400 > time()) {
 #	$next = sprintf("%4d-%02d-%02d",$year+1900,$mon+1,$mday);
 }
 
-my $inf = $dbh->prepare("select A.plimit,A.mgroup,A.name,A.addr,A.mgroup,A.sn,A.model,A.setdate,A.memo,A.active,A.modtime,A.year,A.house,B.name as model,C.name as street,D.name as tower from counters A inner join counter_type B on B.id=A.model left outer join street C on C.id=A.street left outer join towers D on D.id=A.tower_id where A.id=?");
-$inf->execute($id);
-my $Info = $inf->fetchrow_hashref;
-$inf->finish;
+my $Info = $m->comp("lib.msn:counter_info", dbh=>$dbh, id=>$id);
 # Этот счетчик - балансный?
-$inf = $dbh->prepare("select * from mgroup where active=1 and bid=?");
+my $inf = $dbh->prepare("select * from mgroup where active=1 and bid=?");
 $inf->execute($id);
 my $h = $inf->fetchrow_hashref;
 $inf->finish;
@@ -51,8 +48,8 @@ if($h) {
 }
 
 my $Data;
-my $sth = $dbh->prepare("select dt AS tm,se1ai,se2ai,ise from monitor where counter=? and dt <= ? and dt > ? order by dt desc");
-$sth->execute($id,$next2,$date);
+my $sth = $dbh->prepare("select dt AS tm,se1ai,se2ai,ise,ise>? AS over from monitor where counter=? and dt <= ? and dt > ? order by dt desc");
+$sth->execute($Info->{plimit},$id,$next2,$date);
 while(my $row = $sth->fetchrow_hashref) {
 	$row->{tm} =~ s/\+\d+$//;
 	$row->{tm} =~ s/^.*\s+//;
@@ -84,7 +81,8 @@ while(my $row = $sth->fetchrow_hashref) {
 <td><b><% $row->{tm} %></b></td>
 <td align="right"><%$row->{se1ai}%></td>
 <td align="right"><%$row->{se2ai}%></td>
-<td align="right"><%$row->{ise}%></td>
+%my $mark = ($row->{over}) ? "class=redbold":"";
+<td align="right"><div <%$mark%> ><%$row->{ise}%></div></td>
 </tr>
 %}
 </table>
@@ -94,8 +92,6 @@ while(my $row = $sth->fetchrow_hashref) {
 </td>
 <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
 <td valign="top">
-
-
 
 <table border="0">
 <tr><td align="right">Тип:</td><td><%$Info->{model}%></td></tr>
@@ -132,12 +128,7 @@ while(my $row = $sth->fetchrow_hashref) {
 <br>
 <img src="graph/<%$Info->{mgid}%>/balance-year.png">
 
-
-
-
 %}
-
-
 </td>
 </tr>
 </table>
