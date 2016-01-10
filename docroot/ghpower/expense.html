@@ -42,7 +42,7 @@ my $sth;
 # Проезды (улицы)
 my $S = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'street', nocache=>0);
 # Люди
-my $Owners = $m->comp("lib.msn:userlist", dbh=>$dbh, nocache=>0);
+my $Owners = $m->comp("lib.msn:ownerlist", dbh=>$dbh, nocache=>1);
 
 my $MExpenses;
 
