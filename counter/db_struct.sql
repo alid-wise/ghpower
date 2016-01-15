@@ -268,6 +268,19 @@ CREATE TABLE towers (
     primary key (id)
 );
 
+--
+-- Показания счетчиков по дням
+--
+CREATE TABLE daily (
+	id serial not null,
+	cid integer,
+	date date,
+	se1 numeric,
+	se2 numeric,
+	PRIMARY KEY (id)
+);
+create INDEX daily_cid_i ON daily (cid);
+create INDEX daily_date_i ON daily (date);
 
 --
 -- Платежи
