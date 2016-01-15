@@ -60,40 +60,6 @@
 --       OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 --
 
--- users
-create table auth (
-	id serial not null,
-	name varchar,
-	login varchar,
-	password varchar,
-	email varchar,
-	active integer default 0,
-	gid integer default 0,
-	memo varchar,
-	modtime timestamp without time zone DEFAULT now()
-);
-create table groups (
-	id integer not null,
-	name varchar
-);
-INSERT INTO groups (id,name) VALUES (1,'admin');
-INSERT INTO groups (id,name) VALUES (2,'manager');
-INSERT INTO groups (id,name) VALUES (3,'user');
-INSERT INTO groups (id,name) VALUES (4,'guest');
--- admin/admin
-INSERT INTO auth (name,login,password,email,active,gid,memo) VALUES ('- embedded admin -','admin','$1$YqBppwE5$9GaW92wOLUP0v4Au/Lfab.','admin@email',1,1,'Эту запись не стоит удалять');
-
--- группы мониторинга (лучи)
-create table mgroup (
-	id integer not null,
-	active integer,
-	name varchar,
-	if_id integer,
-	memo varchar,
-	rank integer,
-	bid integer,
-	modtime timestamp without time zone DEFAULT now()
-);
 
 -- счетчики
 create table counters (
@@ -112,9 +78,10 @@ create table counters (
 	modtime timestamp default now(),
 	tower_id integer,
 	year integer,
-	street integer,
-	house varchar,
-	owner integer,	-- users.id
+--	street integer,
+--	house varchar,
+	dn varchar,	-- участок ou=3,ou=Восточный
+--	owner varchar,	-- users.id
 	plimit decimal DEFAULT 3.6,	-- допустимая потребляемая мощность
 	subscr integer default 0,	-- подписка владельца на алерты
 	primary key (id)
@@ -289,13 +256,6 @@ CREATE INDEX mexpenses_month_i ON mexpenses (month);
 CREATE INDEX mexpenses_counter_i ON mexpenses (cid);
 
 
---
--- Проезды
---
-CREATE TABLE street (
-    id integer NOT NULL,
-    name character varying(100) NOT NULL
-);
 
 --
 -- столбы
@@ -348,56 +308,36 @@ CREATE TABLE tariff (
 INSERT INTO tariff (t1,t2,sdate) VALUES (4.11,1.39,'2012-07-01');
 
 
-CREATE TABLE users (
+CREATE TABLE feed_log (
 	id serial NOT NULL,
 	auth integer,
-	fname character varying(255),
-	mname character varying(255),
-	lname character varying(255),
-	status character varying,
-	birthday date,
-	passport character varying,
-	address character varying,	-- адрес прописки
-	active integer,
-	memo character varying,
-	modtime timestamp without time zone DEFAULT now(),
-	primary key (id)
-);
-
-CREATE TABLE phones (
-	id serial NOT NULL,
-	auth integer,
-	userid integer NOT NULL,
-	phone character varying(255),
-	typeid integer NOT NULL default 0,
---	active integer NOT NULL default 1,
---	memo character varying,
-	modtime timestamp without time zone DEFAULT now(),
-	primary key (id)
-);
-
-CREATE TABLE sms_log (
-	id serial NOT NULL,
-	auth integer,
-	dt timestamp without time zone DEFAULT now(),
 	cid integer NOT NULL,
-	userid integer NOT NULL,
-	phone character varying(255),
+	dn varchar NOT NULL,
+	target character varying(255),
 	msg character varying,
-	msg_id bigint,
-	active smallint NOT NULL default 0,
 	status smallint,
-	descr character varying,
+	err character varying,
 	posted timestamp without time zone,
-	updates timestamp without time zone,
 	parts smallint,
 	cost numeric,
 	modtime timestamp without time zone DEFAULT now(),
 	primary key (id)
 );
-CREATE INDEX sms_log_dt_i ON sms_log (dt);
-CREATE INDEX sms_log_userid_i ON sms_log (userid);
-CREATE INDEX sms_log_cid_i ON sms_log (cid);
+CREATE INDEX feed_log_posted_i ON feed_log (posted);
+CREATE INDEX feed_log_dn_i ON feed_log (dn);
+CREATE INDEX feed_log_cid_i ON feed_log (cid);
+
+
+
+-- Deprecated ---
+
+--
+-- Проезды
+--
+CREATE TABLE street (
+    id integer NOT NULL,
+    name character varying(100) NOT NULL
+);
 
 -- Альтернативный вариант списка персон (vCard)
 CREATE TABLE contacts (
@@ -418,3 +358,37 @@ update contacts set id=cast(substring(carddata,'\WID:(\d+)') as int);
 
 
 
+-- users
+create table auth (
+	id serial not null,
+	name varchar,
+	login varchar,
+	password varchar,
+	email varchar,
+	active integer default 0,
+	gid integer default 0,
+	memo varchar,
+	modtime timestamp without time zone DEFAULT now()
+);
+create table groups (
+	id integer not null,
+	name varchar
+);
+INSERT INTO groups (id,name) VALUES (1,'admin');
+INSERT INTO groups (id,name) VALUES (2,'manager');
+INSERT INTO groups (id,name) VALUES (3,'user');
+INSERT INTO groups (id,name) VALUES (4,'guest');
+-- admin/admin
+INSERT INTO auth (name,login,password,email,active,gid,memo) VALUES ('- embedded admin -','admin','$1$YqBppwE5$9GaW92wOLUP0v4Au/Lfab.','admin@email',1,1,'Эту запись не стоит удалять');
+
+-- группы мониторинга (лучи)
+create table mgroup (
+	id integer not null,
+	active integer,
+	name varchar,
+	if_id integer,
+	memo varchar,
+	rank integer,
+	bid integer,
+	modtime timestamp without time zone DEFAULT now()
+);
