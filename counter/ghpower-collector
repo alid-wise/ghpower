@@ -125,10 +125,11 @@ foreach my $mgr (values %{$MGr}) {
 		$cps++;
 	# ждем освобождения очереди
 	while(%pids) {
+		sleep(1);
 		last	if($cps < $plim);
 	}
 }
-while(%pids) {}
+while(%pids) { sleep(1); }
 
 print time()." collector: completed in ".(time() - $^T)." sec\n" if($verb);
 
