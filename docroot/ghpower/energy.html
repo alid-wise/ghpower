@@ -7,10 +7,7 @@
 use POSIX;
 use locale;
 use Time::Local;
-#setlocale(&LC_COLLATE, 'ru_RU.KOI8-R');
-use utf8;
-
-#my $login = $ENV{REMOTE_USER} || '-';
+#use utf8;
 
 map { $_ =~ s/\D//g; } ( $id);
 map { $_ = 0 if($_ > 100000) } ($id);
@@ -61,7 +58,7 @@ while(my $row = $sth->fetchrow_hashref) {
 <table border=0>
 <tr><td>
 <table border="1">
-<tr><td align="right">Адрес:</td><td><%$Info->{street}%>, <%$Info->{house}%></td></tr>
+<tr><td align="right">Адрес:</td><td><%$Info->{street_name}%>, <%$Info->{domain}%></td></tr>
 </table>
 </td>
 <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="stored.html?id=<%$id%>">Показания счетчика по дням</a>&nbsp;&nbsp;&nbsp;<a href="expense.html?id=<%$id%>">Расход по месяцам</a></td>
