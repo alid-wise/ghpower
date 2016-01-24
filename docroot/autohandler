@@ -2,18 +2,30 @@
         $dbname => 'ghpower'
 </%args>
 <%init>
+use strict;
+use lib "$ENV{MY}/lib/";
+use GHPower;
+use GHPowerUtils;
+use GHPowerLDAP;
 use DBI;
 use utf8;
 use open qw(:std :utf8);
-use strict;
 
 my $dbh = DBI->connect("dbi:Pg:dbname=$dbname", "", "", {RaiseError => 1, pg_enable_utf8 => 1});
-my $sth = $dbh->prepare("select A.id,A.name,A.login,A.email,A.modtime,A.gid,G.name AS group from auth A inner join groups G on A.gid = G.id WHERE A.login=? AND active=1");
+#my $sth = $dbh->prepare("select A.id,A.name,A.login,A.email,A.modtime,A.gid,G.name AS group from auth A inner join groups G on A.gid = G.id WHERE A.login=? AND active=1");
 my $auth;
-if($sth->execute($ENV{REMOTE_USER})) {
-	$auth = ($sth->fetchrow_hashref);
-}
-$sth->finish;
+#if($sth->execute($ENV{REMOTE_USER})) {
+#	$auth = ($sth->fetchrow_hashref);
+#}
+#$sth->finish;
+
+$auth->{'id'} = $ENV{AUTHENTICATE_UIDNUMBER};
+$auth->{'name'} = $ENV{AUTHENTICATE_CN};
+$auth->{'gid'} = $ENV{AUTHENTICATE_GIDNUMBER};
+$auth->{'login'} = $ENV{AUTHENTICATE_UID};
+#$auth->{'group'} = 
+#$auth->{'email'} =
+
 $r->content_type(q{text/html; charset=utf-8});
 </%init>
 <html>
