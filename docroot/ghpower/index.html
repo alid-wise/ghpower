@@ -329,7 +329,7 @@ $(document).ready(function() {
 %	my $i=1;
 %#	foreach my $item (sort { $S->{$a->{street}}->{name} cmp $S->{$b->{street}}->{name} || $a->{house} <=> $b->{house}} @{$List->{$mgid}->{items}}) {
 
-%	foreach my $item (sort { $a->{street_name} cmp $b->{street_name} || $a->{domain} <=> $b->{domain} || $a->{name} <=> $b->{name}} @{$List->{$mgid}->{items}}) {
+%	foreach my $item (sort { $a->{street_name} cmp $b->{street_name} || $a->{domain} <=> $b->{domain} || $a->{name} cmp $b->{name}} @{$List->{$mgid}->{items}}) {
 
 
 %		if($filter2) {
