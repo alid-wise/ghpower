@@ -8,69 +8,314 @@
 	$nocache => 0
 </%args>
 <%init>
-
-unless($nocache) {
-	my ($rv, $cached) = $m->cache_self(
-		expire_in => '1 hour',
-		busy_lock => '5sec',
-		ttl => '5minutes',
-		key => "$name",
-		expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
-	);
-	return $rv	if($cached);
-}
-my $ret = undef;
-my $sth = $dbh->prepare("select * from $name");
-$sth->execute();
-while(my $r = $sth->fetchrow_hashref) {
-	$ret->{$r->{id}} = $r;
-}
-$sth->finish;
-$ret = {}	unless $ret;
-return $ret;
+	unless($nocache) {
+		my ($rv, $cached) = $m->cache_self(
+			expire_in => '1 hour',
+			busy_lock => '5sec',
+			ttl => '5minutes',
+			key => "$name",
+			expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
+		);
+		return $rv	if($cached);
+	}
+	my $ghpower = GHPower->new($dbh);
+	return $ghpower->ListLoad($name);
 </%init>
 </%method>
 
-
-<%method userlist>
+<%method counter_info>
 <%doc>
-	Список людей
-	(deprecated)
+	Параметры счетчика
 </%doc>
 <%args>
 	$dbh
-	$name => 'users'
-	$nocache => 0
+	$id
 </%args>
 <%init>
+	my $ghpower = GHPower->new($dbh);
+	return $ghpower->Counter_info($id);
+</%init>
+</%method>
 
+<%method mexpenses>
+<%doc>
+	Месячные расходы счетчика
+</%doc>
+<%args>
+	$dbh
+	$cid => 0
+	$ymon => undef
+	$nocache => 1
+</%args>
+<%init>
+$ymon = UnixDate("1 month ago","%Y-%m")	unless($ymon);
 unless($nocache) {
 	my ($rv, $cached) = $m->cache_self(
 		expire_in => '1 hour',
 		busy_lock => '5sec',
 		ttl => '5minutes',
-		key => "$name",
+		key => "mexpenses_".$cid."_".$ymon,
 		expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
 	);
 	return $rv	if($cached);
 }
-my $ret = undef;
-my $sth = $dbh->prepare("select * from $name");
-$sth->execute();
-while(my $r = $sth->fetchrow_hashref) {
-	if($r->{fname} =~ /^(.){1}/) {
-		$r->{name} = $r->{lname}." $1.";
-		if($r->{mname} =~ /^(.)/) {
-			$r->{name} .= "$1.";
-		}
+my $ghpower = GHPower->new($dbh);
+return $ghpower->mExpenses($cid,$ymon);
+</%init>
+</%method>
+
+<%method global>
+<%doc>
+	Общая информация
+</%doc>
+<%args>
+	$dbh
+	$nocache => 0
+</%args>
+<%init>
+unless($nocache) {
+	my ($rv, $cached) = $m->cache_self(
+		expire_in => '1 hour',
+		busy_lock => '5sec',
+		ttl => '5minutes',
+		key => "global",
+		expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
+	);
+	return $rv	if($cached);
+}
+my $ghpower = GHPower->new($dbh);
+return $ghpower->Global;
+</%init>
+</%method>
+
+<%method cflistload>
+<%doc>
+	Список счетчиков
+</%doc>
+<%args>
+	$dbh
+	$nocache => 0
+	$showdel => 0
+</%args>
+<%init>
+	unless($nocache) {
+		my ($rv, $cached) = $m->cache_self(
+			expire_in => '1 hour',
+			busy_lock => '5sec',
+			ttl => '5minutes',
+			key => "c-full-list",
+			expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
+		);
+		return $rv	if($cached);
 	}
-	$ret->{$r->{id}} = $r;
+	my $ghpower = GHPower->new($dbh);
+	return $ghpower->Counters_list($showdel);
+</%init>
+</%method>
+
+<%method grsum>
+<%doc>
+	Текущая сумма мощностей по лучу
+</%doc>
+<%args>
+	$dbh
+	$gid
+	$nocache => 1
+</%args>
+<%init>
+	unless($nocache) {
+		my ($rv, $cached) = $m->cache_self(
+			expire_in => '1 hour',
+			busy_lock => '5sec',
+			ttl => '5minutes',
+			key => "grsum_".$gid,
+			expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
+		);
+		return $rv	if($cached);
+	}
+	my $ghpower = GHPower->new($dbh);
+	return $ghpower->grsum($gid);
+</%init>
+</%method>
+
+<%method lastime>
+<%doc>
+	Время последнего обновления данных
+</%doc>
+<%args>
+	$dbh
+	$nocache => 1
+</%args>
+<%init>
+	unless($nocache) {
+		my ($rv, $cached) = $m->cache_self(
+			expire_in => '1 hour',
+			busy_lock => '5sec',
+			ttl => '5minutes',
+			key => "lastime",
+			expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
+		);
+		return $rv	if($cached);
+	}
+	my $ghpower = GHPower->new($dbh);
+	return $ghpower->lastime;
+</%init>
+</%method>
+
+<%method tariff>
+<%doc>
+	Текущие тарифы
+</%doc>
+<%args>
+	$dbh
+	$nocache => 0
+</%args>
+<%init>
+	unless($nocache) {
+		my ($rv, $cached) = $m->cache_self(
+			expire_in => '1 hour',
+			busy_lock => '5sec',
+			ttl => '5minutes',
+			key => "tariff",
+			expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
+		);
+		return $rv	if($cached);
+	}
+	my $ghpower = GHPower->new($dbh);
+	return $ghpower->tariff();
+</%init>
+</%method>
+
+<%method getcounter_last>
+<%doc>
+	Последние показания счетчика, дата
+</%doc>
+<%args>
+	$dbh
+	$id
+	$nocache => 1
+</%args>
+<%init>
+	unless($nocache) {
+		my ($rv, $cached) = $m->cache_self(
+			expire_in => '1 hour',
+			busy_lock => '5sec',
+			ttl => '5minutes',
+			key => "getcounter_last_$id",
+			expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
+		);
+		return $rv	if($cached);
+	}
+	return undef	unless($id);
+	my $ghpower = GHPower->new($dbh);
+	return $ghpower->getcounter_last($id);
+</%init>
+</%method>
+
+<%method getcost_simple>
+<%doc>
+	Стоимость потраченного электричества
+	без учета изменения тарифов
+</%doc>
+<%args>
+	$dbh
+	$flow1
+	$flow2
+	$mode => 2
+</%args>
+<%init>
+	my $ghpower = GHPower->new($dbh);
+	return $ghpower->getcost_simple($flow1, $flow2, $mode);
+</%init>
+</%method>
+
+<%method getcounter_date>
+<%doc>
+	Показания счетчика на дату
+</%doc>
+<%args>
+	$dbh
+	$id
+	$nocache => 1
+	$date
+</%args>
+<%init>
+unless($nocache) {
+	my ($rv, $cached) = $m->cache_self(
+		expire_in => '1 hour',
+		busy_lock => '5sec',
+		ttl => '5minutes',
+		key => "getcounter_day_$id"."_$date",
+		expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
+	);
+	return $rv	if($cached);
+}
+my $ghpower = GHPower->new($dbh);
+return $ghpower->getcounter_date($id,$date);
+
+
+
+return undef	if(!$id || !($date =~ /^\d{4}\-\d{2}\-\d{2}$/));
+my $ret = undef;
+my $sth = $dbh->prepare("SELECT date AS date,cid AS counter,se1 AS se1ai,se2 AS se2ai,date AS dt FROM daily WHERE cid=? AND date>=? ORDER BY date LIMIT 1");
+$sth->execute($id,$date);
+while(my $r = $sth->fetchrow_hashref) {
+		$ret = $r;
 }
 $sth->finish;
 $ret = {}	unless $ret;
 return $ret;
 </%init>
 </%method>
+
+
+<%method Domains_Struct>
+<%doc>
+	Вся структура ou=domains с владельцами и пр.
+</%doc>
+<%args>
+	$dbh
+	$nocache => 1
+</%args>
+<%init>
+	unless($nocache) {
+		my ($rv, $cached) = $m->cache_self(
+			expire_in => '1 hour',
+			busy_lock => '5sec',
+			ttl => '5minutes',
+			key => "Domains_Struct",
+			expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
+		);
+		return $rv	if($cached);
+	}
+	my $ghpower = GHPower->new($dbh);
+	return $ghpower->Domains_Struct;
+</%init>
+</%method>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 <%method ownerlist>
 <%doc>
@@ -113,109 +358,6 @@ return $ret;
 </%init>
 </%method>
 
-
-
-
-
-
-
-<%method cflistload>
-<%doc>
-	Список счетчиков
-</%doc>
-<%args>
-	$dbh
-	$nocache => 0
-	$showdel => 0
-</%args>
-<%init>
-unless($nocache) {
-	my ($rv, $cached) = $m->cache_self(
-		expire_in => '1 hour',
-		busy_lock => '5sec',
-		ttl => '5minutes',
-		key => "c-full-list",
-		expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
-	);
-	return $rv	if($cached);
-}
-my $ret = undef;
-my $sth = $dbh->prepare("select A.id,A.name,A.addr,A.mgroup,A.passwd,A.sn,A.model,A.setdate,A.memo,A.active,A.modtime,A.passwd2,A.ktrans,A.tower_id,A.year,A.street,A.house,A.owner,A.plimit,A.subscr,B.id as status_id,B.state,B.pstate,B.se1,B.se2,B.modtime as status_modtime from counters A left outer join status B on B.cid=A.id".((!$showdel) ? " where not (A.active < 0)":""));
-$sth->execute();
-while(my $r = $sth->fetchrow_hashref) {
-		push @{$ret->{$r->{mgroup}}->{items}}, $r;
-}
-$sth->finish;
-$ret = {}	unless $ret;
-return $ret;
-</%init>
-</%method>
-
-
-<%method counter_info>
-<%doc>
-	Параметры счетчика
-</%doc>
-<%args>
-	$dbh
-	$id
-</%args>
-<%init>
-
-my $ret = undef;
-my $sth = $dbh->prepare("SELECT A.id as id,A.name as name,A.addr as addr,A.mgroup as mgroup,A.mgroup as gid,A.passwd as passwd,A.model as model,A.plimit,A.memo,A.active,A.modtime,A.year,A.house,A.sn,A.setdate,B.name AS model,B.type as type,D.dev AS iface,D.id AS if,E.name AS street, F.name AS tower FROM counters A INNER JOIN counter_type b ON a.model=b.id INNER JOIN mgroup c ON a.mgroup=c.id INNER JOIN iface D ON c.if_id=d.id LEFT OUTER JOIN street E ON E.id=A.street LEFT OUTER JOIN towers F ON F.id=A.tower_id WHERE a.id=? LIMIT 1"
-);
-
-$sth->execute($id);
-while(my $r = $sth->fetchrow_hashref) {
-		$ret = $r;
-}
-$sth->finish;
-$ret = {}	unless $ret;
-return $ret;
-</%init>
-</%method>
-
-
-
-
-
-<%method tariff>
-<%doc>
-	Текущие тарифы
-</%doc>
-<%args>
-	$dbh
-	$nocache => 0
-</%args>
-<%init>
-
-unless($nocache) {
-	my ($rv, $cached) = $m->cache_self(
-		expire_in => '1 hour',
-		busy_lock => '5sec',
-		ttl => '5minutes',
-		key => "tariff",
-		expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
-	);
-	return $rv	if($cached);
-}
-my $ret = undef;
-my $sth = $dbh->prepare("select *,coalesce(sdate<now()) as legal from tariff order by sdate desc limit 20");
-$sth->execute();
-while(my $r = $sth->fetchrow_hashref) {
-	unless($ret->{C}) {
-		if($r->{legal}) {
-			$ret->{C} = $r;	# текущий тариф
-		}
-	}
-	$ret->{$r->{id}} = $r;
-}
-$sth->finish;
-$ret = {}	unless $ret;
-return $ret;
-</%init>
-</%method>
 
 
 
@@ -269,225 +411,12 @@ return $ret;
 </%method>
 
 
-<%method grsum>
-<%doc>
-	Текущая сумма по лучу
-</%doc>
-<%args>
-	$dbh
-	$gid
-	$nocache => 1
-</%args>
-<%init>
-unless($nocache) {
-	my ($rv, $cached) = $m->cache_self(
-		expire_in => '1 hour',
-		busy_lock => '5sec',
-		ttl => '5minutes',
-		key => "grsum_".$gid,
-		expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
-	);
-	return $rv	if($cached);
-}
-my $sth = $dbh->prepare("select sum(lpower) as lpsum from status where cid in (select id from counters where mgroup=? and active=1)");
-$sth->execute($gid);
-my $ret = $sth->fetchrow_hashref;
-$sth->finish;
-$ret->{lpsum} = sprintf("%0.2f",$ret->{lpsum});
-$ret->{lpsum} =~ s/\./,/;
-$ret = {}	unless $ret;
-return $ret;
-</%init>
-</%method>
-
-
-<%method mexpenses>
-<%doc>
-	Месячные расходы счетчика
-</%doc>
-<%args>
-	$dbh
-	$cid => 0
-	$ymon => undef
-	$nocache => 1
-</%args>
-<%init>
-$ymon = UnixDate("1 month ago","%Y-%m")	unless($ymon);
-unless($nocache) {
-	my ($rv, $cached) = $m->cache_self(
-		expire_in => '1 hour',
-		busy_lock => '5sec',
-		ttl => '5minutes',
-		key => "mexpenses_".$cid."_".$ymon,
-		expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
-	);
-	return $rv	if($cached);
-}
-use Date::Manip;
-my $ret = undef;
-my $sth;
-if($cid) {
-	$sth = $dbh->prepare("select id,cid,year,month,exp1,exp2,modtime FROM mexpenses WHERE cid=?");
-	$sth->execute($cid);
-	while(my $r = $sth->fetchrow_hashref) {
-		map { $_=sprintf("%0.2f", $_); s/\./,/; } ($r->{exp1}, $r->{exp2});
-		$r->{month} = sprintf("%02d",$r->{month});
-		$ret->{$r->{year}}->{$r->{month}} = $r;
-	}
-} else {	# Полный список
-	$sth = $dbh->prepare("select id,cid,year,month,exp1,exp2,modtime FROM mexpenses WHERE year=? AND month=?");
-	my ($year,$mon) = ($ymon =~ m/(\d{4})\-(\d{2})/);
-
-	$sth->execute($year,$mon);
-	while(my $r = $sth->fetchrow_hashref) {
-		map { $_=sprintf("%0.2f", $_); s/\./,/; } ($r->{exp1}, $r->{exp2});
-		$r->{month} = sprintf("%02d",$r->{month});
-		$ret->{$r->{cid}} = $r;
-	}
-}
-$sth->finish;
-$ret = {}	unless $ret;
-return $ret;
-</%init>
-</%method>
 
 
 
-<%method global>
-<%doc>
-	Общая информация
-</%doc>
-<%args>
-	$dbh
-	$nocache => 0
-</%args>
-<%init>
-unless($nocache) {
-	my ($rv, $cached) = $m->cache_self(
-		expire_in => '1 hour',
-		busy_lock => '5sec',
-		ttl => '5minutes',
-		key => "global",
-		expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
-	);
-	return $rv	if($cached);
-}
-use Date::Manip;
-my $ret = undef;
-my $sth = $dbh->prepare("select min(setdate),max(setdate) from counters");
-$sth->execute();
-($ret->{first_sedate},$ret->{last_sedate}) = ($sth->fetchrow_array);
-$sth->finish;
-($ret->{first_year}) = ($ret->{first_sedate} =~ m/^(\d{4})\-/);
-$ret->{last_year} = UnixDate("1 month ago","%Y");
-$ret->{today_year} = UnixDate("today","%Y");
 
 
-$ret = {}	unless $ret;
-return $ret;
-</%init>
-</%method>
 
-
-<%method getcounter_date>
-<%doc>
-	Показания счетчика на дату
-</%doc>
-<%args>
-	$dbh
-	$id
-	$nocache => 1
-	$date
-</%args>
-<%init>
-
-unless($nocache) {
-	my ($rv, $cached) = $m->cache_self(
-		expire_in => '1 hour',
-		busy_lock => '5sec',
-		ttl => '5minutes',
-		key => "getcounter_day_$id"."_$date",
-		expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
-	);
-	return $rv	if($cached);
-}
-return undef	if(!$id || !($date =~ /^\d{4}\-\d{2}\-\d{2}$/));
-my $ret = undef;
-#my $sth = $dbh->prepare("SELECT CAST(dt AS date) AS date,counter,se1ai,se2ai,ise,dt FROM monitor WHERE counter=? AND dt>? ORDER BY date LIMIT 1");
-my $sth = $dbh->prepare("SELECT date AS date,cid AS counter,se1 AS se1ai,se2 AS se2ai,date AS dt FROM daily WHERE cid=? AND date>=? ORDER BY date LIMIT 1");
-$sth->execute($id,$date);
-while(my $r = $sth->fetchrow_hashref) {
-		$ret = $r;
-}
-$sth->finish;
-$ret = {}	unless $ret;
-return $ret;
-</%init>
-</%method>
-
-
-<%method getcounter_last>
-<%doc>
-	Последние показания счетчика, дата
-</%doc>
-<%args>
-	$dbh
-	$id
-	$nocache => 1
-</%args>
-<%init>
-unless($nocache) {
-	my ($rv, $cached) = $m->cache_self(
-		expire_in => '1 hour',
-		busy_lock => '5sec',
-		ttl => '5minutes',
-		key => "getcounter_last_$id",
-		expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
-	);
-	return $rv	if($cached);
-}
-return undef	unless($id);
-my $ret = undef;
-my $sth = $dbh->prepare("SELECT id,date,cid,se1,se2 FROM daily WHERE cid=? ORDER BY date DESC LIMIT 1");
-$sth->execute($id);
-while(my $r = $sth->fetchrow_hashref) {
-		map { s/\./,/; } ($r->{se1}, $r->{se2});
-		$ret = $r;
-}
-$sth->finish;
-$ret = {}	unless $ret;
-return $ret;
-</%init>
-</%method>
-
-<%method getcost_simple>
-<%doc>
-	Стоимость потраченного электричества
-	без учета изменения тарифов
-</%doc>
-<%args>
-	$dbh
-	$flow1
-	$flow2
-	$mode => 2
-</%args>
-<%init>
-
-# Текущий тариф
-my $T = $m->comp("lib.msn:tariff", dbh=>$dbh, nocache=>0);
-my ($ret,$ret1,$ret2) = (undef,undef,undef);
-if($mode eq "1") {	# Однотарифник
-	$ret = (($flow1 + $flow2) * $T->{C}->{t0}) * $T->{C}->{k};
-	$ret1 = ($flow1 * $T->{C}->{t0}) * $T->{C}->{k};
-	$ret2 = ($flow2 * $T->{C}->{t0}) * $T->{C}->{k};
-} else {	# Двухтарифник
-	$ret = ($flow1 * $T->{C}->{t1} + $flow2 * $T->{C}->{t2}) * $T->{C}->{k};
-	$ret1 = ($flow1 * $T->{C}->{t1}) * $T->{C}->{k};
-	$ret2 = ($flow2 * $T->{C}->{t2}) * $T->{C}->{k};
-}
-return ($ret,$ret1,$ret2);
-</%init>
-</%method>
 
 
 <%method pretty_date>
@@ -529,35 +458,6 @@ use Date::Manip;
 my $ret = undef;
 $ret->{today} = UnixDate("today","%Y-%m-%d");
 $ret->{pretty} = UnixDate("today","%d.%m.%Y");
-$ret = {}	unless $ret;
-return $ret;
-</%init>
-</%method>
-
-<%method lastime>
-<%doc>
-	Время последнего обновления данных
-</%doc>
-<%args>
-	$dbh
-	$nocache => 1
-</%args>
-<%init>
-unless($nocache) {
-	my ($rv, $cached) = $m->cache_self(
-		expire_in => '1 hour',
-		busy_lock => '5sec',
-		ttl => '5minutes',
-		key => "lastime",
-		expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
-	);
-	return $rv	if($cached);
-}
-my $sth = $dbh->prepare("select modtime as lastime from status order by modtime desc limit 1");
-$sth->execute();
-my $ret = $sth->fetchrow_hashref;
-$sth->finish;
-$ret->{lastime} =~ s/\.\d*$//;
 $ret = {}	unless $ret;
 return $ret;
 </%init>
