@@ -11,14 +11,7 @@
 </%args>
 <%init>
 #use Data::Dumper;
-use POSIX;
 use Date::Manip;
-
-#if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# только admin и manager
-#	$r->status_line('');
-#	$m->clear_buffer;
-#	$m->abort(404);
-#}
 
 map { $_ =~ s/\D//g; } ( $verb, $id, $filter, $filter2,$fyear,$fmonth);
 map { $_ = 1 if($_ > 1) } ( $verb);
@@ -34,20 +27,10 @@ if(!$fyear || !$fmonth) {
 }
 
 my %Err;
-#my $OK=0;
 
 my $sth;
-# Справочники
-
-# Проезды (улицы)
-my $S = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'street', nocache=>0);
-# Люди
-my $Owners = $m->comp("lib.msn:ownerlist", dbh=>$dbh, nocache=>1);
-
 my $MExpenses;
-
 my $Global = $m->comp("lib.msn:global", dbh=>$dbh, nocache=>0);
-
 
 my ($List, $Usr);
 # Группы
@@ -59,14 +42,20 @@ while(my $r = $sth->fetchrow_hashref) {
 $sth->finish;
 
 if($id) {
-	$sth = $dbh->prepare("select * from counters where id=?");
-	$sth->execute($id);
-	while(my $r = $sth->fetchrow_hashref) {
-		$Usr = $r;
+	$Usr = $m->comp("lib.msn:counter_info", dbh=>$dbh, id=>$id);
+	my @owners;
+	foreach(@{$Usr->{Dom}->{owners}}) {
+		my ($lname,$fname,$mname) = split(" ",$_->{cn}[0]);
+		my $name;
+		if($fname =~ /^(.){1}/) {
+			$name = $lname." $1.";
+			if($mname =~ /^(.)/) {
+				$name .= "$1.";
+			}
+		}
+		push @owners,$name;
 	}
-	$sth->finish;
-	$Usr->{the_street} = $S->{$Usr->{street}};
-	$Usr->{the_owner} = $Owners->{$Usr->{owner}};
+	$Usr->{the_owner} = join(",",@owners);
 
 	# Расходы
 	$MExpenses = $m->comp("lib.msn:mexpenses", dbh=>$dbh, cid=>$id, nocache=>0);
@@ -81,16 +70,10 @@ if($id) {
 
 }
 </%init>
-<pre>
-%#<%Dumper $auth%>
-</pre>
-
-
-
 %if($id) {
 <h2>Расход электроэнергии по месяцам</h2>
-<p><b><% $Usr->{the_street}->{name} %>, <% $Usr->{house} %><br>
-<% $Usr->{the_owner}->{name} %><br>
+<p><b><% $Usr->{street_name} %>, <% $Usr->{domain} %><br>
+<% $Usr->{the_owner} %><br>
 <% $Usr->{ktrans} > 1 ? "Коэффициент: ".$Usr->{ktrans} : "" %>
 </b></p>
 <table border="1">
@@ -171,7 +154,7 @@ if($id) {
 <td colspan="4"><% $List->{$mgid}->{memo}%></td>
 </tr>
 %	my $i=1; my $total=0; my ($dsum,$nsum) = (0,0);
-%	foreach my $item (sort { $S->{$a->{street}}->{name} cmp $S->{$b->{street}}->{name} || $a->{house} <=> $b->{house}} @{$List->{$mgid}->{items}}) {
+%	foreach my $item (sort { $a->{street_name} cmp $b->{street_name} || $a->{domain} <=> $b->{domain} || $a->{name} <=> $b->{name}} @{$List->{$mgid}->{items}}) {
 %		if($filter2) {
 %			next	if($filter2 eq '1' && $item->{active} ne '1');
 %			next	if($filter2 eq '2' && $item->{active});
@@ -180,15 +163,24 @@ if($id) {
 <tr>
 <td align="center"><%$i%>.</td>
 %	my $parcel;
-%	if($item->{street}) {
-%		$parcel = $item->{street};
-%		$parcel = $S->{$item->{street}}->{name};
+%	if($item->{street_name}) {
+%		$parcel = $item->{street_name};
 %		$parcel = substr($parcel, 0, 1);
 %		$parcel .= '.-';
-%	} $parcel .= $item->{house};
-<td><% $parcel %></td>
-<td><% $Owners->{$item->{owner}}->{name} || $Owners->{$item->{owner}}->{lname}%></td>
-
+%	} $parcel .= $item->{domain};
+<td><% $parcel || $item->{name} %></td>
+%	my @owners;
+%	foreach(@{$item->{Dom}->{owners}}) {
+%		my ($lname,$fname,$mname) = split(" ",$_->{cn}[0]);
+%		my $name;
+%		if($fname =~ /^(.){1}/) {
+%			$name = $lname." $1.";
+%			if($mname =~ /^(.)/) {
+%				$name .= "$1.";
+%			}
+%	}
+%		push @owners,$name; }
+<td><% join ",", @owners %></td>
 <td align="right"><%$MExpenses->{$item->{id}}->{exp1}%></td>
 <td align="right"><%$MExpenses->{$item->{id}}->{exp2}%></td>
 
