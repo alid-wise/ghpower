@@ -10,7 +10,7 @@
 </%args>
 <%init>
 #use Data::Dumper;
-use POSIX;
+#use POSIX;
 
 #if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# только admin и manager
 #	$r->status_line('');
@@ -32,9 +32,9 @@ my $sth;
 # Справочники
 
 # Проезды (улицы)
-my $S = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'street', nocache=>0);
+#my $S = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'street', nocache=>0);
 # Люди
-my $Owners = $m->comp("lib.msn:ownerlist", dbh=>$dbh, nocache=>1);
+#my $Owners = $m->comp("lib.msn:ownerlist", dbh=>$dbh, nocache=>1);
 # Столбы
 my $Towers = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'towers', nocache=>0);
 # Типы счетчиков
@@ -81,17 +81,17 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 			if($Usr) {	# Обновление
 				my $chg = ($active ne $Usr->{active})? 1:0;
 				$chg++	if($subscr ne $Usr->{subscr})? 1:0;
-				map {$chg++ if($ARGS{$_} ne $Usr->{$_})} ('name','addr','mgroup','sn','model','setdate','memo','tower_id','year','street','house','owner','plimit');
+				map {$chg++ if($ARGS{$_} ne $Usr->{$_})} ('name','addr','mgroup','sn','model','setdate','memo','tower_id','year','street','house','owner','plimit','dn');
 				if($chg) {	# есть изменения
-					my $upd = $dbh->prepare("update counters set name=?,addr=?,mgroup=?,sn=?,model=?,setdate=?,memo=?,active=?,tower_id=?,year=?,street=?,house=?,owner=?,modtime=now(),plimit=?,subscr=? where id=?");
-					$upd->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{street},$ARGS{house},$ARGS{owner},$ARGS{plimit},$subscr,$id);
+					my $upd = $dbh->prepare("update counters set name=?,addr=?,mgroup=?,sn=?,model=?,setdate=?,memo=?,active=?,tower_id=?,year=?,street=?,house=?,owner=?,modtime=now(),plimit=?,subscr=?,dn=? where id=?");
+					$upd->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{street},$ARGS{house},$ARGS{owner},$ARGS{plimit},$subscr,$ARGS{dn},$id);
 				}
 			} else {	# Новая запись
 
 				my ($passwd1,$passwd2) = ('','');
 				if($Ctypes->{$ARGS{model}}->{type} eq 'M230') { ($passwd1,$passwd2) = ('111111','222222'); }
-				my $ins = $dbh->prepare("insert into counters (name,addr,mgroup,sn,model,setdate,memo,active,tower_id,year,street,house,owner,passwd,passwd2,modtime,plimit,subscr) values (?,?,?,?,?,?,?,?,?,?,?,?,?,\'$passwd1\',\'$passwd2\',now(),?,?)");
-				$ins->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{street},$ARGS{house},$ARGS{owner},$ARGS{plimit},$subscr);
+				my $ins = $dbh->prepare("insert into counters (name,addr,mgroup,sn,model,setdate,memo,active,tower_id,year,street,house,owner,passwd,passwd2,modtime,plimit,subscr,dn) values (?,?,?,?,?,?,?,?,?,?,?,?,?,\'$passwd1\',\'$passwd2\',now(),?,?,?)");
+				$ins->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{street},$ARGS{house},$ARGS{owner},$ARGS{plimit},$subscr,$ARGS{dn});
 			}
 			undef $id;
 			undef $ARGS{"add_new"};
@@ -173,30 +173,40 @@ $(document).ready(function() {
 </select></td>
 </tr>
 <tr>
-<td>Проезд:</td>
-<td><select name="street" <% ($auth->{gid} >1) ? "disabled":"" %>>
-<option></option>
-%	foreach my $sid (sort {$S->{$a}->{name} cmp $S->{$b}->{name}} keys %$S) {
-<option value="<%$sid%>" <% ((!$ARGS{submit} ? $Usr->{street} : $ARGS{street}) eq $sid)? "selected":"" %>><%$S->{$sid}->{name}%></option>
-%	}
-</select></td>
+<td>Участок:<br><small>формат: "ou=Уч.,ou=Улица"</small></td>
+<td><input type="text" name="dn" value="<%$ARGS{dn} || (!$ARGS{submit} ? $Usr->{dn} : "")%>" <% ($auth->{gid} >1) ? "disabled":"" %>></td>
 </tr>
-<tr>
-<td>Участок:</td>
-<td><input type="text" name="house" value="<%$ARGS{house} || (!$ARGS{submit} ? $Usr->{house} : "")%>" <% ($auth->{gid} >1) ? "disabled":"" %>></td>
-</tr>
-<tr>
-<td>Владелец:</td>
-<td>
-<select name="owner" <% ($auth->{gid} >1) ? "disabled":"" %>>
-<option></option>
-%	foreach my $uid (sort {$Owners->{$a}->{lname} cmp $Owners->{$b}->{lname}} keys %$Owners) {
-%		next	unless($Owners->{$uid}->{lname});
-<option value="<%$uid%>" <% ((!$ARGS{submit} ? $Usr->{owner} : $ARGS{owner}) eq $uid)? "selected":"" %>><%$Owners->{$uid}->{fullname} || $Owners->{$uid}->{name} || $Owners->{$uid}->{lname}%></option>
-%	}
-</select>
-</td>
-</tr>
+
+
+
+%#<tr>
+%#<td>Проезд:</td>
+%#<td><select name="street" <% ($auth->{gid} >1) ? "disabled":"" %>>
+%#<option></option>
+%#%	foreach my $sid (sort {$S->{$a}->{name} cmp $S->{$b}->{name}} keys %$S) {
+%#<option value="<%$sid%>" <% ((!$ARGS{submit} ? $Usr->{street} : $ARGS{street}) eq $sid)? "selected":"" %>><%$S->{$sid}->{name}%></option>
+%#%	}
+%#</select></td>
+%#</tr>
+%#<tr>
+%#<td>Участок:</td>
+%#<td><input type="text" name="house" value="<%$ARGS{house} || (!$ARGS{submit} ? $Usr->{house} : "")%>" <% ($auth->{gid} >1) ? "disabled":"" %>></td>
+%#</tr>
+%#<tr>
+%#<td>Владелец:</td>
+%#<td>
+%#<select name="owner" <% ($auth->{gid} >1) ? "disabled":"" %>>
+%#<option></option>
+%#%	foreach my $uid (sort {$Owners->{$a}->{lname} cmp $Owners->{$b}->{lname}} keys %$Owners) {
+%#%		next	unless($Owners->{$uid}->{lname});
+%#<option value="<%$uid%>" <% ((!$ARGS{submit} ? $Usr->{owner} : $ARGS{owner}) eq $uid)? "selected":"" %>><%$Owners->{$uid}->{fullname} || $Owners->{$uid}->{name} || $Owners->{$uid}->{lname}%></option>
+%#%	}
+%#</select>
+%#</td>
+%#</tr>
+
+
+
 <tr>
 <td>Столб:</td>
 <td><select name="tower_id" <% ($auth->{gid} >1) ? "disabled":"" %>>
@@ -222,8 +232,6 @@ $(document).ready(function() {
 <td>Примечания:</td>
 <td><textarea name="memo" cols="30" rows="2" <% ($auth->{gid} >1) ? "disabled":"" %>><%$ARGS{memo} || (!$ARGS{submit} ? $Usr->{memo} : "")%></textarea></td>
 </tr>
-
-%#	modtime timestamp default now(),
 
 %if($auth->{gid} eq 1) {
 <tr>
@@ -269,7 +277,8 @@ $(document).ready(function() {
 %}
 %if($auth->{gid} eq 1) {
 %#		<li><a href="user.html">Персоны</a></li>
-		<li><a href="auth.html">authors</a></li>
+%#		<li><a href="auth.html">authors</a></li>
+		<li><a href="/phpldapadmin/index.php" target=_blank>Справочник</a></li>
 %}
 	</ul>
 %#	<h3 class="muted">GHPower</h3>
@@ -318,7 +327,11 @@ $(document).ready(function() {
 <td colspan="9"><% $List->{$mgid}->{memo}%></td>
 </tr>
 %	my $i=1;
-%	foreach my $item (sort { $S->{$a->{street}}->{name} cmp $S->{$b->{street}}->{name} || $a->{house} <=> $b->{house}} @{$List->{$mgid}->{items}}) {
+%#	foreach my $item (sort { $S->{$a->{street}}->{name} cmp $S->{$b->{street}}->{name} || $a->{house} <=> $b->{house}} @{$List->{$mgid}->{items}}) {
+
+%	foreach my $item (sort { $a->{street_name} cmp $b->{street_name} || $a->{domain} <=> $b->{domain} || $a->{name} <=> $b->{name}} @{$List->{$mgid}->{items}}) {
+
+
 %		if($filter2) {
 %			next	if($filter2 eq '1' && $item->{active} ne '1');
 %			next	if($filter2 eq '2' && $item->{active});
@@ -328,14 +341,24 @@ $(document).ready(function() {
 <td align="center"><%$i%>.</td>
 <td align="right"><a href="?id=<%$item->{id}%>"><%$item->{addr} ? $item->{addr} : "---"%></a> (<%$item->{sn}%>)</td>
 %	my $parcel;
-%	if($item->{street}) {
-%		$parcel = $item->{street};
-%		$parcel = $S->{$item->{street}}->{name};
+%	if($item->{street_name}) {
+%		$parcel = $item->{street_name};
 %		$parcel = substr($parcel, 0, 1);
 %		$parcel .= '.-';
-%	} $parcel .= $item->{house};
-<td><% $parcel %></td>
-<td><% $Owners->{$item->{owner}}->{name} || $Owners->{$item->{owner}}->{lname}%></td>
+%	} $parcel .= $item->{domain};
+<td><% $parcel || $item->{name} %></td>
+%	my @owners;
+%	foreach(@{$item->{Dom}->{owners}}) {
+%		my ($lname,$fname,$mname) = split(" ",$_->{cn}[0]);
+%		my $name;
+%		if($fname =~ /^(.){1}/) {
+%			$name = $lname." $1.";
+%			if($mname =~ /^(.)/) {
+%				$name .= "$1.";
+%			}
+%	}
+%		push @owners,$name; }
+<td><% join ",", @owners %></td>
 <td><%$Towers->{$item->{tower_id}}->{name}%></td>
 %#<td align="right"><a href="energy.html?id=<%$item->{id}%><%$filter ? "&filter=$filter":""%>"><%$LastCounter->{$item->{id}}->{t1}%></a></td>
 %#<td align="right"><a href="energy.html?id=<%$item->{id}%><%$filter ? "&filter=$filter":""%>"><%$LastCounter->{$item->{id}}->{t2}%></a></td>
@@ -457,10 +480,11 @@ $(document).ready(function() {
 
 
 
-<pre>
+%#<pre>
+%#<% Dumper $List %>
 %#<% Dumper $Usr %>
 %#<% Dumper %ARGS %>
 %#<% Dumper $LastCounter %>
-</pre>
+%#</pre>
 
 
