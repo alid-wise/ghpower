@@ -26,20 +26,9 @@ if($ARGS{cancel}) {
 	}
 }
 
-
-#print STDERR " id=$id\n";
-#print STDERR Dumper %ARGS;
-
-
 map { $_ =~ s/\D//g; } ( $id );
 
 my %Err;
-
-
-
-# Текущая дата
-#my $Today = $m->comp("lib.msn:now", nocache=>1);
-
 
 if($ARGS{submit}) {
 
@@ -92,7 +81,6 @@ if($ARGS{submit}) {
 				$m->redirect($self);
 			}
 		}
-
 	} else { # Новая запись
 		my $ins = $dbh->prepare("insert into tariff (auth,sdate,t0,t1,t2,k) values ($auth->{id},?,?,?,?,?)");
 		unless(%Err) {
@@ -108,9 +96,6 @@ if($ARGS{submit}) {
 
 # Тарифы
 my $T = $m->comp("lib.msn:tariff", dbh=>$dbh, nocache=>1);
-
-
-
 
 </%init>
 <script src="calendar.js" type="text/javascript"></script>
@@ -161,5 +146,3 @@ my $T = $m->comp("lib.msn:tariff", dbh=>$dbh, nocache=>1);
 
 %}
 </table>
-
-
