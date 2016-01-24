@@ -13,84 +13,33 @@ if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# admin или manager
 	$m->abort(404);
 }
 
-# Проезды (улицы)
-my $S = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'street', nocache=>0);
-# Текущий тариф
-#my $T = $m->comp("lib.msn:tariff", dbh=>$dbh, nocache=>0);
-#my $Owners = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'users', nocache=>0);
-my $Owners = $m->comp("lib.msn:ownerlist", dbh=>$dbh, nocache=>0);
-
-# Счетчики
-my $L = $m->comp("lib.msn:cflistload", dbh=>$dbh, nocache=>0);
-
-
-my $List;
 my $gp = $dbh->prepare("SELECT id,date,prev1,prev2,current1,current2,amount,balance,mode,init FROM payments WHERE cid=? ORDER BY modtime DESC LIMIT 1");
+my $List2 = $m->comp("lib.msn:Domains_Struct", dbh=>$dbh, nocache=>0);
+my $ghpower = GHPower->new($dbh);
 
-foreach(keys %$L) {
-	my @items = @{$L->{$_}->{items}};
-	foreach my $item(@items) {
-
-#$m->out('<pre>');
-#$m->out(Dumper $item);
-#$m->out('</pre>');
-		next	unless($item->{street});
-#		next	unless($item->{active});	# только работающие счетчики
-		# последний платеж по этому счетчику
-		$gp->execute($item->{id});
-		my ($p_id,$p_date,$p_prev1,$p_prev2,$p_current1,$p_current2,$p_amount,$p_balance,$t_mode,$init) = $gp->fetchrow_array;
-		$gp->finish;
-		if($p_id) {	# платеж был
-			$item->{p_date} = $p_date;
-#			my $C = $m->comp("lib.msn:lastcounter", dbh=>$dbh, id=>$item->{id}, nocache=>1);
-			my $C = $m->comp("lib.msn:getcounter_last", dbh=>$dbh, id=>$item->{id}, nocache=>1);
-#			map {s/\,/\./} ($C->{t1},$C->{t2});
-			map {s/\,/\./} ($C->{se1},$C->{se2});
-#			my ($c_date,$c1,$c2) = ($C->{tm},$C->{t1},$C->{t2});
-			my ($c_date,$c1,$c2) = ($C->{date},$C->{se1},$C->{se2});
-			my $flow1 = sprintf("%.02f", $c1 - $p_current1);
-			my $flow2 = sprintf("%.02f", $c2 - $p_current2);
-
-
-			my ($bal,undef,undef) = $m->comp("lib.msn:getcost_simple", dbh=>$dbh, flow1=>$flow1, flow2=>$flow2, mode=>$t_mode);
-			$item->{balance} = $p_balance - $bal;
-
-
-#			if($t_mode eq "1") {	# Однотарифник
-#				$item->{balance} = $p_balance - (($flow1 + $flow2) * $T->{C}->{t0}) * $T->{C}->{k};
-#			} else {	# Двухтарифник
-#				$item->{balance} = $p_balance - ($flow1 * $T->{C}->{t1} + $flow2 * $T->{C}->{t2}) * $T->{C}->{k};
-#			}
-			$item->{mode} = $t_mode;
-			$item->{init} = $init;
-		}
-		$List->{$item->{street}}->{$item->{house}} = $item;
-
-	}
-}
 # Экспорт csv
 if($ARGS{export}) {
 	$m->clear_buffer;
 #	$r->content_type('text/csv');
 	$r->content_type('application/octet-stream');
 	$r->headers_out->add('Content-disposition',"attachment;  filename=payments.csv"); 
-	foreach my $street_id (sort { $a <=> $b } keys %$List) {
-		my $items = $List->{$street_id};
-		foreach my $house (sort {$a<=>$b} keys %$items) {
-			$m->out($items->{$house}->{id});
-			$m->out(';');
-			$m->out($S->{$street_id}->{name});
-			$m->out(';');
-			$m->out($house);
-			$m->out(';');
-			$m->out($Owners->{$items->{$house}->{owner}}->{lname});
-			$m->out(';');
-			$m->out($m->comp("lib.msn:pretty", value=>$items->{$house}->{balance}));
-			$m->out(';');
-			$m->out($m->comp("lib.msn:pretty_date", date=>$items->{$house}->{p_date}));
-			$m->out("\n");
-		}
-	}
+#	foreach my $street_id (sort { $a <=> $b } keys %$List) {
+#		my $items = $List->{$street_id};
+#		foreach my $house (sort {$a<=>$b} keys %$items) {
+#			$m->out($items->{$house}->{id});
+#			$m->out(';');
+#			$m->out($S->{$street_id}->{name});
+#			$m->out(';');
+#			$m->out($house);
+#			$m->out(';');
+#			$m->out($Owners->{$items->{$house}->{owner}}->{lname});
+#			$m->out(';');
+#			$m->out($m->comp("lib.msn:pretty", value=>$items->{$house}->{balance}));
+#			$m->out(';');
+#			$m->out($m->comp("lib.msn:pretty_date", date=>$items->{$house}->{p_date}));
+#			$m->out("\n");
+#		}
+#	}
 	$m->abort;
 }
 </%init>
@@ -115,31 +64,60 @@ if($ARGS{export}) {
 		<li class="active"><a href="/">Home</a></li>
 		<li><a href="index.html">Список счетчиков</a></li>
 		<li><a href="tarifs.html" target="pform">Тарифы</a></li>
-		<li><a href="?export=1">Экспорт</a></li>
+%#		<li><a href="?export=1">Экспорт</a></li>
 	</ul>
 %#	<h3 class="muted">GHPower</h3>
 </div>
 <hr>
 <p><br></p>
 
-%#<p><nobr><a href="tarifs.html" target="pform">Тарифы</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="?export=1">Экспорт</a></nobr></p>
 <h2>Платежи</h2>
 <table border="1" class="table-condensed">
-%my $total;
-%foreach my $street_id (sort { $a <=> $b } keys %$List) {
-%	my $items = $List->{$street_id};
-<tr><td colspan="5"><b><br><%$S->{$street_id}->{name}%></b></td></tr>
-<tr><th><i>Дом</i></th><th><i>Владелец</i></th><th><i>Остаток</i></th><th><i>Посл.оплата</i></th></tr>
+%my $total2;
+
+
+%foreach my $street (sort {$List2->{$a}->{ord} <=> $List2->{$b}->{ord}} keys %{$List2}) {
+
+<tr><td colspan="5"><b><br><%$street%></b></td></tr>
+<tr><th><i>Участок</i></th><th><i>Владелец</i></th><th><i>Остаток</i></th><th><i>Посл.оплата</i></th></tr>
 %	my $localsum;
-%	foreach my $house (sort {$a<=>$b} keys %$items) {
-%	$localsum += $items->{$house}->{balance};
+%	my $Dom = $List2->{$street}->{Dom};
+%	foreach my $house (sort {$a <=> $b || $a cmp $b} keys %{$Dom}) {
+%		my @owners;
+%		foreach(@{$Dom->{$house}->{owners}}) {
+%			push @owners, $_->{sn}[0];
+%		}
+%		my $counters = $ghpower->getcounters_dn("ou=$house,ou=$street");
+%		foreach my $cid (keys %{$counters}) {
+%			next	if($counters->{$cid} < 0);	# Не показывать удаленные счетчики
+<%perl>
+		my $BALANCE;
+		# последний платеж по этому счетчику
+		$gp->execute($cid);
+		my ($p_id,$p_date,$p_prev1,$p_prev2,$p_current1,$p_current2,$p_amount,$p_balance,$t_mode,$init) = $gp->fetchrow_array;
+		$gp->finish;
+		if($p_id) {	# платеж был
+#			$item->{p_date} = $p_date;
+			my $C = $m->comp("lib.msn:getcounter_last", dbh=>$dbh, id=>$cid, nocache=>1);
+			map {s/\,/\./} ($C->{se1},$C->{se2});
+			my ($c_date,$c1,$c2) = ($C->{date},$C->{se1},$C->{se2});
+			my $flow1 = sprintf("%.02f", $c1 - $p_current1);
+			my $flow2 = sprintf("%.02f", $c2 - $p_current2);
+
+			my ($bal,undef,undef) = $m->comp("lib.msn:getcost_simple", dbh=>$dbh, flow1=>$flow1, flow2=>$flow2, mode=>$t_mode);
+			$BALANCE = $p_balance - $bal;
+			$localsum += $BALANCE;
+#			$item->{mode} = $t_mode;
+#			$item->{init} = $init;
+		}
+</%perl>
 <tr>
-<td align="right" <% $items->{$house}->{active} ? ($items->{$house}->{mode} eq '1' ? "class=\"onemode\"":"") : "class=\"inactive\"" %>><b><%$house%></b></td>
-<td><a href="pform.html?cid=<%$items->{$house}->{id}%>" target="pform"><%$Owners->{$items->{$house}->{owner}}->{lname} || "-"%></a></td>
-<td align="right"><div style=color:<%$items->{$house}->{balance} <0 ? "red":"green"%>><% $items->{$house}->{balance} ?  $m->comp("lib.msn:pretty", value=>$items->{$house}->{balance}) : ""%></div></td>
-<td align="right" <% $items->{$house}->{init} eq '2' ? "class=\"badinitpay\"":"" %>><%  $m->comp("lib.msn:pretty_date", date=>$items->{$house}->{p_date})%></td>
-%#<td align="right"><a href="pform.html?list=1&id=<%$items->{$house}->{id}%>" target="pform">H</a>&nbsp;<a href="pform.html?id=<%$items->{$house}->{id}%>" target="pform">A</a></td>
+<td align="right" <% $t_mode == 1 ? "class=\"onemode\"":"" %>><b <% $counters->{$cid} == 1 ? "":"class=\"inactive\""%>><%$house%></b></td>
+<td><a href="pform.html?cid=<%$cid%>" target="pform"><%join("<br>", @owners) || "-" %></a></td>
+<td align="right"><div style=color:<%$BALANCE <0 ? "red":"green"%>><% $BALANCE ?  $m->comp("lib.msn:pretty", value=>$BALANCE) : ""%></div></td>
+<td align="right" <% $init eq '2' ? "class=\"badinitpay\"":"" %>><%  $m->comp("lib.msn:pretty_date", date=>$p_date)%></td>
 </tr>
+%		}
 %	}
 <tr>
 <td></td>
@@ -147,9 +125,9 @@ if($ARGS{export}) {
 <td align="right"><div style=color:<%$localsum <0 ? "red":"green"%>><b><% $localsum ?  $m->comp("lib.msn:pretty", value=>$localsum) : ""%></b></div></td>
 <td></td>
 </tr>
-%	$total += $localsum;
+%	$total2 += $localsum;
 %}
 </table>
 <hr>
-<p><nobr><b>Итого:</b>&nbsp;&nbsp;&nbsp;<b><% $total ?  $m->comp("lib.msn:pretty", value=>$total) : "0"%></b></nobr></p>
+<p><nobr><b>Итого:</b>&nbsp;&nbsp;&nbsp;<b><% $total2 ?  $m->comp("lib.msn:pretty", value=>$total2) : "0"%></b></nobr></p>
 
