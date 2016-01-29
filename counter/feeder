@@ -136,7 +136,7 @@ while(my $r = $sth->fetchrow_hashref) {
 	my $addr = "$street_name, $domain";
 	my $date = Now(UTime($r->{tm}));
 	my ($balance,$se1,$se2) = $ghpower->get_balance($r->{id});
-	map { s/\./,/; } ($se1,$se2);
+	map { $_=sprintf("%0.2f",$_); s/\./,/; } ($se1,$se2);
 	my $warn = '';
 	my $balance_p = sprintf("%0.2f", $balance);
 	$balance_p =~ s/\./,/;
