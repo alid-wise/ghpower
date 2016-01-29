@@ -3,6 +3,8 @@ package GHPowerUtils;
 use strict;
 use vars qw(@ISA @EXPORT);
 use Encode qw(encode decode is_utf8);
+use open qw(:std :utf8);
+use utf8;
 use POSIX;
 use Carp;
 use Time::Local;
@@ -10,7 +12,7 @@ use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw(&SendMail &SendMailCharset &Time &UTime &Now);
 
-sub SendMail {
+sub SendMail_ {
         my ($from, $to, $subj, $body, %opts) = @_;
 
         my $charset = $opts{charset} || "utf-8";
@@ -25,10 +27,32 @@ sub SendMail {
         open XMAIL, "| /usr/local/sbin/sendmail -t"   or croak "Can't open sendmail: $!";
         my $xheaders = $opts{xheaders} || '';
         $xheaders .= "\n"       if $xheaders && $xheaders !~ /\n$/;
-        Encode::_utf8_off($body);
+#        Encode::_utf8_off($body);
         print XMAIL "MIME-Version: 1.0\nContent-Type: $ctype;charset=\"$charset\"\nSubject: $subj\nFrom: $from\nTo: $to\n$xheaders\n$body";
         close(XMAIL);
 }
+
+sub SendMail {
+        my ($from, $to, $subj, $body, %opts) = @_;
+
+        my $charset = $opts{charset} || "utf8";
+        eval{ require MIME::Words };
+        unless($@ || $subj =~ /^\=\?/){
+                Encode::_utf8_off($subj);
+                $subj = MIME::Words::encode_mimeword($subj, 'B', $charset);
+        }
+
+        my $ctype = $opts{content} || 'text/plain';
+        open XMAIL, "| /usr/sbin/sendmail -t"   or croak "Can't open sendmail: $!";
+        my $xheaders = $opts{xheaders} || '';
+        $xheaders .= "\n"       if $xheaders && $xheaders !~ /\n$/;
+#                Encode::_utf8_off($body);
+        print XMAIL "MIME-Version: 1.0\nContent-Type: $ctype;charset=\"$charset\"\nSubject: $subj\nFrom: $from\nTo: $to\n$xheaders\n$body";
+        close(XMAIL);
+}
+
+
+
 
 sub Time {
         my ($tm) = @_;
