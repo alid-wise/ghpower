@@ -261,5 +261,29 @@ sub Domains_Struct {
   return $ghldap->Domains_Struct();
 }
 
+# Текущий баланс по счетчику
+# !!! Добавить учет ktrans !!!
+sub get_balance {
+	my $self = shift;
+	my $cid = shift;
+	return undef	unless($cid);
+
+	my $gp = $self->{dbh}->prepare("SELECT id,date,prev1,prev2,current1,current2,amount,balance,mode,init FROM payments WHERE cid=? ORDER BY modtime DESC LIMIT 1");
+	# последний платеж по этому счетчику
+	$gp->execute($cid);
+	my ($p_id,$p_date,$p_prev1,$p_prev2,$p_current1,$p_current2,$p_amount,$p_balance,$t_mode,$init) = $gp->fetchrow_array;
+	$gp->finish;
+	return undef	unless($p_id);
+	# платеж был
+	my $C = $self->getcounter_last($cid);
+	map {s/\,/\./} ($C->{se1},$C->{se2});
+	my ($c_date,$c1,$c2) = ($C->{date},$C->{se1},$C->{se2});
+	my $flow1 = sprintf("%.02f", $c1 - $p_current1);
+	my $flow2 = sprintf("%.02f", $c2 - $p_current2);
+
+	my ($bal,undef,undef) = $self->getcost_simple($flow1, $flow2, $t_mode);
+	my $BALANCE = $p_balance - $bal;
+	return $BALANCE;
+}
 
 1;
