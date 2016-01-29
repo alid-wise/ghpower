@@ -135,7 +135,8 @@ while(my $r = $sth->fetchrow_hashref) {
 	my $body = $BODY;
 	my $addr = "$street_name, $domain";
 	my $date = Now(UTime($r->{tm}));
-	my $balance = $ghpower->get_balance($r->{id});
+	my ($balance,$se1,$se2) = $ghpower->get_balance($r->{id});
+	map { s/\./,/; } ($se1,$se2);
 	my $warn = '';
 	my $balance_p = sprintf("%0.2f", $balance);
 	$balance_p =~ s/\./,/;
@@ -145,7 +146,7 @@ while(my $r = $sth->fetchrow_hashref) {
 		$warn =~ s/\{BALANCE\}/$balance_p/;
 		$warn =~ s/\{ALERT\}/$alert/;
 	}
-	map { $_ =~ s/\{T1\}/$r->{t1}/; $_ =~ s/\{T2\}/$r->{t2}/; $_ =~ s/\{ADDR\}/$addr/; $_ =~ s/\{DATE\}/$date/; $_ =~ s/\{BALANCE\}/$balance_p/; $_ =~ s/\{WARN\}/$warn/; $_ =~ s/\{SN\}/$r->{sn}/; } ($subj,$body);
+	map { $_ =~ s/\{T1\}/$se1/; $_ =~ s/\{T2\}/$se2/; $_ =~ s/\{ADDR\}/$addr/; $_ =~ s/\{DATE\}/$date/; $_ =~ s/\{BALANCE\}/$balance_p/; $_ =~ s/\{WARN\}/$warn/; $_ =~ s/\{SN\}/$r->{sn}/; } ($subj,$body);
 	my $KTRANS = ($r->{ktrans} > 1) ? "(коэффициент преобразования $r->{ktrans})":"";
 	$body =~ s/\{KTRANS\}/$KTRANS/;
 	# Куда слать
