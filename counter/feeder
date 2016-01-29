@@ -161,7 +161,7 @@ while(my $r = $sth->fetchrow_hashref) {
 		# Если нет адресов, то смотрим владельцев
 		unless(@emails) {
 			foreach my $owner (sort { $a->{cn} cmp $b->{cn} } @{$Dom->{owners}}) {
-                        	foreach(sort { $a->{mail} cmp $b->{mail} } @{$owner->{mail}}) {
+                        	foreach(sort { $a->{mail} cmp $b->{mail} } ref $owner->{mail} eq 'ARRAY' ? @{$owner->{mail}} : ($owner->{mail} || ())) {
                                 	push @emails, $_;
                        	 	}
                 	}
