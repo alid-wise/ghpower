@@ -45,13 +45,15 @@ if($h) {
 }
 
 my $Data;
-my $sth = $dbh->prepare("select dt AS tm,se1ai,se2ai,ise,ise>? AS over from monitor where counter=? and dt <= ? and dt > ? order by dt desc");
+my $sth = $dbh->prepare("select dt AS tm,se1ai,se2ai,ise,ise>? AS over, (mp3 is not null) as tf from monitor where counter=? and dt <= ? and dt > ? order by dt desc");
 $sth->execute($Info->{plimit},$id,$next2,$date);
+my $TF = 0;
 while(my $row = $sth->fetchrow_hashref) {
 	$row->{tm} =~ s/\+\d+$//;
 	$row->{tm} =~ s/^.*\s+//;
 	map { $_ =sprintf("%0.3f",$_); s/\./\,/;} ($row->{ise},$row->{se1ai},$row->{se2ai});
 	push @$Data, $row;
+	$TF = 1	if($row->{tf});
 }
 </%init>
 <p><a href="index.html">Список счетчиков</a></p>
@@ -111,6 +113,22 @@ while(my $row = $sth->fetchrow_hashref) {
 <img src="graph/<%$Info->{mgroup}%>/<%$id%>-3month.png">
 <br>
 <img src="graph/<%$Info->{mgroup}%>/<%$id%>-year.png">
+
+%if($TF) {	# Трехфазный счетчик - показать распределение по фазам
+<br>
+<img src="graph/<%$Info->{mgroup}%>/<%$id%>.3f-day.png">
+<br>
+<img src="graph/<%$Info->{mgroup}%>/<%$id%>.3f-yesterday.png">
+<br>
+<img src="graph/<%$Info->{mgroup}%>/<%$id%>.3f-week.png">
+<br>
+<img src="graph/<%$Info->{mgroup}%>/<%$id%>.3f-month.png">
+<br>
+<img src="graph/<%$Info->{mgroup}%>/<%$id%>.3f-3month.png">
+<br>
+<img src="graph/<%$Info->{mgroup}%>/<%$id%>.3f-year.png">
+%}
+
 %if($Info->{mgid}) {
 <br>
 <img src="graph/<%$Info->{mgid}%>/balance-day.png">
