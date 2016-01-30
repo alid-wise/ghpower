@@ -174,14 +174,14 @@ unless($cid) {
 }	# balance
 
 # Графики потребления счетчиков луча
-$sth = $dbh->prepare("select date,ise from ONLY monitor where counter=? order by date desc limit 1");
+$sth = $dbh->prepare("select date,ise,mp1,mp2,mp3 from ONLY monitor where counter=? order by date desc limit 1");
 foreach my $id (@Glist) {
 	unless(-e "$dpath/$mgid/$id.rrd") {	# база этого счетчика
 		my $res = system("rrdtool","create","$dpath/$mgid/$id.rrd","--start","1200000000","--step","300","DS:ise:GAUGE:600:U:U","RRA:AVERAGE:0.1:1:600","RRA:AVERAGE:0.1:6:300","RRA:AVERAGE:0.1:24:300","RRA:AVERAGE:0.1:72:300","RRA:AVERAGE:0.1:288:300");
 		die "Can't create counter database: $dpath/$mgid/$id.rrd - $!"	if $res;
 	}
 	$sth->execute($id);
-	my ($tm,$val) = $sth->fetchrow_array;
+	my ($tm,$val,$mp1,$mp2,$mp3) = $sth->fetchrow_array;
 	$sth->finish;
 	if($tm && defined $val) {
 		$val *= 1000;	# Ватты
@@ -231,6 +231,118 @@ foreach my $id (@Glist) {
 		."LINE:ise#0000FF:Power"
 	." >/dev/null");
 
+
+	# Для трехфазных счетчиков - распределение по фазам
+	if($mp2 || $mp3) {	# Трехфазный счетчик
+
+		unless(-e "$dpath/$mgid/$id.3f.rrd") {	# база этого счетчика
+			my $res = system("rrdtool","create","$dpath/$mgid/$id.3f.rrd","--start","1200000000","--step","300",
+				"DS:mp1:GAUGE:600:U:U",
+				"DS:mp2:GAUGE:600:U:U",
+				"DS:mp3:GAUGE:600:U:U",
+				"RRA:AVERAGE:0.1:1:600","RRA:AVERAGE:0.1:6:300","RRA:AVERAGE:0.1:24:300","RRA:AVERAGE:0.1:72:300","RRA:AVERAGE:0.1:288:300");
+			die "Can't create counter database: $dpath/$mgid/$id.3f.rrd - $!"	if $res;
+		}
+
+		if($tm) {
+			map { $_ ||= 0; } ($mp1,$mp2,$mp3);
+			# Ватты
+			map { $_ *= 1000; } ($mp1,$mp2,$mp3);
+			my $tmlast;
+			eval{ $tmlast = system("rrdtool","last","$dpath/$mgid/$id.3f.rrd"); };
+			chomp $tmlast; $tmlast ||= 0;
+
+			if($tm > $tmlast) {
+				eval{ my $res = system("rrdtool","update","$dpath/$mgid/$id.3f.rrd","$tm:$mp1:$mp2:$mp3"); };
+#				warn "Can't update counter database: $!"	if $res;
+			}
+		}
+
+		system("rrdtool graph $gpath/$mgid/$id.3f-day.png --imgformat PNG -z "
+			."--start -24h --end now "
+			."--title \"Phase Power today\" "
+			." --vertical-label 'VA' "
+			."DEF:mp1=$dpath/$mgid/$id.3f.rrd:mp1:AVERAGE "
+			."DEF:mp2=$dpath/$mgid/$id.3f.rrd:mp2:AVERAGE "
+			."DEF:mp3=$dpath/$mgid/$id.3f.rrd:mp3:AVERAGE "
+			."LINE:mp1#0000FF:Phase-1 "
+			."LINE:mp2#00FF00:Phase-2 "
+			."LINE:mp3#FF0000:Phase-3 "
+#			."GPRINT:mp1:MAX:max p1=\%.0lf\%s "
+#			."GPRINT:mp2:MAX:max p2=\%.0lf\%s "
+#			."GPRINT:mp3:MAX:max p3=\%.0lf\%s "
+			." >/dev/null");
+		system("rrdtool graph $gpath/$mgid/$id.3f-yesterday.png --imgformat PNG -z "
+			."--start -48h --end -24h "
+			."--title \"Phase Power yesterday\" "
+			." --vertical-label 'VA' "
+			."DEF:mp1=$dpath/$mgid/$id.3f.rrd:mp1:AVERAGE "
+			."DEF:mp2=$dpath/$mgid/$id.3f.rrd:mp2:AVERAGE "
+			."DEF:mp3=$dpath/$mgid/$id.3f.rrd:mp3:AVERAGE "
+			."LINE:mp1#0000FF:Phase-1 "
+			."LINE:mp2#00FF00:Phase-2 "
+			."LINE:mp3#FF0000:Phase-3 "
+#			."GPRINT:mp1:MAX:max p1=\%.0lf\%s "
+#			."GPRINT:mp2:MAX:max p2=\%.0lf\%s "
+#			."GPRINT:mp3:MAX:max p3=\%.0lf\%s "
+			." >/dev/null");
+		system("rrdtool graph $gpath/$mgid/$id.3f-week.png --imgformat PNG -z "
+			."--start -7d --end now "
+			."--title \"Phase Power last week\" "
+			." --vertical-label 'VA' "
+			."DEF:mp1=$dpath/$mgid/$id.3f.rrd:mp1:AVERAGE "
+			."DEF:mp2=$dpath/$mgid/$id.3f.rrd:mp2:AVERAGE "
+			."DEF:mp3=$dpath/$mgid/$id.3f.rrd:mp3:AVERAGE "
+			."LINE:mp1#0000FF:Phase-1 "
+			."LINE:mp2#00FF00:Phase-2 "
+			."LINE:mp3#FF0000:Phase-3 "
+#			."GPRINT:mp1:MAX:max p1=\%.0lf\%s "
+#			."GPRINT:mp2:MAX:max p2=\%.0lf\%s "
+#			."GPRINT:mp3:MAX:max p3=\%.0lf\%s "
+			." >/dev/null");
+		system("rrdtool graph $gpath/$mgid/$id.3f-month.png --imgformat PNG -z "
+			."--start -30d --end now "
+			."--title \"Power last month\" "
+			." --vertical-label 'VA' "
+			."DEF:mp1=$dpath/$mgid/$id.3f.rrd:mp1:AVERAGE "
+			."DEF:mp2=$dpath/$mgid/$id.3f.rrd:mp2:AVERAGE "
+			."DEF:mp3=$dpath/$mgid/$id.3f.rrd:mp3:AVERAGE "
+			."LINE:mp1#0000FF:Phase-1 "
+			."LINE:mp2#00FF00:Phase-2 "
+			."LINE:mp3#FF0000:Phase-3 "
+#			."GPRINT:mp1:MAX:max p1=\%.0lf\%s "
+#			."GPRINT:mp2:MAX:max p2=\%.0lf\%s "
+#			."GPRINT:mp3:MAX:max p3=\%.0lf\%s "
+			." >/dev/null");
+		system("rrdtool graph $gpath/$mgid/$id.3f-3month.png --imgformat PNG -z "
+			."--start -91d --end now "
+			."--title \"Phase Power last three month\" "
+			." --vertical-label 'VA' "
+			."DEF:mp1=$dpath/$mgid/$id.3f.rrd:mp1:AVERAGE "
+			."DEF:mp2=$dpath/$mgid/$id.3f.rrd:mp2:AVERAGE "
+			."DEF:mp3=$dpath/$mgid/$id.3f.rrd:mp3:AVERAGE "
+			."LINE:mp1#0000FF:Phase-1 "
+			."LINE:mp2#00FF00:Phase-2 "
+			."LINE:mp3#FF0000:Phase-3 "
+#			."GPRINT:mp1:MAX:max p1=\%.0lf\%s "
+#			."GPRINT:mp2:MAX:max p2=\%.0lf\%s "
+#			."GPRINT:mp3:MAX:max p3=\%.0lf\%s "
+			." >/dev/null");
+		system("rrdtool graph $gpath/$mgid/$id.3f-year.png --imgformat PNG -z "
+			."--start -365d --end now "
+			."--title \"Phase Power last year\" "
+			." --vertical-label 'VA' "
+			."DEF:mp1=$dpath/$mgid/$id.3f.rrd:mp1:AVERAGE "
+			."DEF:mp2=$dpath/$mgid/$id.3f.rrd:mp2:AVERAGE "
+			."DEF:mp3=$dpath/$mgid/$id.3f.rrd:mp3:AVERAGE "
+			."LINE:mp1#0000FF:Phase-1 "
+			."LINE:mp2#00FF00:Phase-2 "
+			."LINE:mp3#FF0000:Phase-3 "
+#			."GPRINT:mp1:MAX:max p1=\%.0lf\%s "
+#			."GPRINT:mp2:MAX:max p2=\%.0lf\%s "
+#			."GPRINT:mp3:MAX:max p3=\%.0lf\%s "
+			." >/dev/null");
+	}
 }
 
 $dbh->disconnect;
