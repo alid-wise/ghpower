@@ -71,6 +71,7 @@ use strict;
 #
 # Построение графиков на луче
 # 2012-01-02 alid
+# 2016-01-30 Добавлены графики распределения по фазам для трехфазных счетчиков
 #
 
 my (@args, %opts);
@@ -218,12 +219,12 @@ foreach my $id (@Glist) {
 		."DEF:ise=$dpath/$mgid/$id.rrd:ise:AVERAGE "
 		."LINE:ise#0000FF:Power"
 	." >/dev/null");
-	system("rrdtool graph $gpath/$mgid/$id-3month.png --imgformat PNG -z "
-		."--start -91d --end now "
-		."--title \"Power last three month\" "
-		."DEF:ise=$dpath/$mgid/$id.rrd:ise:AVERAGE "
-		."LINE:ise#0000FF:Power"
-	." >/dev/null");
+#	system("rrdtool graph $gpath/$mgid/$id-3month.png --imgformat PNG -z "
+#		."--start -91d --end now "
+#		."--title \"Power last three month\" "
+#		."DEF:ise=$dpath/$mgid/$id.rrd:ise:AVERAGE "
+#		."LINE:ise#0000FF:Power"
+#	." >/dev/null");
 	system("rrdtool graph $gpath/$mgid/$id-year.png --imgformat PNG -z "
 		."--start -365d --end now "
 		."--title \"Power last year\" "
@@ -314,20 +315,20 @@ foreach my $id (@Glist) {
 #			."GPRINT:mp2:MAX:max p2=\%.0lf\%s "
 #			."GPRINT:mp3:MAX:max p3=\%.0lf\%s "
 			." >/dev/null");
-		system("rrdtool graph $gpath/$mgid/$id.3f-3month.png --imgformat PNG -z "
-			."--start -91d --end now "
-			."--title \"Phase Power last three month\" "
-			." --vertical-label 'VA' "
-			."DEF:mp1=$dpath/$mgid/$id.3f.rrd:mp1:AVERAGE "
-			."DEF:mp2=$dpath/$mgid/$id.3f.rrd:mp2:AVERAGE "
-			."DEF:mp3=$dpath/$mgid/$id.3f.rrd:mp3:AVERAGE "
-			."LINE:mp1#0000FF:Phase-1 "
-			."LINE:mp2#00FF00:Phase-2 "
-			."LINE:mp3#FF0000:Phase-3 "
-#			."GPRINT:mp1:MAX:max p1=\%.0lf\%s "
-#			."GPRINT:mp2:MAX:max p2=\%.0lf\%s "
-#			."GPRINT:mp3:MAX:max p3=\%.0lf\%s "
-			." >/dev/null");
+#		system("rrdtool graph $gpath/$mgid/$id.3f-3month.png --imgformat PNG -z "
+#			."--start -91d --end now "
+#			."--title \"Phase Power last three month\" "
+#			." --vertical-label 'VA' "
+#			."DEF:mp1=$dpath/$mgid/$id.3f.rrd:mp1:AVERAGE "
+#			."DEF:mp2=$dpath/$mgid/$id.3f.rrd:mp2:AVERAGE "
+#			."DEF:mp3=$dpath/$mgid/$id.3f.rrd:mp3:AVERAGE "
+#			."LINE:mp1#0000FF:Phase-1 "
+#			."LINE:mp2#00FF00:Phase-2 "
+#			."LINE:mp3#FF0000:Phase-3 "
+##			."GPRINT:mp1:MAX:max p1=\%.0lf\%s "
+##			."GPRINT:mp2:MAX:max p2=\%.0lf\%s "
+##			."GPRINT:mp3:MAX:max p3=\%.0lf\%s "
+#			." >/dev/null");
 		system("rrdtool graph $gpath/$mgid/$id.3f-year.png --imgformat PNG -z "
 			."--start -365d --end now "
 			."--title \"Phase Power last year\" "
