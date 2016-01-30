@@ -73,7 +73,6 @@ use lib "$ENV{MY}/lib/";
 use GHPowerUtils;
 use GHPower;
 
-
 #
 # Рассылка по подписке клиентам текущей информации о показаниях счетчиков и балансе
 # 2015-12-28 alid
@@ -154,14 +153,14 @@ while(my $r = $sth->fetchrow_hashref) {
 	if($Dom) {
 		# Сначала ищем среди управляющих
 		foreach my $manager (sort { $a->{cn} cmp $b->{cn} } @{$Dom->{managers}}) {
-			foreach(sort { $a->{mail} cmp $b->{mail} } @{$manager->{mail}}) {
+			foreach(sort { $a cmp $b } ref $manager->{mail} eq 'ARRAY' ? @{$manager->{mail}} : ($manager->{mail} || ())) {
 				push @emails, $_;
 			}
 		}
 		# Если нет адресов, то смотрим владельцев
 		unless(@emails) {
 			foreach my $owner (sort { $a->{cn} cmp $b->{cn} } @{$Dom->{owners}}) {
-                        	foreach(sort { $a->{mail} cmp $b->{mail} } ref $owner->{mail} eq 'ARRAY' ? @{$owner->{mail}} : ($owner->{mail} || ())) {
+                        	foreach(sort { $a cmp $b } ref $owner->{mail} eq 'ARRAY' ? @{$owner->{mail}} : ($owner->{mail} || ())) {
                                 	push @emails, $_;
                        	 	}
                 	}
@@ -187,34 +186,10 @@ while(my $r = $sth->fetchrow_hashref) {
                         print "Body: $body\n";
 		}
 		# Сообщение об ошибке - в лог
+		print "Unable to find any e-mail addresses: $addr\n";
 		$status = 2;
 	}
 	$log->execute(0,$r->{id},$r->{dn},join(",",@emails),"$subj\n$body",$status,$err,1,0)	unless($verb);
 }
 $sth->finish;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 $dbh->disconnect;
-
-__END__
-		my $subj = "Alert from ghpower: the limit is exceeded ($ise)\n";
-		my $body = "Превышена потребляемая мощность: $ise kWA (при пороге $limit kWA)\n$List\n";
-		SendMail("GHPower checklimit",$emails,$subj,$body);
-	}
-}
-
-
-
-
