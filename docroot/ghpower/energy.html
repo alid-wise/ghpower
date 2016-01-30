@@ -58,7 +58,7 @@ while(my $row = $sth->fetchrow_hashref) {
 <table border=0>
 <tr><td>
 <table border="1">
-<tr><td align="right">Адрес:</td><td><%$Info->{street_name}%>, <%$Info->{domain}%></td></tr>
+<tr><td align="right">Участок:</td><td><% $Info->{street_name} ? $Info->{street_name}.", ".$Info->{domain} : $Info->{name} %></td></tr>
 </table>
 </td>
 <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="stored.html?id=<%$id%>">Показания счетчика по дням</a>&nbsp;&nbsp;&nbsp;<a href="expense.html?id=<%$id%>">Расход по месяцам</a></td>
