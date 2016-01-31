@@ -298,7 +298,7 @@ foreach my $id (@Glist) {
 			." >/dev/null");
 		system("rrdtool graph $gpath/$mgid/$id.3f-month.png --imgformat PNG -z "
 			."--start -30d --end now "
-			."--title \"Power last month\" "
+			."--title \"Phase Power last month\" "
 			."DEF:mp1=$dpath/$mgid/$id.3f.rrd:mp1:AVERAGE "
 			."DEF:mp2=$dpath/$mgid/$id.3f.rrd:mp2:AVERAGE "
 			."DEF:mp3=$dpath/$mgid/$id.3f.rrd:mp3:AVERAGE "
