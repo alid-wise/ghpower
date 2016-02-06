@@ -12,12 +12,6 @@
 #use Data::Dumper;
 #use POSIX;
 
-#if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# только admin и manager
-#	$r->status_line('');
-#	$m->clear_buffer;
-#	$m->abort(404);
-#}
-
 map { $_ =~ s/\D//g; } ( $verb, $id, $filter, $filter2);
 map { $_ = 1 if($_ > 1) } ( $verb);
 map { $_ = 0 if($_ > 1000) } ( $id);
@@ -30,11 +24,6 @@ my $OK=0;
 
 my $sth;
 # Справочники
-
-# Проезды (улицы)
-#my $S = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'street', nocache=>0);
-# Люди
-#my $Owners = $m->comp("lib.msn:ownerlist", dbh=>$dbh, nocache=>1);
 # Столбы
 my $Towers = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'towers', nocache=>0);
 # Типы счетчиков
@@ -62,7 +51,6 @@ if($id) {
 
 if($ARGS{submit} && $auth->{gid} eq 1) {
 	if($ARGS{delete} && $id) {	# удаление записи
-#		$dbh->do("delete from counters where id=$id");
 		$dbh->do("UPDATE counters SET active=-1 WHERE id=$id");
 		undef $id;
 		$OK++;
@@ -96,13 +84,6 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 			undef $id;
 			undef $ARGS{"add_new"};
 			$OK++;
-#			$m->clear_buffer;
-#			# The next two lines are necessary to stop Apache from re-reading POSTed data.
-#			$r->method('GET');
-#			$r->headers_in->unset('Content-length');
-#			$r->content_type('text/html');
-#			$r->header_out('Location' => 'index.html');
-#			$m->abort(301);
 		}
 	}
 }
@@ -111,12 +92,8 @@ if(!$ARGS{"add_new"} && !$id && !$OK) {
 	# Счетчики полный список
 	my $L = $m->comp("lib.msn:cflistload", dbh=>$dbh, nocache=>1, showdel=>$showdel);
 	foreach(keys %$L) { $List->{$_}->{items} = $L->{$_}->{items}; }
-
 }
 </%init>
-%#<pre>
-%#<%Dumper $auth%>
-%#</pre>
 %if($OK) {
 <h3 id="resok">Запись сохранена</h3>
 <p><a href="index.html">Home</a></p>
@@ -176,37 +153,6 @@ $(document).ready(function() {
 <td>Участок:<br><small>формат: "ou=Уч.,ou=Улица"</small></td>
 <td><input type="text" name="dn" value="<%$ARGS{dn} || (!$ARGS{submit} ? $Usr->{dn} : "")%>" <% ($auth->{gid} >1) ? "disabled":"" %>></td>
 </tr>
-
-
-
-%#<tr>
-%#<td>Проезд:</td>
-%#<td><select name="street" <% ($auth->{gid} >1) ? "disabled":"" %>>
-%#<option></option>
-%#%	foreach my $sid (sort {$S->{$a}->{name} cmp $S->{$b}->{name}} keys %$S) {
-%#<option value="<%$sid%>" <% ((!$ARGS{submit} ? $Usr->{street} : $ARGS{street}) eq $sid)? "selected":"" %>><%$S->{$sid}->{name}%></option>
-%#%	}
-%#</select></td>
-%#</tr>
-%#<tr>
-%#<td>Участок:</td>
-%#<td><input type="text" name="house" value="<%$ARGS{house} || (!$ARGS{submit} ? $Usr->{house} : "")%>" <% ($auth->{gid} >1) ? "disabled":"" %>></td>
-%#</tr>
-%#<tr>
-%#<td>Владелец:</td>
-%#<td>
-%#<select name="owner" <% ($auth->{gid} >1) ? "disabled":"" %>>
-%#<option></option>
-%#%	foreach my $uid (sort {$Owners->{$a}->{lname} cmp $Owners->{$b}->{lname}} keys %$Owners) {
-%#%		next	unless($Owners->{$uid}->{lname});
-%#<option value="<%$uid%>" <% ((!$ARGS{submit} ? $Usr->{owner} : $ARGS{owner}) eq $uid)? "selected":"" %>><%$Owners->{$uid}->{fullname} || $Owners->{$uid}->{name} || $Owners->{$uid}->{lname}%></option>
-%#%	}
-%#</select>
-%#</td>
-%#</tr>
-
-
-
 <tr>
 <td>Столб:</td>
 <td><select name="tower_id" <% ($auth->{gid} >1) ? "disabled":"" %>>
@@ -276,8 +222,6 @@ $(document).ready(function() {
 		<li><a href="pays.html">Платежи</a></li>
 %}
 %if($auth->{gid} eq 1) {
-%#		<li><a href="user.html">Персоны</a></li>
-%#		<li><a href="auth.html">authors</a></li>
 		<li><a href="/phpldapadmin/index.php" target=_blank>Справочник</a></li>
 %}
 	</ul>
@@ -327,11 +271,7 @@ $(document).ready(function() {
 <td colspan="9"><% $List->{$mgid}->{memo}%></td>
 </tr>
 %	my $i=1;
-%#	foreach my $item (sort { $S->{$a->{street}}->{name} cmp $S->{$b->{street}}->{name} || $a->{house} <=> $b->{house}} @{$List->{$mgid}->{items}}) {
-
 %	foreach my $item (sort { $a->{street_name} cmp $b->{street_name} || $a->{domain} <=> $b->{domain} || $a->{name} cmp $b->{name}} @{$List->{$mgid}->{items}}) {
-
-
 %		if($filter2) {
 %			next	if($filter2 eq '1' && $item->{active} ne '1');
 %			next	if($filter2 eq '2' && $item->{active});
@@ -358,11 +298,8 @@ $(document).ready(function() {
 %			}
 %	}
 %		push @owners,$name; }
-<td><% join ",", @owners %></td>
+<td><% join ", ", @owners %></td>
 <td><%$Towers->{$item->{tower_id}}->{name}%></td>
-%#<td align="right"><a href="energy.html?id=<%$item->{id}%><%$filter ? "&filter=$filter":""%>"><%$LastCounter->{$item->{id}}->{t1}%></a></td>
-%#<td align="right"><a href="energy.html?id=<%$item->{id}%><%$filter ? "&filter=$filter":""%>"><%$LastCounter->{$item->{id}}->{t2}%></a></td>
-
 <td id="t1_<%$item->{id}%>" align="right"><%$LastCounter->{$item->{id}}->{t1}%></td>
 <td id="t2_<%$item->{id}%>"align="right"><%$LastCounter->{$item->{id}}->{t2}%></td>
 
@@ -374,7 +311,6 @@ $(document).ready(function() {
 <a href="ping.html?id=<%$item->{id}%>" target="ping">ping</a>
 %}
 </td>
-%#<td bgcolor="<% defined $item->{state} ? ($item->{state} ? "red":"green") : "yellow" %>"/>
 <td><input type="checkbox" name="subscr_<%$item->{id}%>" <% ($ARGS{"subscr_".$item->{id}} || $item->{subscr}) ? "checked":""%> disabled></td>
 </tr>
 %	$i++;
