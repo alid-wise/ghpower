@@ -176,6 +176,7 @@ sub collector {
 
 	my $sins = $dbh->prepare("insert into status (cid,state,pstate,se1,se2,lpower,maintenance,modtime) values (?,?,?,?,?,?,0,now())");
 	my $supd = $dbh->prepare("update status set state=?,pstate=?,se1=?,se2=?,lpower=?,maintenance=?,modtime=now() where id=?");
+	my $supd2 = $dbh->prepare("update status set state=?,pstate=?,se1=?,se2=?,lpower=?,maintenance=?,tmok=?,modtime=now() where id=?");
 	my $ins1 = $dbh->prepare("insert into monitor (dt,date,counter,mv1,mc1,mf,mps,mss,se1ai,se2ai) values (?,?,?,?,?,?,?,?,?,?) returning ise");
 	my $ins2 = $dbh->prepare("insert into monitor (dt,date,counter,mv1,mv2,mv3,mc1,mc2,mc3,mf,ma1,ma2,ma3,mps,mp1,mp2,mp3,mqs,mq1,mq2,mq3,mss,ms1,ms2,ms3,mks,mk1,mk2,mk3,se1ai,se1ae,se1ri,se1re,se2ai,se2ae,se2ri,se2re) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) returning ise");
 	my $maintenance_done = 0;
@@ -190,6 +191,7 @@ sub collector {
 		my $time = time();
 		my $tm = Now(undef,iso=>1);
 		my $lpower = 0;
+		my $tmok;
 
 		# Коррекция часов счетчика нужна?
 		my $maintenance_do = 0;
@@ -227,6 +229,7 @@ sub collector {
 			# Коррекция часов
 			if($maintenance_do) {
 				eval{ system("$adjtime203 ".$counter->{addr}." ".$counter->{dev}." ".($verb ? '-v':'')); };
+				$tmok = ($@) ? "0":"1";
 			}
 		}
 		elsif($counter->{type} =~ /M230/) {
@@ -240,13 +243,13 @@ sub collector {
 				$ins2->execute($tm,$time,$counter->{id},$mv1,$mv2,$mv3,$mc1,$mc2,$mc3,$mf,$ma1,$ma2,$ma3,$mps,$mp1,$mp2,$mp3,$mqs,$mq1,$mq2,$mq3,$mss,$ms1,$ms2,$ms3,$mks,$mk1,$mk2,$mk3,$se1ai,$se1ae,$se1ri,$se1re,$se2ai,$se2ae,$se2ri,$se2re)	or die;
 				$lpower = $ins2->fetch()->[0];
 				$ins2->finish;
-#		$dbh->do("insert into monitor (dt,date,counter,mv1,mv2,mv3,mc1,mc2,mc3,mf,ma1,ma2,ma3,mps,mp1,mp2,mp3,mqs,mq1,mq2,mq3,mss,ms1,ms2,ms3,mks,mk1,mk2,mk3,se1ai,se1ae,se1ri,se1re,se2ai,se2ae,se2ri,se2re) values ('$tm',$time,$counter->{id},$mv1,$mv2,$mv3,$mc1,$mc2,$mc3,$mf,$ma1,$ma2,$ma3,$mps,$mp1,$mp2,$mp3,$mqs,$mq1,$mq2,$mq3,$mss,$ms1,$ms2,$ms3,$mks,$mk1,$mk2,$mk3,$se1ai,$se1ae,$se1ri,$se1re,$se2ai,$se2ae,$se2ri,$se2re)")	or die;
 			} else {
 				$err++;
 				print "Error reading from: ".$counter->{addr}." (3f)\n"	if($verb);
 			}
 			if($maintenance_do) {
 				eval{ system("$adjtime230 ".$counter->{addr}." ".$counter->{passwd}." ".$counter->{dev}." ".($verb ? '-v':'').""); };
+				$tmok = ($@) ? "0":"1";
 			}
 		} else {
 			print " ERROR: unknown device type [".$counter->{type}."]\n"	if $verb;
@@ -257,7 +260,11 @@ sub collector {
 		$counter->{pstate} = $counter->{state} || 0;
 		$counter->{state} = $err;
 		if($counter->{"status_id"}) {
+			if(defined $tmok) {	# Обновить флаг коррекции часов
+			$supd2->execute($counter->{state},$counter->{pstate},$se1ai,$se2ai,$lpower,$maintenance_cnt,$tmok,$counter->{"status_id"});
+			} else {
 			$supd->execute($counter->{state},$counter->{pstate},$se1ai,$se2ai,$lpower,$maintenance_cnt,$counter->{"status_id"});
+			}
 		} else {
 			$sins->execute($counter->{id},$counter->{state},$counter->{pstate},$se1ai,$se2ai,$lpower);
 		}
