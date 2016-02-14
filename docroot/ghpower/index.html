@@ -279,7 +279,7 @@ $(document).ready(function() {
 %		next	if($item->{active} < 0 && !$showdel);
 <tr id="<%$item->{id}%>">
 <td align="center"><%$i%>.</td>
-<td align="right"><a href="?id=<%$item->{id}%>"><%$item->{addr} ? $item->{addr} : "---"%></a> (<%$item->{sn}%>)</td>
+<td align="right"><a href="?id=<%$item->{id}%>"><%$item->{addr} ? $item->{addr} : "---"%></a> (<font color=<% ($LastCounter->{$item->{id}}->{tmok}) ? "green":"red" %>><%$item->{sn}%></div>)</td>
 %	my $parcel;
 %	if($item->{street_name}) {
 %		$parcel = $item->{street_name};
