@@ -294,6 +294,32 @@ return $ret;
 </%method>
 
 
+<%method lastcounter>
+<%doc>
+	Последние показания счетчика
+</%doc>
+<%args>
+	$dbh
+	$id => 0
+	$nocache => 1
+</%args>
+<%init>
+unless($nocache) {
+	my ($rv, $cached) = $m->cache_self(
+		expire_in => '1 hour',
+		busy_lock => '5sec',
+		ttl => '5minutes',
+		key => "lastcounter_$id",
+		expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
+	);
+	return $rv	if($cached);
+}
+	my $ghpower = GHPower->new($dbh);
+	return $ghpower->lastcounter($id);
+</%init>
+</%method>
+
+
 
 
 
@@ -358,67 +384,6 @@ return $ret;
 </%init>
 </%method>
 
-
-
-
-<%method lastcounter>
-<%doc>
-	Последние показания счетчика
-</%doc>
-<%args>
-	$dbh
-	$id => 0
-	$nocache => 1
-</%args>
-<%init>
-unless($nocache) {
-	my ($rv, $cached) = $m->cache_self(
-		expire_in => '1 hour',
-		busy_lock => '5sec',
-		ttl => '5minutes',
-		key => "lastcounter_$id",
-		expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
-	);
-	return $rv	if($cached);
-}
-my $ret = undef;
-my $sth;
-if($id) {
-	$sth = $dbh->prepare("select A.modtime AS tm,A.se1 AS t1,A.se2 AS t2, A.lpower, A.lpower>B.plimit AS over,A.state from status A inner join counters B on A.cid=B.id where A.cid=? order by A.modtime desc LIMIT  1");
-	$sth->execute($id);
-	while(my $r = $sth->fetchrow_hashref) {
-		$r->{t1} = sprintf("%0.2f",$r->{t1});
-		$r->{t2} = sprintf("%0.2f",$r->{t2});
-		$r->{lpower} = sprintf("%0.2f",$r->{lpower});
-		map { s/\./,/; } ($r->{t1}, $r->{t2}, $r->{lpower});
-		$ret = $r;
-	}
-} else {	# Полный список
-	$sth = $dbh->prepare("select A.modtime AS tm,A.se1 AS t1,A.se2 AS t2, A.cid, A.lpower, A.lpower>B.plimit AS over,A.state from status A inner join counters B on A.cid=B.id where A.state=0");
-	$sth->execute();
-	while(my $r = $sth->fetchrow_hashref) {
-		$r->{t1} = sprintf("%0.2f",$r->{t1});
-		$r->{t2} = sprintf("%0.2f",$r->{t2});
-		$r->{lpower} = sprintf("%0.2f",$r->{lpower});
-		map { s/\./,/; } ($r->{t1}, $r->{t2}, $r->{lpower});
-		$ret->{$r->{cid}} = $r;
-	}
-}
-$sth->finish;
-$ret = {}	unless $ret;
-return $ret;
-</%init>
-</%method>
-
-
-
-
-
-
-
-
-
-
 <%method pretty_date>
 <%doc>
 	Преобразование даты из YYYY-MM-DD в DD-MM-YYYY
@@ -478,3 +443,27 @@ return $value;
 </%init>
 </%method>
 
+
+<%method fee_tariff>
+<%doc>
+	Текущие членские взносы
+</%doc>
+<%args>
+	$dbh
+	$nocache => 0
+</%args>
+<%init>
+	unless($nocache) {
+		my ($rv, $cached) = $m->cache_self(
+			expire_in => '1 hour',
+			busy_lock => '5sec',
+			ttl => '5minutes',
+			key => "fee_tariff",
+			expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
+		);
+		return $rv	if($cached);
+	}
+	my $ghpower = GHPower->new($dbh);
+	return $ghpower->tariff('fee_tariff');
+</%init>
+</%method>
