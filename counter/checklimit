@@ -70,6 +70,7 @@ use utf8;
 use open qw(:std :utf8);
 use strict;
 use lib "$ENV{MY}/lib/";
+use GHPower;
 use GHPowerUtils;
 
 #
@@ -93,25 +94,20 @@ $sth->execute($main_counter_id);
 my ($date,$ise) = $sth->fetchrow_array;
 $sth->finish;
 
-#print "$date $ise\n";
 $ise = sprintf("%.f",$ise);
 if($ise > $limit) {
 	# Ищем превышение по всем счетчикам
-	my $cntr = $dbh->prepare("select A.id,A.mgroup,A.mgroup,A.house,B.name as street,C.fullname as owner,A.plimit,A.ktrans from counters A left outer join street B on B.id=A.street left outer join contacts C on A.owner=C.uid where A.active=1");
-	$cntr->execute();
+	my $ghpower = GHPower->new($dbh);
+	my $cntr = $ghpower->lastcounter(0, plimit=>1 );
+
 	my $List = "Нарушители:\n";
-	while(my $r = $cntr->fetchrow_hashref) {
-		next	if $r->{id} == $main_counter_id; 
-		$sth->execute($r->{id});
-		my ($ldate,$lise) = $sth->fetchrow_array;
-		$sth->finish;
-		$lise = sprintf("%.2f",$lise * $r->{ktrans});
-		if($lise > $r->{plimit}) {	# Превышение
-			$List .= $r->{street}.", ".$r->{house}." ".$r->{owner}."\n";
-			$List .= "Мощность: $lise kWA (разрешено $r->{plimit})\n\n";
-		}
+	foreach my $cid (keys %{$cntr}) {
+		next	if $cid == $main_counter_id;
+		my $Counter = $ghpower->Counter_info($cid);
+		$List .= $Counter->{dn}.", ".join(",",@{$Counter->{Dom}->{owner}})."\n";
+		$List .= "Мощность: ".$cntr->{$cid}->{lpower}." kWA (разрешено $Counter->{plimit})\n\n";
 	}
-	$cntr->finish;
+
 	my $subj = "Alert from ghpower: the limit is exceeded ($ise)";
 	my $body = "Превышена потребляемая мощность: $ise kWA (при пороге $limit kWA)\n$List\n";
 
@@ -121,8 +117,4 @@ if($ise > $limit) {
 		SendMail("GHPower checklimit",$emails,$subj,$body);
 	}
 }
-
-
-
 $dbh->disconnect;
-
