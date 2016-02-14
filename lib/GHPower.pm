@@ -109,7 +109,6 @@ sub Counter_info {
   return $ret;
 }
 
-
 #    Список счетчиков
 sub Counters_list {
   my $self = shift;
@@ -126,6 +125,39 @@ sub Counters_list {
       $r->{Dom} = $ghldap->get_Domain($r->{dn});
     }
     push @{$ret->{$r->{mgroup}}->{items}}, $r;
+  }
+  $sth->finish;
+  $ret = {} unless $ret;
+  return $ret;
+}
+
+#    Последние показания счетчика
+sub lastcounter {
+  my $self = shift;
+  my $id = shift;
+
+  my $ret = undef;
+  my $sth;
+  if($id) {
+    $sth = $self->{dbh}->prepare("select A.modtime AS tm,A.se1 AS t1,A.se2 AS t2, A.lpower, A.lpower>B.plimit AS over,A.state from status A inner join counters B on A.cid=B.id where A.cid=? order by A.modtime desc LIMIT 1");
+    $sth->execute($id);
+    while(my $r = $sth->fetchrow_hashref) {
+      $r->{t1} = sprintf("%0.2f",$r->{t1});
+      $r->{t2} = sprintf("%0.2f",$r->{t2});
+      $r->{lpower} = sprintf("%0.2f",$r->{lpower});
+      map { s/\./,/; } ($r->{t1}, $r->{t2}, $r->{lpower});
+      $ret = $r;
+    }
+  } else {  # Полный список
+    $sth = $self->{dbh}->prepare("select A.modtime AS tm,A.se1 AS t1,A.se2 AS t2, A.cid, A.lpower, A.lpower>B.plimit AS over,A.state from status A inner join counters B on A.cid=B.id where A.state=0");
+    $sth->execute();
+    while(my $r = $sth->fetchrow_hashref) {
+      $r->{t1} = sprintf("%0.2f",$r->{t1});
+      $r->{t2} = sprintf("%0.2f",$r->{t2});
+      $r->{lpower} = sprintf("%0.2f",$r->{lpower});
+      map { s/\./,/; } ($r->{t1}, $r->{t2}, $r->{lpower});
+      $ret->{$r->{cid}} = $r;
+    }
   }
   $sth->finish;
   $ret = {} unless $ret;
@@ -163,9 +195,10 @@ sub lastime {
 # Текущие тарифы
 sub tariff {
   my $self = shift;
+  my $table = shift || 'tariff';
 
   my $ret = undef;
-  my $sth = $self->{dbh}->prepare("select *,coalesce(sdate<now()) as legal from tariff order by sdate desc limit 20");
+  my $sth = $self->{dbh}->prepare("select *,coalesce(sdate<now()) as legal from $table order by sdate desc limit 20");
   $sth->execute();
   while(my $r = $sth->fetchrow_hashref) {
     unless($ret->{C}) {
@@ -179,7 +212,7 @@ sub tariff {
   return $ret;
 }
 
-# Последние показания счетчика, дата
+# Последние показания счетчика, дата (суточная фиксация - для денежных расчетов)
 sub getcounter_last {
   my $self = shift;
   my $id = shift;
