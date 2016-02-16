@@ -228,8 +228,9 @@ sub collector {
 			}
 			# Коррекция часов
 			if($maintenance_do) {
-				eval{ system("$adjtime203 ".$counter->{addr}." ".$counter->{dev}." ".($verb ? '-v':'')); };
-				$tmok = ($@) ? "0":"1";
+				my $ret;
+				eval{ $ret = system("$adjtime203 ".$counter->{addr}." ".$counter->{dev}." ".($verb ? '-v':'')); };
+				$tmok = ($@ || ($ret != 0)) ? "0":"1";
 			}
 		}
 		elsif($counter->{type} =~ /M230/) {
@@ -248,8 +249,9 @@ sub collector {
 				print "Error reading from: ".$counter->{addr}." (3f)\n"	if($verb);
 			}
 			if($maintenance_do) {
-				eval{ system("$adjtime230 ".$counter->{addr}." ".$counter->{passwd}." ".$counter->{dev}." ".($verb ? '-v':'').""); };
-				$tmok = ($@) ? "0":"1";
+				my $ret;
+				eval{ $ret = system("$adjtime230 ".$counter->{addr}." ".$counter->{passwd}." ".$counter->{dev}." ".($verb ? '-v':'').""); };
+				$tmok = ($@ || ($ret != 0)) ? "0":"1";
 			}
 		} else {
 			print " ERROR: unknown device type [".$counter->{type}."]\n"	if $verb;
