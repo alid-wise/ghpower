@@ -112,9 +112,6 @@ my (%pids,$cps);
 $SIG{INT} = sub { die; };
 $SIG{CHLD} = \&reaper;
 
-use Data::Dumper;
-#print Dumper $MGr;
-
 foreach my $mgr (values %{$MGr}) {
 		my $child;
 		unless($child = fork) {
@@ -201,7 +198,7 @@ sub collector {
 			$maintenance_do++;
 		} else {
 			if($counter->{maintenance}) {
-				$counter->{maintenance}--;
+				$counter->{maintenance}--	if($counter->{maintenance} > 0);
 				$maintenance_cnt = $counter->{maintenance};
 			} else {
 				$maintenance_cnt = 0;
