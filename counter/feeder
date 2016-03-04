@@ -91,6 +91,7 @@ my $verb = exists $opts{v};
 my $sms = exists $opts{s};
 my $pgport = 5432;
 my $database = $opts{D} || 'ghpower';
+my $cid = $opts{c} || 0;	# только для этого счетчика
 
 # Шаблон сообщения
 my $SUBJ = '"Зеленая горка": показания счетчика';
@@ -119,7 +120,7 @@ AWARN
 my $ALERT = 'У вас большой долг за электричество.';
 
 my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1, AutoCommit => 1});
-my $sth = $dbh->prepare("select A.id,A.sn,A.ktrans,A.dn,C.modtime as tm,C.se1 as t1,C.se2 as t2 from counters A inner join status C on A.id=C.cid where A.active=1 and A.subscr=1");
+my $sth = $dbh->prepare("select A.id,A.sn,A.ktrans,A.dn,C.modtime as tm,C.se1 as t1,C.se2 as t2 from counters A inner join status C on A.id=C.cid where A.active=1 and A.subscr=1".($cid ? " AND A.id=$cid":""));
 my $log = $dbh->prepare("INSERT INTO feed_log (auth,cid,dn,target,msg,status,err,posted,parts,cost) VALUES (?,?,?,?,?,?,?,now(),?,?)");
 
 $sth->execute();
