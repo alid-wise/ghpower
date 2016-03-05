@@ -69,6 +69,7 @@ $| = 1;
 # 2014-07-09 alid
 #
 # 2016-02-17 Возможность отключения коррекции часов счетчика (maintenance=-1)
+# 2016-03-04 Установка времени вместо коррекции для М230
 
 use DBI;
 use Carp;
@@ -156,7 +157,7 @@ sub collector {
 	my $cget203 = "$ENV{MY}counter/mon203";
 	my $cget230 = "$ENV{MY}counter/mon230";
 	my $charting = "$ENV{MY}/counter/line-graph $database $mgid";
-	my $adjtime230 = "$ENV{MY}counter/adjtime -a";
+	my $adjtime230 = "$ENV{MY}counter/adjtime -F";
 	my $adjtime203 = "$ENV{MY}counter/adjtime203 -a";
 
 	my $lock = Lock->new("/tmp/counter.collector.$mgid.lock",1);
@@ -164,7 +165,7 @@ sub collector {
 
 	my $dbh = DBI->connect("dbi:Pg:dbname=$database","","",{AutoCommit => 1})	or die;
 	# список счетчиков
-	my $sth = $dbh->prepare("select counters.id,counters.name,counters.addr,counters.passwd,iface.dev,counters.ktrans,counter_type.type,status.id as status_id,status.state,status.pstate,status.maintenance from counters inner join mgroup on mgroup.id=counters.mgroup inner join iface on mgroup.if_id=iface.id inner join counter_type on model=counter_type.id left outer join status on counters.id=status.cid where counters.active=1 and counters.mgroup=? order by counters.id");
+	my $sth = $dbh->prepare("select counters.id,counters.name,counters.addr,counters.passwd,iface.dev,counters.ktrans,counter_type.type,status.id as status_id,status.state,status.pstate,status.maintenance,counters.passwd2 from counters inner join mgroup on mgroup.id=counters.mgroup inner join iface on mgroup.if_id=iface.id inner join counter_type on model=counter_type.id left outer join status on counters.id=status.cid where counters.active=1 and counters.mgroup=? order by counters.id");
 	$sth->execute($mgid)	or die;
 	my $List;
 	while(my $row = $sth->fetchrow_hashref) {
@@ -248,7 +249,7 @@ sub collector {
 			}
 			if($maintenance_do) {
 				my $ret;
-				eval{ $ret = system("$adjtime230 ".$counter->{addr}." ".$counter->{passwd}." ".$counter->{dev}." ".($verb ? '-v':'').""); };
+				eval{ $ret = system("$adjtime230 ".$counter->{addr}." ".$counter->{passwd2}." ".$counter->{dev}." ".($verb ? '-v':'').""); };
 				$tmok = ($@ || ($ret != 0)) ? "0":"1";
 			}
 		} else {
