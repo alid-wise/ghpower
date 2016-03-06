@@ -88,7 +88,7 @@ if($verb || !$adj) {
 	($status,$cnt,@data) = $connect->_recv();
 	die "[$addr] request failed: [$status]"	unless($status=~/ok/);
 	print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
-	print "[$saddr] [x$addr] 20".$data[7]."-".$data[6]."-".$data[5]." ".$data[4]." ".$data[3].":".$data[2].":".$data[1]." ".(($data[8] eq '00')?'summer':'winter')."\n";
+	print "[$saddr] [x$addr] 20".$data[7]."-".$data[6]."-".$data[5]." ".$data[4]." ".$data[3].":".$data[2].":".$data[1]." ".(($data[8] eq '00')?'summer':'winter')."\n" unless($set);
 }
 if($adj) {
 	print "Time correction: $hh:$mm:$ss\n"	if($verb);
