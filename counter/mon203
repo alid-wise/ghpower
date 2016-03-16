@@ -127,7 +127,7 @@ print "Monitoring ########################\n"	if $verb;
 
 die "[".hex($addr)."] 26h request failed: [$status]"	unless($status=~/ok/);
 print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
-push @{$Data->{mp}}, join("",$data[5],$data[6])/100;
+push @{$Data->{mp}}, join("",$data[5],$data[6])*10;
 print "mp [26h]: ".join(' ',@{$Data->{mp}})."\n"	if $verb;
 
 # частота
@@ -144,9 +144,9 @@ die "[".hex($addr)."] 63h request failed: [$status]"	unless($status=~/ok/);
 print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
 push @{$Data->{mv}}, join("",$data[5],$data[6])/10;
 print "mv [63h]: ".join(' ',@{$Data->{mv}})."\n"	if $verb;
-push @{$Data->{mc}}, join("",$data[7],$data[8])/10;
+push @{$Data->{mc}}, join("",$data[7],$data[8])/100;
 print "mv [63h]: ".join(' ',@{$Data->{mc}})."\n"	if $verb;
-push @{$Data->{ms}}, join("",$data[9],$data[10],$data[11])/10;
+push @{$Data->{ms}}, join("",$data[9],$data[10],$data[11])*1;
 print "ms [63h]: ".join(' ',@{$Data->{ms}})."\n"	if $verb;
 
 ###### data output
