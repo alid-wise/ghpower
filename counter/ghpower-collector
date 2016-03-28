@@ -75,7 +75,9 @@ use DBI;
 use Carp;
 use Time::Local;
 use lib "$ENV{MY}/counter";
+use lib "$ENV{MY}/lib";
 use Lock;
+use GHPowerUtils;
 use POSIX;
 
 my (@args, %opts);
@@ -158,6 +160,7 @@ sub collector {
 	my $cget230 = "$ENV{MY}counter/mon230";
 	my $charting = "$ENV{MY}/counter/line-graph $database $mgid";
 	my $adjtime230 = "$ENV{MY}counter/adjtime -F";
+	my $gettime230 = "$ENV{MY}counter/adjtime";
 	my $adjtime203 = "$ENV{MY}counter/adjtime203 -a";
 
 	my $lock = Lock->new("/tmp/counter.collector.$mgid.lock",1);
@@ -250,7 +253,13 @@ sub collector {
 			if($maintenance_do) {
 				my $ret;
 				eval{ $ret = system("$adjtime230 ".$counter->{addr}." ".$counter->{passwd2}." ".$counter->{dev}." ".($verb ? '-v':'').""); };
-				$tmok = ($@ || ($ret != 0)) ? "0":"1";
+#				$tmok = ($@ || ($ret != 0)) ? "0":"1";
+				if($@ || ($ret != 0)) {	# Произошла ошибка; надо проверить время счетчика
+					eval{ $ret = `$gettime230 $counter->{addr}." ".$counter->{passwd2}." ".$counter->{dev}`; };
+					my ($gdate) = ($ret=~/(\d{4}\-\d{2}\-\d{2}\s+\d+\s+[\d\:]+)/);
+					my $delta = abs(UTime($gdate) - time());
+					$tmok = ($delta < 10) ? "1":"0";	# Ошибка не более 10 секунд
+				}
 			}
 		} else {
 			print " ERROR: unknown device type [".$counter->{type}."]\n"	if $verb;
