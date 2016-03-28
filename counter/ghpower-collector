@@ -290,7 +290,7 @@ sub collector {
 	exit(0);
 }
 
-
+__END__
 sub Now {
         my ($stamp, %opts) = @_;
         $stamp = time()         unless defined $stamp;
