@@ -255,7 +255,7 @@ sub collector {
 				eval{ $ret = system("$adjtime230 ".$counter->{addr}." ".$counter->{passwd2}." ".$counter->{dev}." ".($verb ? '-v':'').""); };
 #				$tmok = ($@ || ($ret != 0)) ? "0":"1";
 #				if($@ || ($ret != 0)) {	# Произошла ошибка; надо проверить время счетчика
-					eval{ $ret = `$gettime230 $counter->{addr}." ".$counter->{passwd1}." ".$counter->{dev}`; };
+					eval{ $ret = `$gettime230 $counter->{addr}." ".$counter->{passwd}." ".$counter->{dev}`; };
 					my ($gdate) = ($ret=~/(\d{4}\-\d{2}\-\d{2}\s+\d+\s+[\d\:]+)/);
 					my $delta = abs(UTime($gdate) - time());
 					$tmok = ($delta < 10) ? "1":"0";	# Ошибка не более 10 секунд
