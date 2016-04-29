@@ -84,6 +84,7 @@ my ($database,$emails) = (@args);
 die "Usage: $0 database"		unless($database);
 my $verb = exists $opts{v};
 my $pgport = 5432;
+my $Alerts;
 
 my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1, AutoCommit => 0});
 my $sth = $dbh->prepare("select id,cid,state,pstate,se1,se2,modtime from status where state<>pstate");
@@ -100,6 +101,15 @@ $sth->finish;
 $dbh->commit;
 $dbh->disconnect;
 
+if($Alerts) {
+	# Тут надо в самом деле отправить алерт (почта, смс ?)
+	if($emails) {
+		print "Sending alert to: $emails\n"     if($verb);
+		my $subj = "GHPower: Alerts";
+		SendMail("GHPower Alerter",$emails,$subj,$Alerts);
+	}
+}
+
 # Обработка алерта
 sub alert {
 	my ($cid,$state,$pstate,$se1,$se2,$modtime) = @_;
@@ -115,16 +125,10 @@ sub alert {
 		$event = "CLEAR";
 
 	}
-	# Тут надо будет в самом деле отправить алерт (почта, смс ?)
-	print 	"$event [$modtime]: $model,$addr,$sn,$street,$house,$mgroup,$tower\n"	if($verb);
-	if($emails) {
-		print "Sending alert to: $emails\n"	if($verb);
-		my $subj = "$event: Unavailable device";
-		my $body = "$event: Unavailable device\n";
-		$body .= "Model: $model\nSerial: $sn\nAddress: $addr\nGroup: $mgroup\nTower: $tower\n$street, $house\n";
-		SendMail("GHPower Alerter",$emails,$subj,$body);
-	}
-
+	print   "$event [$modtime]: $model,$addr,$sn,$street,$house,$mgroup,$tower\n"   if($verb);
+	my $body = "$event: Unavailable device\n";
+	$body .= "Model: $model\nSerial: $sn\nAddress: $addr\nGroup: $mgroup\nTower: $tower\n$street, $house\n\n";
+	$Alerts .= $body;
 }
 
 
