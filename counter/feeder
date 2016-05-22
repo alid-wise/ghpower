@@ -98,7 +98,7 @@ my $SUBJ = '"Зеленая горка": показания счетчика';
 my $BODY = <<ATEXT;
 Участок: {ADDR}
 Показания счетчика электроэнергии на {DATE}
-Дневной тариф (Т1): {T1}
+Дневной тариф (Т1): {T1}\n
 Ночной тариф (Т2): {T2}
 
 Баланс: {BALANCE} руб.
@@ -106,6 +106,8 @@ my $BODY = <<ATEXT;
 {WARN}
 -------------------------------
 Счетчик No: {SN} {KTRANS}
+
+Действующий тариф: {TARIFF}
 
 При оплате через банк сведения о произведённом платеже учитываются бухгалтером в ближайший приёмный день на основании банковской выписки. 
 Сведения из банка поступают с некоторой задержкой. Поэтому возможно, что ваш платеж еще не учтен по чисто техническим причинам.
@@ -126,6 +128,7 @@ my $log = $dbh->prepare("INSERT INTO feed_log (auth,cid,dn,target,msg,status,err
 $sth->execute();
 my $ghldap = new GHPowerLDAP;
 my $ghpower = new GHPower($dbh);
+my $T = $ghpower->tariff();	# Текущий тариф
 while(my $r = $sth->fetchrow_hashref) {
 	my $status = 1;	# 0-ok, 1-отправлено, 2 - нет адреса (target)
 	my $err = '';
@@ -139,7 +142,7 @@ while(my $r = $sth->fetchrow_hashref) {
 	my $body = $BODY;
 	my $addr = "$street_name, $domain";
 	my $date = Now(UTime($r->{tm}));
-	my ($balance,$se1,$se2) = $ghpower->get_balance($r->{id});
+	my ($balance,$se1,$se2,$t_mode) = $ghpower->get_balance($r->{id});
 	map { $_=sprintf("%0.2f",$_); s/\./,/; } ($se1,$se2);
 	my $warn = '';
 	my $balance_p = sprintf("%0.2f", $balance);
@@ -153,6 +156,17 @@ while(my $r = $sth->fetchrow_hashref) {
 	map { $_ =~ s/\{T1\}/$se1/; $_ =~ s/\{T2\}/$se2/; $_ =~ s/\{ADDR\}/$addr/; $_ =~ s/\{DATE\}/$date/; $_ =~ s/\{BALANCE\}/$balance_p/; $_ =~ s/\{WARN\}/$warn/; $_ =~ s/\{SN\}/$r->{sn}/; } ($subj,$body);
 	my $KTRANS = ($r->{ktrans} > 1) ? "(коэффициент преобразования $r->{ktrans})":"";
 	$body =~ s/\{KTRANS\}/$KTRANS/;
+	my $tartext;
+	print "Mode: $t_mode\n"	if($verb);
+	if($t_mode eq '1')	{
+		$tartext = $T->{C}->{t0};
+		$tartext =~ s/\./,/;
+		$tartext .= " руб.\/кВт*час";
+	} else {
+		map { s/\./,/; } ($T->{C}->{t1},$T->{C}->{t2});
+		$tartext = "\nT1 - ".$T->{C}->{t1}." руб.\/кВт*час\nT2 - ".$T->{C}->{t2}." руб.\/кВт*час";
+	}
+	$body =~ s/\{TARIFF\}/$tartext/;
 	# Куда слать
 	my @emails;
 	if($Dom) {
