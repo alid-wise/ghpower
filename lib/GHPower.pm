@@ -316,7 +316,7 @@ sub get_balance {
 
 	my ($bal,undef,undef) = $self->getcost_simple($flow1, $flow2, $t_mode);
 	my $BALANCE = $p_balance - $bal;
-	return ($BALANCE,$C->{se1},$C->{se2});
+	return ($BALANCE,$C->{se1},$C->{se2},$t_mode);
 }
 
 1;
