@@ -137,7 +137,7 @@ foreach my $date (@Dates) {
 		$sth->execute($cid, $date, $date2);
 		my ($se1,$se2) = $sth->fetchrow_array;
 		$sth->finish;
-		next	unless($se1 && $se2);	# Хоть какие-нибудь данные должны быть
+		next	unless(($se1 =~ m/\d+/) && ($se2 =~ m/\d+/));	# Хоть какие-нибудь данные должны быть
 		$cget->execute($cid,$date);
 		my ($id) = $cget->fetchrow_array;
 		$cget->finish;
