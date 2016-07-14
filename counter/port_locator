@@ -190,7 +190,9 @@ foreach my $gid (keys %{$CList}) {
 	print STDERR "Unconnected group: [$gid] ".$List->{$gid}->{name}."\n";
 	$upd->execute(0,$gid);	# Несуществующий интерфейс
 }
-
+# 2016-07-14 Включаем коррекцию часов для всех (замечено - при обесточивании у некоторых счетчиков останавливаются часы)
+$dbh->do("update status set maintenance=0,tmok=0");
+ 
 $dbh->commit	if($commit);
 $dbh->disconnect;
 $lock->clear;
