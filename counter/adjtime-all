@@ -76,9 +76,11 @@ $dbh->disconnect;
 foreach my $counter (@$List) {
 	print "set: ".$counter->{addr}." ".$counter->{type}."..."	if $verb;
 	if($counter->{type} =~ /M203/) {
+print "$action203 ".$counter->{addr}." ".$counter->{dev}." ".($verb ? '-v':'')." $flag\n"	if($verb);
 		system("$action203 ".$counter->{addr}." ".$counter->{dev}." ".($verb ? '-v':'')." $flag");
 	}
 	elsif($counter->{type} =~ /M230/) {
+print "$action230 ".$counter->{addr}." ".(($mode =~ /F/)? $counter->{passwd2} : $counter->{passwd})." ".$counter->{dev}." ".($verb ? '-v':'')."\n"	if($verb);
 		system("$action230 ".$counter->{addr}." ".(($mode =~ /F/)? $counter->{passwd2} : $counter->{passwd})." ".$counter->{dev}." ".($verb ? '-v':'')."");
 	} else {
 		print " ERROR: unknown device type [".$counter->{type}."]\n"	if $verb;
