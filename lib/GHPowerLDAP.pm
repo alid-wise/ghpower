@@ -157,6 +157,7 @@ sub Domains_Struct {
     foreach my $dn (keys %{$domlist}) {
       my $dom = $self->get_Domain($dn);
       $Struct->{$name}->{Dom}->{$domlist->{$dn}} = $dom;
+      $Struct->{$name}->{Dom}->{$domlist->{$dn}}->{dn} = $dn;
     }
   }
   return $Struct;
