@@ -443,27 +443,32 @@ return $value;
 </%init>
 </%method>
 
-
-<%method fee_tariff>
+<%method b_tariff_type>
 <%doc>
-	Текущие членские взносы
+	Типы членских (и других) взносов
+</%doc>
+<%args>
+	$dbh => 0
+</%args>
+<%init>
+	my $ghpower = GHPower->new($dbh);
+	return $ghpower->b_tariff_type();
+</%init>
+</%method>
+
+
+<%method set_fee>
+<%doc>
+	Начисление членских (и других) взносов
 </%doc>
 <%args>
 	$dbh
-	$nocache => 0
+	$bid
+	$auth
+	$verb => 0
 </%args>
 <%init>
-	unless($nocache) {
-		my ($rv, $cached) = $m->cache_self(
-			expire_in => '1 hour',
-			busy_lock => '5sec',
-			ttl => '5minutes',
-			key => "fee_tariff",
-			expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
-		);
-		return $rv	if($cached);
-	}
 	my $ghpower = GHPower->new($dbh);
-	return $ghpower->tariff('fee_tariff');
+	return $ghpower->set_fee($bid,$auth,$verb);
 </%init>
 </%method>
