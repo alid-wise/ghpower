@@ -251,7 +251,7 @@ unless($nocache) {
 	return $rv	if($cached);
 }
 my $ghpower = GHPower->new($dbh);
-return $ghpower->getcounter_date($id,$date);
+#return $ghpower->getcounter_date($id,$date);
 
 
 
