@@ -61,6 +61,17 @@
 --
 
 
+-- группы мониторинга (лучи)
+create table mgroup (
+	id integer not null,
+	active integer,
+	name varchar,
+	if_id integer,
+	memo varchar,
+	rank integer,
+	bid integer,
+	modtime timestamp without time zone DEFAULT now()
+);
 -- счетчики
 create table counters (
 	id integer not null,
@@ -112,6 +123,7 @@ create table status (
 	lpower decimal,
 	modtime timestamp without time zone DEFAULT now(),
 	maintenance integer DEFAULT 0,
+	tmok integer DEFAULT 0,
 	primary key (id)
 );
 -- лог алертов
@@ -318,8 +330,6 @@ CREATE TABLE tariff (
     modtime timestamp without time zone DEFAULT now() NOT NULL,
     primary key (id)
 );
-INSERT INTO tariff (t1,t2,sdate) VALUES (4.11,1.39,'2012-07-01');
-
 
 CREATE TABLE feed_log (
 	id serial NOT NULL,
@@ -342,66 +352,52 @@ CREATE INDEX feed_log_cid_i ON feed_log (cid);
 
 
 
--- Deprecated ---
+------------------------------------------------
+-- Членские взносы и другие платежи
+-- 2016-07-11
 
---
--- Проезды
---
-CREATE TABLE street (
-    id integer NOT NULL,
-    name character varying(100) NOT NULL
+-- Начисления
+CREATE TABLE b_tariff (
+    id serial NOT NULL,
+    auth integer,
+    type integer, 	-- 0 - фиксированный (с участка), 1 - с площади
+    amount decimal,
+    edate date,           -- срок погашения
+    sdate date,           -- дата начисления
+    memo text,
+    modtime timestamp without time zone DEFAULT now() NOT NULL,
+    primary key (id)
 );
-
--- Альтернативный вариант списка персон (vCard)
-CREATE TABLE contacts (
-        id serial NOT NULL,
-        uid varchar,
-        active integer default 1,
-        fullname varchar,
-        carddata varchar,
-        uri varchar,
-        etag varchar,
-        modtime timestamp without time zone DEFAULT now(),
-        primary key (uid)
+-- credit
+CREATE TABLE b_credit (
+	id serial NOT NULL,
+	auth integer,
+	dn varchar NOT NULL,
+	b_tariff_id integer not null,	-- начисление
+    date date,		-- дата начисления
+    status integer default 0,		-- 1-погашен, 2-отменен
+    amount decimal,
+    debt decimal,
+	memo text,
+	modtime timestamp without time zone DEFAULT now(),
+	primary key (id)
 );
--- example:
-INSERT INTO contacts (uid,fullname,carddata) VALUES ('489b1350-46e4-69e4-49bd-3fd47b26e237','Admin','FN:Admin');
+CREATE INDEX b_credit_dn_i ON b_credit (dn);
+CREATE INDEX b_credit_tariff_id_i ON b_credit (b_tariff_id);
 
-update contacts set id=cast(substring(carddata,'\WID:(\d+)') as int);
-
-
-
--- users
-create table auth (
-	id serial not null,
-	name varchar,
-	login varchar,
-	password varchar,
-	email varchar,
-	active integer default 0,
-	gid integer default 0,
-	memo varchar,
-	modtime timestamp without time zone DEFAULT now()
+-- платежи
+CREATE TABLE b_pays (
+	id serial NOT NULL,
+	auth integer,
+	dn varchar NOT NULL,
+	b_credit_id integer not null,	-- начисление
+    pdate date,		-- дата платежа
+    amount decimal,
+	memo text,
+	modtime timestamp without time zone DEFAULT now(),
+	primary key (id)
 );
-create table groups (
-	id integer not null,
-	name varchar
-);
-INSERT INTO groups (id,name) VALUES (1,'admin');
-INSERT INTO groups (id,name) VALUES (2,'manager');
-INSERT INTO groups (id,name) VALUES (3,'user');
-INSERT INTO groups (id,name) VALUES (4,'guest');
--- admin/admin
-INSERT INTO auth (name,login,password,email,active,gid,memo) VALUES ('- embedded admin -','admin','$1$YqBppwE5$9GaW92wOLUP0v4Au/Lfab.','admin@email',1,1,'Эту запись не стоит удалять');
+CREATE INDEX b_pays_dn_i ON b_pays (dn);
+CREATE INDEX b_pays_tariff_id_i ON b_pays (b_tariff_id);
 
--- группы мониторинга (лучи)
-create table mgroup (
-	id integer not null,
-	active integer,
-	name varchar,
-	if_id integer,
-	memo varchar,
-	rank integer,
-	bid integer,
-	modtime timestamp without time zone DEFAULT now()
-);
+
