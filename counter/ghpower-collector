@@ -252,7 +252,7 @@ sub collector {
 			}
 			if($maintenance_do) {
 				my $ret;
-#				eval{ $ret = system("$adjtime230 ".$counter->{addr}." ".$counter->{passwd2}." ".$counter->{dev}." ".($verb ? '-v':'').""); };
+				eval{ $ret = system("$adjtime230 ".$counter->{addr}." ".$counter->{passwd2}." ".$counter->{dev}." ".($verb ? '-v':'').""); };
 #				$tmok = ($@ || ($ret != 0)) ? "0":"1";
 #				if($@ || ($ret != 0)) {	# Произошла ошибка; надо проверить время счетчика
 					eval{ $ret = `$gettime230 $counter->{addr} $counter->{passwd} $counter->{dev}`; };
