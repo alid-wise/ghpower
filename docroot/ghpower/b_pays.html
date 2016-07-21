@@ -1,0 +1,232 @@
+<%args>
+	$dbh
+	$auth
+	$dn => undef
+	$id => undef	# в таблице b_credit
+</%args>
+<%init>
+use Data::Dumper;
+use POSIX;
+
+my ($List2,$sth,$Data,$PData,$Pay,%Err,$OK);
+my ($House,$Street);
+#my $ghpower = GHPower->new($dbh);
+
+if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# admin или manager
+	$r->status_line('');
+	$m->clear_buffer;
+	$m->abort(404);
+}
+
+# Ищем кнопку добавления платежа
+foreach(keys %ARGS) {
+	if(m/^padd_(\d+)$/) {
+		$id = $1;
+		last;
+	}
+}
+if($ARGS{cancel}) { undef $id; }
+
+
+if($dn) {	# Имеем дело с одним конкретным юзером
+	($House,$Street) = ($dn =~ m/ou\=(\w+)\,ou\=(\w+)/);
+	# Начисления
+	$sth = $dbh->prepare("SELECT A.id,A.b_tariff_id,B.edate,A.amount AS p_amount,A.status,A.debt,A.memo,A.modtime, B.name,B.amount,B.type,case when A.debt>0 AND now()>B.edate then 1 else 0 end AS flag FROM b_credit A INNER JOIN b_tariff B ON A.b_tariff_id=B.id WHERE A.dn=? ORDER BY B.edate DESC,A.modtime DESC");
+	$sth->execute($dn);
+	while(my $r = $sth->fetchrow_hashref) { push @$Data, $r; }
+	$sth->finish;
+	# Платежи
+	$sth = $dbh->prepare("SELECT A.id,A.b_credit_id,A.pdate,A.amount AS p_amount,A.memo,A.modtime,B.name,B.amount,B.type FROM b_pays A INNER JOIN b_credit C ON A.b_credit_id=C.id INNER JOIN b_tariff B ON C.b_tariff_id=B.id WHERE A.dn=? ORDER BY A.modtime DESC");
+	$sth->execute($dn);
+	while(my $r = $sth->fetchrow_hashref) { push @$PData, $r; }
+	$sth->finish;
+
+	if($id) {	# Добавляем платеж по этому начислению
+		foreach(@$Data) {
+			if($_->{id} == $id) {
+				$Pay = $_;
+				last;
+			}
+		}
+		if($ARGS{submit} && $ARGS{payment})	{
+			my $payment = $ARGS{payment};
+			if($payment =~ /^\s*(\d+)[\.\,]*(\d*)$/) {
+				$payment = $1.($2 ? ".$2":"");
+			} else  {
+				$Err{payment}++;
+			}
+			if($payment > $Pay->{debt}) { $Err{badpayment}++; }
+
+			unless(%Err) {
+				my $ins = $dbh->prepare("INSERT INTO b_pays (auth,pdate,dn,b_credit_id,amount) VALUES ($auth->{id},now(),?,?,?)");
+				my $upd = $dbh->prepare("UPDATE b_credit SET debt=?,modtime=now() WHERE id=?");
+
+				$dbh->begin_work;
+				$ins->execute($dn,$id,$payment);
+				my $debt = $Pay->{debt} - $payment;
+				$debt = 0 if($debt < 0);
+				$upd->execute($debt,$id);
+				$dbh->commit;
+				$OK++;
+			}
+		}
+	}
+
+
+
+} else {	# Полный список
+	$List2 = $m->comp("lib.msn:Domains_Struct", dbh=>$dbh, nocache=>0);
+	$sth = $dbh->prepare("select (select sum(A.debt) from b_credit A inner join b_tariff B on A.b_tariff_id=B.id where dn=? and B.edate<now() and A.debt>0) as debt, (select max(pdate) from b_pays where dn=?) as pdate");
+}
+</%init>
+%if($OK) {
+<h3 id="resok">Запись сохранена</h3>
+<p><a href="b_pays.html?dn=<% $dn | u %>">Home</a></p>
+<script type=text/javascript>
+$(document).ready(function() {
+	$("#resok").fadeOut(1200, function() {document.location = "b_pays.html?dn=<% $dn | u %>"; });
+});
+</script>
+%} elsif($dn) {
+%	if($id) {	# Новый платеж
+<p><b><%$Street%>, <%$House%></b></p>
+<form method="POST" name="newpay">
+<table border="1">
+<tr><td colspan="2" align="right"><input class="close" type="submit" name="cancel" value="X"></td></tr>
+<tr><td colspan="2"><% $Pay->{name} %></td></tr>
+<tr>
+<td><div style=color:<% ($Err{payment} || $Err{badpayment}) ? "red":"black"%>>Сумма:</div></td>
+<td><input type="text" name="payment" value="<% $ARGS{payment} || $Pay->{debt} %>"></td>
+</tr>
+<td colspan="2" align="center"><nobr><input type="submit" name="submit" value="Сохранить"></nobr></td>
+</table>
+<% $Err{badpayment} ? "<p class=\"error\">Сумма платежа не может превышать суммы долга.</p>":""%>
+<input type="hidden" name="id" value="<%$id%>">
+</form>
+%	} else {
+
+
+<div class="masthead">
+	<ul class="nav nav-pills pull-left">
+		<li class="active"><a href="b_pays.html">Назад в список</a></li>
+%#		<li><a href="index.html">Список счетчиков</a></li>
+%#		<li><a href="b_tariff.html" target="pform">Тариф</a></li>
+%#		<li><a href="?export=1">Экспорт</a></li>
+	</ul>
+%#	<h3 class="muted">GHPower</h3>
+</div>
+<hr>
+<p><br></p>
+<p><b><%$Street%>, <%$House%></b></p>
+
+<form method="POST" name="padd">
+<table border="0">
+<tr>
+<td valign="top">
+%my $n = 1;
+<h3>Начисления</h3>
+<table border="1">
+<tr>
+<th>N</th><th>Дата</th><th>Взнос</th><th>Сумма</th><th>Долг</th><th>Действие</th>
+</tr>
+%foreach my $cred (@$Data) {
+%	my $mark = $cred->{flag} ? "class=redbold":"";
+<tr>
+<td><%$n%></td>
+<td><% $m->comp("lib.msn:pretty_date", date=>$cred->{edate}) %></td>
+<td><% $cred->{name} %></td>
+<td><% $cred->{p_amount} %></td>
+<td><div <%$mark%>><% $cred->{debt} %></div></td>
+<td><% $cred->{debt} ? "<input type=\"submit\" name=\"padd_".$cred->{id}."\" value=\"платеж\" title=\"добавить платеж\">":""%></td>
+</tr>
+%$n++;}
+</table>
+</td>
+<td valign="top">
+%my $i = 1;
+<h3>Платежи</h3>
+<table border="1">
+<tr>
+<th>N</th><th>Дата</th><th>Взнос</th><th>Сумма</th>
+</tr>
+%foreach my $pay (@$PData) {
+<tr>
+<td><%$i%></td>
+<td><% $m->comp("lib.msn:pretty_date", date=>$pay->{pdate}) %></td>
+<td><% $pay->{name} %></td>
+<td><% $pay->{p_amount} %></td>
+</tr>
+%$i++;}
+</table>
+</td>
+</tr>
+</table>
+</form>
+%	}
+%} else {	# Полный список
+<div class="masthead">
+	<ul class="nav nav-pills pull-left">
+		<li class="active"><a href="/">Home</a></li>
+%#		<li><a href="index.html">Список счетчиков</a></li>
+		<li><a href="b_tariff.html" target="pform">Тариф</a></li>
+%#		<li><a href="?export=1">Экспорт</a></li>
+	</ul>
+%#	<h3 class="muted">GHPower</h3>
+</div>
+<hr>
+<p><br></p>
+
+<h2>Членские и другие взносы</h2>
+<table border="1" class="table-condensed">
+%my $total2;
+
+
+%foreach my $street (sort {$List2->{$a}->{ord} <=> $List2->{$b}->{ord}} keys %{$List2}) {
+
+<tr><td colspan="5"><b><br><%$street%></b></td></tr>
+<tr><th><i>Участок</i></th><th><i>Владелец</i></th><th><i>Долг</i></th><th><i>Посл.оплата</i></th></tr>
+<%perl>
+	my $localsum = 0;
+	my $Dom = $List2->{$street}->{Dom};
+	foreach my $house (sort {$a <=> $b || $a cmp $b} keys %{$Dom}) {
+		my @owners;
+		foreach(@{$Dom->{$house}->{owners}}) {
+			push @owners, $_->{sn}[0];
+		}
+		next	unless(@owners);	# Не показывать, если нет владельца
+#		my $dn = $Dom->{$house}->{uid}[0];
+		my $dn = $Dom->{$house}->{dn};
+#		my $BALANCE;
+		# последний платеж
+#		my $r = $ghpower->last_pay($Dom->{$house}->{dn});
+#		my ($p_id,$p_date,$p_amount,$p_balance) = ($r->{id},$r->{pdate},$r->{amount},$r->{balance});
+		$sth->execute($dn,$dn);
+		my ($p_balance,$p_date) = ($sth->fetchrow_array);
+		$sth->finish;
+		$localsum += $p_balance;
+
+</%perl>
+<tr>
+<td align="right"><b><%$house%></b></td>
+<td><a href="?dn=<% $dn |u %>"><%join("<br>", @owners) || "-" %></a></td>
+<td align="right"><div style=color:<%$p_balance >0 ? "red":"green"%>><% $p_balance ?  $m->comp("lib.msn:pretty", value=>$p_balance) : "0"%></div></td>
+<td align="right"><%  $m->comp("lib.msn:pretty_date", date=>$p_date)%></td>
+</tr>
+%	}
+<tr>
+<td></td>
+<td><b>Всего:</b></td>
+<td align="right"><div style=color:<%$localsum >0 ? "red":"green"%>><b><% $localsum ?  $m->comp("lib.msn:pretty", value=>$localsum) : ""%></b></div></td>
+<td></td>
+</tr>
+%	$total2 += $localsum;
+%}
+</table>
+<hr>
+<p><nobr><b>Итого:</b>&nbsp;&nbsp;&nbsp;<b><% $total2 ?  $m->comp("lib.msn:pretty", value=>$total2) : "0"%></b></nobr></p>
+%}	# Полный список
+
+%#<pre>
+%#<% Dumper %ARGS %>
+%#<% Dumper $Pay %>
+%#</pre>
