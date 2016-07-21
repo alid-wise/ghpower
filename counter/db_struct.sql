@@ -361,6 +361,7 @@ CREATE TABLE b_tariff (
     id serial NOT NULL,
     auth integer,
     type integer, 	-- 0 - фиксированный (с участка), 1 - с площади
+    name varchar,
     amount decimal,
     edate date,           -- срок погашения
     sdate date,           -- дата начисления
