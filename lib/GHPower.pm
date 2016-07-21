@@ -319,4 +319,108 @@ sub get_balance {
 	return ($BALANCE,$C->{se1},$C->{se2},$t_mode);
 }
 
+#
+# Прочие (не электрические) платежи
+# 2016-07-15
+#
+
+# Типы платежей
+sub b_tariff_type {
+  my %b_tariff_type = (
+    0 => 'с участка',
+    1 => 'с площади',
+  );
+  return %b_tariff_type;
+}
+
+# Начисление платежа всем по списку
+sub set_fee {
+  my $self = shift;
+  my ($bid,$auth,$verb) = @_;
+
+  $auth ||= 0;
+  my $Err;
+  unless($bid) {
+    $Err->{nobid} = 1;
+    return $Err;
+  }
+  $self->{dbh}->begin_work;
+  my $ins = $self->{dbh}->prepare("INSERT INTO b_credit (auth,date,dn,b_tariff_id,amount,debt) VALUES ($auth,now(),?,?,?,?)");
+  my $sth = $self->{dbh}->prepare("SELECT type,amount FROM b_tariff WHERE id=? AND sdate IS NULL LIMIT 1");
+  my $upd = $self->{dbh}->prepare("UPDATE b_tariff SET sdate=now() WHERE id=?");
+
+  # Данные взноса
+  $sth->execute($bid);
+  my ($b_type,$b_amount) = $sth->fetchrow_array;
+  $sth->finish;
+  unless(defined $b_type && defined $b_amount) {
+    $Err->{badpars} = 1;
+    return $Err;
+  }
+
+  # Список участков
+  my $List2 = $self->Domains_Struct;
+  foreach my $street (sort {$List2->{$a}->{ord} <=> $List2->{$b}->{ord}} keys %{$List2}) {
+    my $Dom = $List2->{$street}->{Dom};
+    foreach my $house (sort {$a <=> $b || $a cmp $b} keys %{$Dom}) {
+#next unless($house eq '3');
+      my $dn = $Dom->{$house}->{dn};
+      next  unless($dn);
+
+next unless($dn =~ m/Восточный/);
+#print Dumper $Dom->{$house};
+
+      my ($S,$amount);
+      if($b_type == 1)  { # начисление с площади
+        $S = $Dom->{$house}->{x121address}[0];  # Площадь участка из справочника
+        unless(defined $S) {
+          push @{$Err->{nos}}, $dn;
+          next;
+        }
+        $amount = $b_amount * $S;
+
+      } else {        # начисление с участка
+        $amount = $b_amount;
+      }
+      print "[$dn] S=$S Amount=$amount\n"   if($verb);
+      $ins->execute($dn,$bid,$amount,$amount);  # b_credit
+    }
+  }
+  # ставим флаг active
+  $upd->execute($bid);
+
+  if($Err) {
+    $self->{dbh}->rollback;
+    print "Rollback due errors.\n"  if($verb);
+    return $Err;
+  } else {
+    $self->{dbh}->commit;
+    print "All committed\n" if($verb);
+    return;
+  }
+}
+
+# Последний платеж
+sub last_pay {
+  my $self = shift;
+  my ($dn) = @_;
+  return(undef) unless($dn);
+
+  my $sth = $self->{dbh}->prepare("SELECT id,auth,b_tariff_id,pdate,amount,balance,memo,modtime FROM b_pays WHERE dn=? ORDER BY modtime DESC LIMIT 1");
+  $sth->execute($dn);
+  my ($r) = $sth->fetchrow_hashref;
+  $sth->finish;
+print STDERR "DN: [$dn]\n";
+use Data::Dumper;
+print STDERR Dumper $r;
+
+  return($r);
+}
+
+
+
+
+
+
+
 1;
