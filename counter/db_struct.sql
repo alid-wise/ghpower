@@ -398,6 +398,6 @@ CREATE TABLE b_pays (
 	primary key (id)
 );
 CREATE INDEX b_pays_dn_i ON b_pays (dn);
-CREATE INDEX b_pays_tariff_id_i ON b_pays (b_tariff_id);
+CREATE INDEX b_pays_credit_id_i ON b_pays (b_credit_id);
 
 
