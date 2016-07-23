@@ -367,7 +367,7 @@ sub set_fee {
       my $dn = $Dom->{$house}->{dn};
       next  unless($dn);
 
-next unless($dn =~ m/Восточный/);
+#next unless($dn =~ m/Восточный/);
 #print Dumper $Dom->{$house};
 
       my ($S,$amount);
