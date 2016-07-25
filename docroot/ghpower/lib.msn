@@ -269,31 +269,6 @@ return $ret;
 </%method>
 
 
-<%method Domains_Struct>
-<%doc>
-	Вся структура ou=domains с владельцами и пр.
-</%doc>
-<%args>
-	$dbh
-	$nocache => 1
-</%args>
-<%init>
-	unless($nocache) {
-		my ($rv, $cached) = $m->cache_self(
-			expire_in => '1 hour',
-			busy_lock => '5sec',
-			ttl => '5minutes',
-			key => "Domains_Struct",
-			expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
-		);
-		return $rv	if($cached);
-	}
-	my $ghpower = GHPower->new($dbh);
-	return $ghpower->Domains_Struct;
-</%init>
-</%method>
-
-
 <%method lastcounter>
 <%doc>
 	Последние показания счетчика
@@ -320,12 +295,44 @@ unless($nocache) {
 </%method>
 
 
+<%method get_Domain>
+<%doc>
+	Информация из LDAP о заданном учестке
+</%doc>
+<%args>
+	$dbh
+	$dn
+</%args>
+<%init>
+	my $ghpower = GHPowerLDAP->new($dbh);
+	return $ghpower->get_Domain($dn);
+</%init>
+</%method>
 
 
-
-
-
-
+<%method Domains_Struct>
+<%doc>
+	Вся структура ou=domains с владельцами и пр.
+</%doc>
+<%args>
+	$dbh
+	$nocache => 1
+</%args>
+<%init>
+	unless($nocache) {
+		my ($rv, $cached) = $m->cache_self(
+			expire_in => '1 hour',
+			busy_lock => '5sec',
+			ttl => '5minutes',
+			key => "Domains_Struct",
+			expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
+		);
+		return $rv	if($cached);
+	}
+	my $ghpower = GHPower->new($dbh);
+	return $ghpower->Domains_Struct;
+</%init>
+</%method>
 
 
 
@@ -472,3 +479,5 @@ return $value;
 	return $ghpower->set_fee($bid,$auth,$verb);
 </%init>
 </%method>
+
+
