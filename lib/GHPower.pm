@@ -294,6 +294,15 @@ sub Domains_Struct {
   return $ghldap->Domains_Struct();
 }
 
+# Информация из LDAP о заданном участке
+sub get_Domain {
+  my $self = shift;
+  my $dn = shift;
+  return undef  unless $dn;
+  my $ghldap = new GHPowerLDAP;
+  return $ghldap->get_Domain($dn);
+}
+
 # Текущий баланс по счетчику
 # !!! Добавить учет ktrans !!!
 sub get_balance {
@@ -399,6 +408,9 @@ sub set_fee {
     return;
   }
 }
+
+
+
 
 # Последний платеж
 sub last_pay {
