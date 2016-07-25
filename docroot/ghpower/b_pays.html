@@ -8,7 +8,7 @@
 use Data::Dumper;
 use POSIX;
 
-my ($List2,$sth,$Data,$PData,$Pay,%Err,$OK);
+my ($List2,$sth,$Data,$PData,$Pay,%Err,$OK,$Usr);
 my ($House,$Street);
 #my $ghpower = GHPower->new($dbh);
 
@@ -29,11 +29,12 @@ if($ARGS{cancel}) { undef $id; }
 
 
 if($dn) {	# Имеем дело с одним конкретным юзером
+	$Usr = $m->comp("lib.msn:get_Domain", dbh=>$dbh, dn=>$dn);
 	($House,$Street) = ($dn =~ m/ou\=(\w+)\,ou\=(\w+)/);
 	# Начисления
 	$sth = $dbh->prepare("SELECT A.id,A.b_tariff_id,B.edate,A.amount AS p_amount,A.status,A.debt,A.memo,A.modtime, B.name,B.amount,B.type,case when A.debt>0 AND now()>B.edate then 1 else 0 end AS flag FROM b_credit A INNER JOIN b_tariff B ON A.b_tariff_id=B.id WHERE A.dn=? ORDER BY B.edate DESC,A.modtime DESC");
 	$sth->execute($dn);
-	while(my $r = $sth->fetchrow_hashref) { push @$Data, $r; }
+	while(my $r = $sth->fetchrow_hashref) { push @$Data, $r; $Usr->{debt} += $r->{debt}; }
 	$sth->finish;
 	# Платежи
 	$sth = $dbh->prepare("SELECT A.id,A.b_credit_id,A.pdate,A.amount AS p_amount,A.memo,A.modtime,B.name,B.amount,B.type FROM b_pays A INNER JOIN b_credit C ON A.b_credit_id=C.id INNER JOIN b_tariff B ON C.b_tariff_id=B.id WHERE A.dn=? ORDER BY A.modtime DESC");
@@ -108,7 +109,7 @@ $(document).ready(function() {
 
 <div class="masthead">
 	<ul class="nav nav-pills pull-left">
-		<li class="active"><a href="b_pays.html">Назад в список</a></li>
+		<li class="active"><a href="b_pays.html">Назад в список платежей</a></li>
 %#		<li><a href="index.html">Список счетчиков</a></li>
 %#		<li><a href="b_tariff.html" target="pform">Тариф</a></li>
 %#		<li><a href="?export=1">Экспорт</a></li>
@@ -117,7 +118,12 @@ $(document).ready(function() {
 </div>
 <hr>
 <p><br></p>
-<p><b><%$Street%>, <%$House%></b></p>
+<p><b><%$Street%>, <%$House%></b><br>
+Площадь: <% $Usr->{x121address}[0] %><br>
+% my @a; map { push @a, $_->{cn}[0]; } @{$Usr->{owners}};
+Владелец: <% join ",", @a %><br>
+Сумма долга: <% $Usr->{debt} %>
+</p>
 
 <form method="POST" name="padd">
 <table border="0">
@@ -168,7 +174,7 @@ $(document).ready(function() {
 	<ul class="nav nav-pills pull-left">
 		<li class="active"><a href="/">Home</a></li>
 %#		<li><a href="index.html">Список счетчиков</a></li>
-		<li><a href="b_tariff.html" target="pform">Тариф</a></li>
+		<li><a href="b_tariff.html">Тариф</a></li>
 %#		<li><a href="?export=1">Экспорт</a></li>
 	</ul>
 %#	<h3 class="muted">GHPower</h3>
@@ -194,12 +200,8 @@ $(document).ready(function() {
 			push @owners, $_->{sn}[0];
 		}
 		next	unless(@owners);	# Не показывать, если нет владельца
-#		my $dn = $Dom->{$house}->{uid}[0];
 		my $dn = $Dom->{$house}->{dn};
-#		my $BALANCE;
 		# последний платеж
-#		my $r = $ghpower->last_pay($Dom->{$house}->{dn});
-#		my ($p_id,$p_date,$p_amount,$p_balance) = ($r->{id},$r->{pdate},$r->{amount},$r->{balance});
 		$sth->execute($dn,$dn);
 		my ($p_balance,$p_date) = ($sth->fetchrow_array);
 		$sth->finish;
@@ -226,7 +228,8 @@ $(document).ready(function() {
 <p><nobr><b>Итого:</b>&nbsp;&nbsp;&nbsp;<b><% $total2 ?  $m->comp("lib.msn:pretty", value=>$total2) : "0"%></b></nobr></p>
 %}	# Полный список
 
-%#<pre>
+<pre>
 %#<% Dumper %ARGS %>
 %#<% Dumper $Pay %>
-%#</pre>
+%#<% Dumper $Usr %>
+</pre>
