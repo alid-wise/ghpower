@@ -154,7 +154,7 @@ $sth->finish;
 </select></td>
 </tr>
 <tr>
-<td><div style=color:<% $Err{amount} ? "red":"black"%>>Сумма:</div></td>
+<td><div style=color:<% $Err{amount} ? "red":"black"%>>Тариф:</div></td>
 <td><input type="text" name="amount" value="<% (defined $ARGS{amount}) ? $ARGS{amount} : ($ARGS{submit} ? "":$T->{$id}->{amount}) %>" <% $T->{$id}->{sdate} ? "disabled":"" %>></td>
 </tr>
 <tr>
@@ -186,12 +186,21 @@ $sth->finish;
 </form>
 %} else {
 
+<div class="masthead">
+	<ul class="nav nav-pills pull-left">
+		<li class="active"><a href="b_pays.html">Платежи</a></li>
+%#		<li><a href="index.html">Список счетчиков</a></li>
+%#		<li><a href="?export=1">Экспорт</a></li>
+	</ul>
+%#	<h3 class="muted">GHPower</h3>
+</div>
+<p><br><br><br></p>
 <form method=POST>
 <input type="submit" name="add_new" value="добавить" title="добавить">
 <p><br></p>
 %}
 <table>
-<tr><th>No</th><th>Дата погашения</th><th>Название</th><th>Тип</th><th>Сумма</th><th>Дата начисления</th></tr>
+<tr><th>No</th><th>Дата погашения</th><th>Название</th><th>Тип</th><th>Тариф</th><th>Дата начисления</th></tr>
 %foreach my $tid (sort { $T->{$b}->{edate} cmp $T->{$a}->{edate}} keys %{$T}) {
 %	next unless $tid;
 <tr>
