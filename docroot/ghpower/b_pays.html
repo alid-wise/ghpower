@@ -98,11 +98,11 @@ if($dn) {	# Имеем дело с одним конкретным юзером
 			if($payment > $Pay->{debt}) { $Err{badpayment}++; }
 
 			unless(%Err) {
-				my $ins = $dbh->prepare("INSERT INTO b_pays (auth,pdate,dn,b_credit_id,amount) VALUES ($auth->{id},now(),?,?,?)");
+				my $ins = $dbh->prepare("INSERT INTO b_pays (auth,pdate,dn,b_credit_id,amount,memo) VALUES ($auth->{id},now(),?,?,?,?)");
 				my $upd = $dbh->prepare("UPDATE b_credit SET debt=?,modtime=now() WHERE id=?");
 
 				$dbh->begin_work;
-				$ins->execute($dn,$id,$payment);
+				$ins->execute($dn,$id,$payment,$ARGS{memo});
 				my $debt = $Pay->{debt} - $payment;
 				$debt = 0 if($debt < 0);
 				$upd->execute($debt,$id);
@@ -164,6 +164,10 @@ $(document).ready(function() {
 <td><div style=color:<% ($Err{payment} || $Err{badpayment}) ? "red":"black"%>>Сумма:</div></td>
 <td><input type="text" name="payment" value="<% $ARGS{payment} || $Pay->{debt} %>"></td>
 </tr>
+<tr>
+<td>Примечание:</td>
+<td><input type="text" name="memo" value="<% $ARGS{memo} || $Pay->{memo} %>"></td>
+</tr>
 <td colspan="2" align="center"><nobr><input type="submit" name="submit" value="Сохранить"></nobr></td>
 </table>
 <% $Err{badpayment} ? "<p class=\"error\">Сумма платежа не может превышать суммы долга.</p>":""%>
@@ -199,7 +203,7 @@ $(document).ready(function() {
 <input type="submit" name="add_fee" value="+" title="добавить индивидуальное начисление"></h3>
 <table border="1">
 <tr>
-<th>N</th><th>Дата</th><th>Взнос</th><th>Сумма</th><th>Долг</th><th>Действие</th>
+<th>N</th><th>Дата</th><th>Взнос</th><th>Сумма</th><th>Долг</th><th>Примечания</th><th>Действие</th>
 </tr>
 %foreach my $cred (@$Data) {
 %	my $mark = $cred->{flag} ? "class=redbold":"";
@@ -209,6 +213,7 @@ $(document).ready(function() {
 <td><% $cred->{name} %></td>
 <td><% $cred->{p_amount} %></td>
 <td><div <%$mark%>><% $cred->{debt} %></div></td>
+<td><% $cred->{memo} %></td>
 <td><% $cred->{debt} ? "<input type=\"submit\" name=\"padd_".$cred->{id}."\" value=\"платеж\" title=\"добавить платеж\">":""%></td>
 </tr>
 %$n++;}
@@ -219,7 +224,7 @@ $(document).ready(function() {
 <h3>Платежи</h3>
 <table border="1">
 <tr>
-<th>N</th><th>Дата</th><th>Взнос</th><th>Сумма</th>
+<th>N</th><th>Дата</th><th>Взнос</th><th>Сумма</th><th>Примечания</th>
 </tr>
 %foreach my $pay (@$PData) {
 <tr>
@@ -227,6 +232,7 @@ $(document).ready(function() {
 <td><% $m->comp("lib.msn:pretty_date", date=>$pay->{pdate}) %></td>
 <td><% $pay->{name} %></td>
 <td><% $pay->{p_amount} %></td>
+<td><% $pay->{memo} %></td>
 </tr>
 %$i++;}
 </table>
