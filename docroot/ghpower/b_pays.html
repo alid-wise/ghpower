@@ -25,11 +25,50 @@ foreach(keys %ARGS) {
 		last;
 	}
 }
-if($ARGS{cancel}) { undef $id; }
+if($ARGS{cancel}) { undef $id; undef $ARGS{submit}; undef $ARGS{add_fee}; }
 
+# Данные участка
+$Usr = $m->comp("lib.msn:get_Domain", dbh=>$dbh, dn=>$dn)	if($dn);
+
+if($ARGS{add_fee} && $dn && $ARGS{submit}) {	# Индивидуальное начисление
+	my $bid = $ARGS{new_fee};
+	$bid =~ s/\D//g;
+	if($bid) {
+		$dbh->begin_work;
+		$sth = $dbh->prepare("select id,type,amount,edate,sdate from b_tariff where id=?");
+		$sth->execute($bid);
+		my ($b_id,$b_type,$b_amount,$b_edate,$b_sdate) = $sth->fetchrow_array;
+		$sth->finish;
+		if($b_id) {	# Есть такой тариф
+			my ($S,$amount);
+			if($b_type == 1)  { # начисление с площади
+				$S = $Usr->{x121address}[0];  # Площадь участка из справочника
+				if(defined $S) {
+					$amount = $b_amount * $S;
+				}
+			} else {        # начисление с участка
+				$amount = $b_amount;
+			}
+			if($amount) {
+				my $ins = $dbh->prepare("INSERT INTO b_credit (auth,date,dn,b_tariff_id,amount,debt,memo) VALUES ($auth->{id},now(),?,?,?,?,?)");
+				$ins->execute($dn,$bid,$amount,$amount,$ARGS{memo});
+				# Флаг тарифу, если еще не поставлен
+				unless($b_sdate) {
+					  my $upd = $dbh->prepare("UPDATE b_tariff SET sdate=now() WHERE id=?");
+					  $upd->execute($bid);
+				}
+				$dbh->commit;
+				$OK++;
+			}
+		}
+		$dbh->rollback	unless($OK);
+	}
+	unless($OK) {
+		undef $ARGS{submit}; undef $ARGS{add_fee};
+	}
+}
 
 if($dn) {	# Имеем дело с одним конкретным юзером
-	$Usr = $m->comp("lib.msn:get_Domain", dbh=>$dbh, dn=>$dn);
 	($House,$Street) = ($dn =~ m/ou\=(\w+)\,ou\=(\w+)/);
 	# Начисления
 	$sth = $dbh->prepare("SELECT A.id,A.b_tariff_id,B.edate,A.amount AS p_amount,A.status,A.debt,A.memo,A.modtime, B.name,B.amount,B.type,case when A.debt>0 AND now()>B.edate then 1 else 0 end AS flag FROM b_credit A INNER JOIN b_tariff B ON A.b_tariff_id=B.id WHERE A.dn=? ORDER BY B.edate DESC,A.modtime DESC");
@@ -88,6 +127,32 @@ $(document).ready(function() {
 	$("#resok").fadeOut(1200, function() {document.location = "b_pays.html?dn=<% $dn | u %>"; });
 });
 </script>
+%} elsif($ARGS{add_fee} && $dn) {	# Индивидуальное начисление
+<p><b><%$Street%>, <%$House%></b><br></p>
+<form method="POST" name="newfee">
+<table border="1">
+<tr><td colspan="2" align="right"><input class="close" type="submit" name="cancel" value="X"></td></tr>
+%	# Список тарифов
+%	my %b_tariff_type = $m->comp("lib.msn:b_tariff_type");
+%	my $sth = $dbh->prepare("select id,name,amount,type,edate from b_tariff A where not exists (select id from b_credit B where B.b_tariff_id=A.id and dn=?) order by edate desc limit 100");
+%	$sth->execute($dn);
+<tr>
+<td>Тариф:</td>
+<td><select name="new_fee">
+<option></option>
+%	while(my $r = $sth->fetchrow_hashref) {
+<option value="<% $r->{id} %>"><% $r->{name} %>&nbsp;(сумма: <% $r->{amount} %> <% $b_tariff_type{$r->{type}} %>; дата: <% $m->comp("lib.msn:pretty_date", date=>$r->{edate}) %>)</option>
+%	} $sth->finish;
+</select></td></tr>
+<tr>
+<td>Примечания:</td>
+<td><input type="text" name="memo" value="<% $ARGS{memo} %>"></td>
+</tr>
+<tr><td colspan="2" align="center"><nobr><input type="submit" name="submit" value="Начислить"></nobr></td></tr>
+</table>
+<input type="hidden" name="add_fee" value="1">
+</form>
+
 %} elsif($dn) {
 %	if($id) {	# Новый платеж
 <p><b><%$Street%>, <%$House%></b></p>
@@ -130,7 +195,8 @@ $(document).ready(function() {
 <tr>
 <td valign="top">
 %my $n = 1;
-<h3>Начисления</h3>
+<h3>Начисления&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="submit" name="add_fee" value="+" title="добавить индивидуальное начисление"></h3>
 <table border="1">
 <tr>
 <th>N</th><th>Дата</th><th>Взнос</th><th>Сумма</th><th>Долг</th><th>Действие</th>
