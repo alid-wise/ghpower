@@ -40,11 +40,9 @@ if($ARGS{submit}) {
 	$name = $ARGS{name};
 	$memo = $ARGS{memo};
 
-	if($ARGS{edate} =~ /(\d{1,2})[\-\.](\d{1,2})[\-\.](\d{4})/) {
-		$edate = sprintf("%d-%02d-%02d",$3,$2,$1);
-	} else {
-		$Err{edate}++;
-	}
+	$edate = $m->comp("lib.msn:check_date", date=>$ARGS{edate});
+	$Err{edate}++	unless($edate);
+
 	map { $_ =~ s/\s//g; } ( $ARGS{amount} );
 
 	if($ARGS{amount} =~ /(\d+)[\.\,]*(\d*)/) {
@@ -188,7 +186,7 @@ $sth->finish;
 
 <div class="masthead">
 	<ul class="nav nav-pills pull-left">
-		<li class="active"><a href="b_pays.html">Платежи</a></li>
+		<li class="active"><a href="b_pays.html">Назад в список платежей</a></li>
 %#		<li><a href="index.html">Список счетчиков</a></li>
 %#		<li><a href="?export=1">Экспорт</a></li>
 	</ul>

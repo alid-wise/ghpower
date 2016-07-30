@@ -98,13 +98,16 @@ if($dn) {	# Имеем дело с одним конкретным юзером
 				$Err{payment}++;
 			}
 			if($payment > $Pay->{debt}) { $Err{badpayment}++; }
+			# Дата платежа
+			my $pdate = $m->comp("lib.msn:check_date", date=>$ARGS{pdate});
+			$Err{pdate}++	unless($pdate);
 
 			unless(%Err) {
-				my $ins = $dbh->prepare("INSERT INTO b_pays (auth,pdate,dn,b_credit_id,amount,memo) VALUES ($auth->{id},now(),?,?,?,?)");
+				my $ins = $dbh->prepare("INSERT INTO b_pays (auth,pdate,dn,b_credit_id,amount,memo) VALUES ($auth->{id},?,?,?,?,?)");
 				my $upd = $dbh->prepare("UPDATE b_credit SET debt=?,modtime=now() WHERE id=?");
 
 				$dbh->begin_work;
-				$ins->execute($dn,$id,$payment,$ARGS{memo});
+				$ins->execute($pdate,$dn,$id,$payment,$ARGS{memo});
 				my $debt = $Pay->{debt} - $payment;
 				$debt = 0 if($debt < 0);
 				$upd->execute($debt,$id);
@@ -158,11 +161,19 @@ $(document).ready(function() {
 
 %} elsif($dn) {
 %	if($id) {	# Новый платеж
+<script src="calendar.js" type="text/javascript"></script>
 <p><b><%$Street%>, <%$House%></b></p>
 <form method="POST" name="newpay">
 <table border="1">
 <tr><td colspan="2" align="right"><input class="close" type="submit" name="cancel" value="X"></td></tr>
 <tr><td colspan="2"><% $Pay->{name} %></td></tr>
+
+<tr>
+<td><div style=color:<% $Err{pdate} ? "red":"black"%>>Дата платежа:</div></td>
+<td><input type="text" name="pdate" value="<% $ARGS{pdate} || $m->comp("lib.msn:now")->{pretty} || "dd.mm.yyyy"%>" onfocus="this.select();_Calendar.lcs(this)" onclick="event.cancelBubble=true;this.select();_Calendar.lcs(this)"></td>
+</tr>
+
+
 <tr>
 <td><div style=color:<% ($Err{payment} || $Err{badpayment}) ? "red":"black"%>>Сумма:</div></td>
 <td><input type="text" name="payment" value="<% $ARGS{payment} || $Pay->{debt} %>"></td>

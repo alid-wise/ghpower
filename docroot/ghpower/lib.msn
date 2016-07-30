@@ -391,22 +391,6 @@ return $ret;
 </%init>
 </%method>
 
-<%method pretty_date>
-<%doc>
-	Преобразование даты из YYYY-MM-DD в DD-MM-YYYY
-</%doc>
-<%args>
-	$date
-</%args>
-<%init>
-
-if($date =~ /(\d{4})\-(\d{2})\-(\d{2})/) {
-	return sprintf("%02d.%02d.%d",$3,$2,$1);
-}
-return undef;
-</%init>
-</%method>
-
 
 <%method now>
 <%doc>
@@ -434,6 +418,45 @@ $ret = {}	unless $ret;
 return $ret;
 </%init>
 </%method>
+
+<%method pretty_date>
+<%doc>
+	Преобразование даты из YYYY-MM-DD в DD-MM-YYYY
+</%doc>
+<%args>
+	$date
+</%args>
+<%init>
+
+if($date =~ /(\d{4})\-(\d{2})\-(\d{2})/) {
+	return sprintf("%02d.%02d.%d",$3,$2,$1);
+}
+return undef;
+</%init>
+</%method>
+
+<%method check_date>
+<%doc>
+	Проверка корректности даты
+</%doc>
+<%args>
+	$date
+</%args>
+<%init>
+	use Date::Manip;
+	my $t;
+	if($date =~ /(\d{1,2})[\-\.](\d{1,2})[\-\.](\d{4})/) {
+		$t = sprintf("%d-%02d-%02d",$3,$2,$1);
+	} elsif($date =~ /(\d{4})\-(\d{1,2})\-(\d{1,2})/) {
+		$t = sprintf("%d-%02d-%02d",$1,$2,$3);
+	} else {
+		return undef;
+	}
+	return $t 	if(ParseDate($t));
+	return undef;
+</%init>
+</%method>
+
 
 <%method pretty>
 <%doc>
