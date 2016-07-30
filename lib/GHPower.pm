@@ -372,16 +372,11 @@ sub set_fee {
   foreach my $street (sort {$List2->{$a}->{ord} <=> $List2->{$b}->{ord}} keys %{$List2}) {
     my $Dom = $List2->{$street}->{Dom};
     foreach my $house (sort {$a <=> $b || $a cmp $b} keys %{$Dom}) {
-#next unless($house eq '3');
       my $dn = $Dom->{$house}->{dn};
       next  unless($dn);
-
-#next unless($dn =~ m/Восточный/);
-
 #use Data::Dumper;
 #print STDERR Dumper $Dom->{$house};
-
-	  next	unless($Dom->{$house}->{owners}[0]);
+  	  next	unless($Dom->{$house}->{owners}[0]);  # Пропускать, если нет владельца
 
       my ($S,$amount);
       if($b_type == 1)  { # начисление с площади
@@ -395,6 +390,7 @@ sub set_fee {
       } else {        # начисление с участка
         $amount = $b_amount;
       }
+      $amount = sprintf("%0.f",$amount);  # 2016-07-30 Татьяна: Начисление округляется до целого числа
       print "[$dn] S=$S Amount=$amount\n"   if($verb);
       $ins->execute($dn,$bid,$amount,$amount);  # b_credit
     }
@@ -412,9 +408,6 @@ sub set_fee {
     return;
   }
 }
-
-
-
 
 # Последний платеж
 sub last_pay {
