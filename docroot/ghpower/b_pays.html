@@ -50,6 +50,8 @@ if($ARGS{add_fee} && $dn && $ARGS{submit}) {	# Индивидуальное на
 				$amount = $b_amount;
 			}
 			if($amount) {
+				# 2016-07-30 Татьяна: Округление до целого
+				$amount = sprintf("%0.f",$amount);
 				my $ins = $dbh->prepare("INSERT INTO b_credit (auth,date,dn,b_tariff_id,amount,debt,memo) VALUES ($auth->{id},now(),?,?,?,?,?)");
 				$ins->execute($dn,$bid,$amount,$amount,$ARGS{memo});
 				# Флаг тарифу, если еще не поставлен
@@ -141,7 +143,7 @@ $(document).ready(function() {
 <td><select name="new_fee">
 <option></option>
 %	while(my $r = $sth->fetchrow_hashref) {
-<option value="<% $r->{id} %>"><% $r->{name} %>&nbsp;(сумма: <% $r->{amount} %> <% $b_tariff_type{$r->{type}} %>; дата: <% $m->comp("lib.msn:pretty_date", date=>$r->{edate}) %>)</option>
+<option value="<% $r->{id} %>"><% $r->{name} %>&nbsp;(сумма: <% $m->comp("lib.msn:pretty", value=>$r->{amount}) %> <% $b_tariff_type{$r->{type}} %>; дата: <% $m->comp("lib.msn:pretty_date", date=>$r->{edate}) %>)</option>
 %	} $sth->finish;
 </select></td></tr>
 <tr>
@@ -150,6 +152,7 @@ $(document).ready(function() {
 </tr>
 <tr><td colspan="2" align="center"><nobr><input type="submit" name="submit" value="Начислить"></nobr></td></tr>
 </table>
+<p>Прим.: Сумма начисления округляется до целого числа.</p>
 <input type="hidden" name="add_fee" value="1">
 </form>
 
@@ -191,7 +194,7 @@ $(document).ready(function() {
 Площадь: <% $Usr->{x121address}[0] %><br>
 % my @a; map { push @a, $_->{cn}[0]; } @{$Usr->{owners}};
 Владелец: <% join ",", @a %><br>
-Сумма долга: <% $Usr->{debt} %>
+Сумма долга: <% $m->comp("lib.msn:pretty", value=>$Usr->{debt}) %>
 </p>
 
 <form method="POST" name="padd">
@@ -211,8 +214,8 @@ $(document).ready(function() {
 <td><%$n%></td>
 <td><% $m->comp("lib.msn:pretty_date", date=>$cred->{edate}) %></td>
 <td><% $cred->{name} %></td>
-<td><% $cred->{p_amount} %></td>
-<td><div <%$mark%>><% $cred->{debt} %></div></td>
+<td align="right"><% $m->comp("lib.msn:pretty", value=>$cred->{p_amount}) %></td>
+<td align="right"><div <%$mark%>><% $m->comp("lib.msn:pretty", value=>$cred->{debt}) %></div></td>
 <td><% $cred->{memo} %></td>
 <td><% $cred->{debt} ? "<input type=\"submit\" name=\"padd_".$cred->{id}."\" value=\"платеж\" title=\"добавить платеж\">":""%></td>
 </tr>
@@ -231,7 +234,7 @@ $(document).ready(function() {
 <td><%$i%></td>
 <td><% $m->comp("lib.msn:pretty_date", date=>$pay->{pdate}) %></td>
 <td><% $pay->{name} %></td>
-<td><% $pay->{p_amount} %></td>
+<td align="right"><% $m->comp("lib.msn:pretty", value=>$pay->{p_amount}) %></td>
 <td><% $pay->{memo} %></td>
 </tr>
 %$i++;}
