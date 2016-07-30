@@ -377,7 +377,11 @@ sub set_fee {
       next  unless($dn);
 
 #next unless($dn =~ m/Восточный/);
-#print Dumper $Dom->{$house};
+
+#use Data::Dumper;
+#print STDERR Dumper $Dom->{$house};
+
+	  next	unless($Dom->{$house}->{owners}[0]);
 
       my ($S,$amount);
       if($b_type == 1)  { # начисление с площади
