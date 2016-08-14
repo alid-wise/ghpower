@@ -75,7 +75,11 @@ if($dn) {	# Имеем дело с одним конкретным юзером
 	# Начисления
 	$sth = $dbh->prepare("SELECT A.id,A.b_tariff_id,B.edate,A.amount AS p_amount,A.status,A.debt,A.memo,A.modtime, B.name,B.amount,B.type,case when A.debt>0 AND now()>B.edate then 1 else 0 end AS flag FROM b_credit A INNER JOIN b_tariff B ON A.b_tariff_id=B.id WHERE A.dn=? ORDER BY B.edate DESC,A.modtime DESC");
 	$sth->execute($dn);
-	while(my $r = $sth->fetchrow_hashref) { push @$Data, $r; $Usr->{debt} += $r->{debt}; }
+	while(my $r = $sth->fetchrow_hashref) {
+		push @$Data, $r;
+		$Usr->{debt} += $r->{debt};
+		$Usr->{debtb} += $r->{debt}	if($r->{flag});
+	}
 	$sth->finish;
 	# Платежи
 	$sth = $dbh->prepare("SELECT A.id,A.b_credit_id,A.pdate,A.amount AS p_amount,A.memo,A.modtime,B.name,B.amount,B.type FROM b_pays A INNER JOIN b_credit C ON A.b_credit_id=C.id INNER JOIN b_tariff B ON C.b_tariff_id=B.id WHERE A.dn=? ORDER BY A.modtime DESC");
@@ -205,7 +209,7 @@ $(document).ready(function() {
 Площадь: <% $Usr->{x121address}[0] %><br>
 % my @a; map { push @a, $_->{cn}[0]; } @{$Usr->{owners}};
 Владелец: <% join ",", @a %><br>
-Сумма долга: <% $m->comp("lib.msn:pretty", value=>$Usr->{debt}) %>
+<nobr>Сумма долга: <% $m->comp("lib.msn:pretty", value=>$Usr->{debt}) %> (просроченный: <% $m->comp("lib.msn:pretty", value=>$Usr->{debtb}) %>)</nobr>
 </p>
 
 <form method="POST" name="padd">
