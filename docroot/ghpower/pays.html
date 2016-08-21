@@ -79,7 +79,7 @@ if($ARGS{export}) {
 %foreach my $street (sort {$List2->{$a}->{ord} <=> $List2->{$b}->{ord}} keys %{$List2}) {
 
 <tr><td colspan="5"><b><br><%$street%></b></td></tr>
-<tr><th><i>Участок</i></th><th><i>Владелец</i></th><th><i>Остаток</i></th><th><i>Посл.оплата</i></th></tr>
+<tr><th><i>Участок</i></th><th><i>Владелец</i></th><th><i>Остаток</i></th><th><i>Посл.оплата</i></th><th><i>Рассылка</i></th></tr>
 %	my $localsum;
 %	my $Dom = $List2->{$street}->{Dom};
 %	foreach my $house (sort {$a <=> $b || $a cmp $b} keys %{$Dom}) {
@@ -91,31 +91,35 @@ if($ARGS{export}) {
 %		foreach my $cid (keys %{$counters}) {
 %			next	if($counters->{$cid} < 0);	# Не показывать удаленные счетчики
 <%perl>
-		my $BALANCE;
-		# последний платеж по этому счетчику
-		$gp->execute($cid);
-		my ($p_id,$p_date,$p_prev1,$p_prev2,$p_current1,$p_current2,$p_amount,$p_balance,$t_mode,$init) = $gp->fetchrow_array;
-		$gp->finish;
-		if($p_id) {	# платеж был
-#			$item->{p_date} = $p_date;
-			my $C = $m->comp("lib.msn:getcounter_last", dbh=>$dbh, id=>$cid, nocache=>1);
-			map {s/\,/\./} ($C->{se1},$C->{se2});
-			my ($c_date,$c1,$c2) = ($C->{date},$C->{se1},$C->{se2});
-			my $flow1 = sprintf("%.02f", $c1 - $p_current1);
-			my $flow2 = sprintf("%.02f", $c2 - $p_current2);
+			my $BALANCE;
+			# последний платеж по этому счетчику
+			$gp->execute($cid);
+			my ($p_id,$p_date,$p_prev1,$p_prev2,$p_current1,$p_current2,$p_amount,$p_balance,$t_mode,$init) = $gp->fetchrow_array;
+			$gp->finish;
+			if($p_id) {	# платеж был
+				my $C = $m->comp("lib.msn:getcounter_last", dbh=>$dbh, id=>$cid, nocache=>1);
+				map {s/\,/\./} ($C->{se1},$C->{se2});
+				my ($c_date,$c1,$c2) = ($C->{date},$C->{se1},$C->{se2});
+				my $flow1 = sprintf("%.02f", $c1 - $p_current1);
+				my $flow2 = sprintf("%.02f", $c2 - $p_current2);
 
-			my ($bal,undef,undef) = $m->comp("lib.msn:getcost_simple", dbh=>$dbh, flow1=>$flow1, flow2=>$flow2, mode=>$t_mode);
-			$BALANCE = $p_balance - $bal;
-			$localsum += $BALANCE;
-#			$item->{mode} = $t_mode;
-#			$item->{init} = $init;
-		}
+				my ($bal,undef,undef) = $m->comp("lib.msn:getcost_simple", dbh=>$dbh, flow1=>$flow1, flow2=>$flow2, mode=>$t_mode);
+				$BALANCE = $p_balance - $bal;
+				$localsum += $BALANCE;
+			}
+
+			my $Item = $m->comp("lib.msn:counter_info",dbh=>$dbh,id=>$cid);
+#use Data::Dumper; print STDERR Dumper $Item;
 </%perl>
 <tr>
 <td align="right" <% $t_mode == 1 ? "class=\"onemode\"":"" %>><b <% $counters->{$cid} == 1 ? "":"class=\"inactive\""%>><%$house%></b></td>
 <td><a href="pform.html?cid=<%$cid%>" target="pform"><%join("<br>", @owners) || "-" %></a></td>
 <td align="right"><div style=color:<%$BALANCE <0 ? "red":"green"%>><% $BALANCE ?  $m->comp("lib.msn:pretty", value=>$BALANCE) : ""%></div></td>
 <td align="right" <% $init eq '2' ? "class=\"badinitpay\"":"" %>><%  $m->comp("lib.msn:pretty_date", date=>$p_date)%></td>
+<td align=right>
+<input type="checkbox" name="subscr_<%$cid%>" <% $Item->{subscr} ? "checked":""%> disabled>
+
+</td>
 </tr>
 %		}
 %	}
