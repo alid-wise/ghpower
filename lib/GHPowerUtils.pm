@@ -76,9 +76,9 @@ sub UTime {
   }elsif($date =~ /^(\d\d)(\d\d)(\d\d\d\d)\s+(\d\d)(\d\d)/){
         return eval{ $opts{gmtime} ? timegm(0, $5, $4, $1, $2 - 1, $3) : timelocal(0, $5, $4, $1, $2 - 1, $3) };
   }elsif($date =~ /^\d+$/){
-        return $date
+        return $date;
   }else{
-        return
+        return;
   }
   $year += ($year >= 70 ? 1900:2000)    if $year < 1000;
   my ($hour, $min, $sec) = $date =~ /\s+(\d+):(\d+):?(\d*)$/;
