@@ -264,11 +264,11 @@ sub collector {
 #					$tmok = 1;
 #				}
 			}
-			my $ret;
-			eval{ $ret = `$gettime230 $counter->{addr} $counter->{passwd} $counter->{dev}`; };
-			my ($gdate) = ($ret=~/(\d{4}\-\d{2}\-\d{2}\s+\d+\s+[\d\:]+)/);
-			my $delta = abs(UTime($gdate) - time());
-			$tmok = ($delta < 10) ? "1":"0";	# Ошибка не более 10 секунд
+#			my $ret;
+#			eval{ $ret = `$gettime230 $counter->{addr} $counter->{passwd} $counter->{dev}`; };
+#			my ($gdate) = ($ret=~/(\d{4}\-\d{2}\-\d{2}\s+\d+\s+[\d\:]+)/);
+#			my $delta = abs(UTime($gdate) - time());
+#			$tmok = ($delta < 10) ? "1":"0";	# Ошибка не более 10 секунд
 		} else {
 			print " ERROR: unknown device type [".$counter->{type}."]\n"	if $verb;
 			next;
