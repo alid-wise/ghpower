@@ -167,7 +167,7 @@ foreach my $street (keys %$List) {
 			$sth2->execute($P->{dn});
 			my ($ldate) = $sth2->fetchrow_array;
 			$sth2->finish;
-			$ldate = Now(UTime($ldate));
+			$ldate = Now(UTime($ldate))	if($ldate);
 			$ldate =~ s/\d{2}:\d{2}:\d{2}//;
 			$body =~ s/{LDATE}/$ldate/;
 
