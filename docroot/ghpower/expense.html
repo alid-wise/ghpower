@@ -94,12 +94,19 @@ if($id) {
 %} else {	# полный список
 %	my ($sec,$min,$hour,$mday,$mon,$year) = (localtime)[0,1,2,3,4,5];
 
-
-<p><a href="/">Home</a>&nbsp;<a href="index.html">Список счетчиков</a>&nbsp;
+<div class="masthead">
+	<ul class="nav nav-pills pull-left">
+		<li class="active"><a href="/">Home</a></li>
+		<li><a href="index.html">Список счетчиков</a></li>
 %if($auth->{gid} < 3) {
-<a href="pays.html">Платежи</a>&nbsp;
+		<li><a href="pays.html">Платежи</a></li>
 %}
-</p>
+	</ul>
+</div>
+<hr>
+<p><br></p>
+
+
 <form name="filter" method="POST">
 <select name="filter">
 <option value="0">-- все группы --</option>
