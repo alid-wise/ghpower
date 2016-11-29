@@ -124,22 +124,7 @@ foreach my $street (keys %$List) {
 		my $status = 1;	# 0-ok, 1-отправлено, 2 - нет адреса (target)
 		my $err = '';
 		my ($subj,$body);
-
-		my @emails;
-		# Сначала ищем среди управляющих
-		foreach my $manager (sort { $a->{cn} cmp $b->{cn} } @{$P->{managers}}) {
-			foreach(sort { $a cmp $b } ref $manager->{mail} eq 'ARRAY' ? @{$manager->{mail}} : ($manager->{mail} || ())) {
-				push @emails, $_;
-			}
-		}
-		# Если нет адресов, то смотрим владельцев
-		unless(@emails) {
-			foreach my $owner (sort { $a->{cn} cmp $b->{cn} } @{$P->{owners}}) {
-				foreach(sort { $a cmp $b } ref $owner->{mail} eq 'ARRAY' ? @{$owner->{mail}} : ($owner->{mail} || ())) {
-                	push @emails, $_;
-				}
-			}
-		}
+		my @emails = $ghpower->get_Domain_subscr_emails($P->{dn});
 
 		# Есть куда слать :)
 		if(@emails) {

@@ -303,6 +303,31 @@ sub get_Domain {
   return $ghldap->get_Domain($dn);
 }
 
+# Информация из LDAP - адреса для рассылки
+sub get_Domain_subscr_emails {
+  my $self = shift;
+  my $dn = shift;
+  return undef  unless $dn;
+  my $ghldap = new GHPowerLDAP;
+  my $P = $ghldap->get_Domain($dn);
+  my @emails;
+  # Сначала ищем среди управляющих
+  foreach my $manager (sort { $a->{cn} cmp $b->{cn} } @{$P->{managers}}) {
+    foreach(sort { $a cmp $b } ref $manager->{mail} eq 'ARRAY' ? @{$manager->{mail}} : ($manager->{mail} || ())) {
+      push @emails, $_;
+    }
+  }
+  # Если нет адресов, то смотрим владельцев
+  unless(@emails) {
+    foreach my $owner (sort { $a->{cn} cmp $b->{cn} } @{$P->{owners}}) {
+      foreach(sort { $a cmp $b } ref $owner->{mail} eq 'ARRAY' ? @{$owner->{mail}} : ($owner->{mail} || ())) {
+        push @emails, $_;
+      }
+    }
+  }
+  return @emails;
+}
+
 # Текущий баланс по счетчику
 # !!! Добавить учет ktrans !!!
 sub get_balance {
