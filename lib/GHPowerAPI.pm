@@ -22,6 +22,7 @@ END {
 
 sub echo : Public {    # new version style. called by clients
     # first argument is JSON::RPC::Legacy::Server object.
+print STDERR Dumper $_[0];
 print STDERR Dumper $_[1];
     return $_[1];
 }
@@ -89,7 +90,34 @@ sub lastime : Public {
 	return $Ret;
 }
 
+# Адреса для рассылки, если есть
+sub get_Domain_subscr_emails : Public {
+	my $Usr = $_[1];
+	use GHPower;
+	my $ghpower = GHPower->new();
+	my $Ret;
+	($Ret->{emails}) = $ghpower->get_Domain_subscr_emails($Usr->{id});
+	return $Ret;
+}
 
+# Можно ли включать в рассылку (есть емейл)
+sub can_subscribe : Public {	# cid - id счетчика
+	my $Usr = $_[1];
+	use GHPower;
+	my $ghpower = GHPower->new($dbh);
+	my $Ret;
+	my $dom = $ghpower->Counter_info($Usr->{id});
+	$Ret->{cansub} = $ghpower->get_Domain_subscr_emails($dom->{dn}) ? 1:0;
+	return $Ret;
+}
+sub can_subscribe_dn : Public { # dn - дом в ldap
+	my $Usr = $_[1];
+	use GHPower;
+	my $ghpower = GHPower->new();
+	my $Ret;
+	$Ret->{cansub} = $ghpower->get_Domain_subscr_emails($Usr->{id}) ? 1:0;
+	return $Ret;
+}
 
 
 

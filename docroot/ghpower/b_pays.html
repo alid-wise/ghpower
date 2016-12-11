@@ -269,14 +269,14 @@ $(document).ready(function() {
 <p><br></p>
 
 <h2>Членские и другие взносы</h2>
-<table border="1" class="table-condensed">
+<table border="1" class="table-condensed" id="fullist">
 %my $total2;
 
 
 %foreach my $street (sort {$List2->{$a}->{ord} <=> $List2->{$b}->{ord}} keys %{$List2}) {
 
 <tr><td colspan="5"><b><br><%$street%></b></td></tr>
-<tr><th><i>Участок</i></th><th><i>Владелец</i></th><th><i>Долг</i></th><th><i>Посл.оплата</i></th></tr>
+<tr><th><i>Участок</i></th><th><i>Владелец</i></th><th><i>Долг</i></th><th><i>Посл.оплата</i></th><th><i>Рассылка</i></th></tr>
 <%perl>
 	my $localsum = 0;
 	my $Dom = $List2->{$street}->{Dom};
@@ -292,19 +292,19 @@ $(document).ready(function() {
 		my ($p_balance,$p_date) = ($sth->fetchrow_array);
 		$sth->finish;
 		$localsum += $p_balance;
-
 </%perl>
 <tr>
 <td align="right"><b><%$house%></b></td>
 <td><a href="?dn=<% $dn |u %>"><%join("<br>", @owners) || "-" %></a></td>
 <td align="right"><div style=color:<%$p_balance >0 ? "red":"green"%>><% $p_balance ?  $m->comp("lib.msn:pretty", value=>$p_balance) : "0"%></div></td>
 <td align="right"><%  $m->comp("lib.msn:pretty_date", date=>$p_date)%></td>
+<td align="right"><input type="checkbox" name="<%$dn%>" <% ($Dom->{$house}->{olcaddcontentacl}[0] =~ m/true/i) ? "checked":""%> id="subscr_<% $Dom->{$house}->{uid}[0] %>" disabled></td>
 </tr>
 %	}
 <tr>
 <td></td>
 <td><b>Всего:</b></td>
-<td align="right"><div style=color:<%$localsum >0 ? "red":"green"%>><b><% $localsum ?  $m->comp("lib.msn:pretty", value=>$localsum) : ""%></b></div></td>
+<td align="right" colspan="2"><div style=color:<%$localsum >0 ? "red":"green"%>><b><% $localsum ?  $m->comp("lib.msn:pretty", value=>$localsum) : ""%></b></div></td>
 <td></td>
 </tr>
 %	$total2 += $localsum;
@@ -314,8 +314,54 @@ $(document).ready(function() {
 <p><nobr><b>Итого:</b>&nbsp;&nbsp;&nbsp;<b><% $total2 ?  $m->comp("lib.msn:pretty", value=>$total2) : "0"%></b></nobr></p>
 %}	# Полный список
 
-<pre>
+%#<pre>
 %#<% Dumper %ARGS %>
 %#<% Dumper $Pay %>
 %#<% Dumper $Usr %>
-</pre>
+%#</pre>
+
+
+<%doc>
+<script type=text/javascript>
+%# Возможность рассылки (есть адрес)
+function can_subscribe(par,uid) {
+	var cmd = JSON.stringify({ 
+							method: 'can_subscribe_dn', 
+							version: 1.1,
+							params: {id:par}
+						});
+	 $.ajax({
+		data: cmd,
+   		success: function(data,status,jqxhr){
+			var data = JSON.parse(jqxhr.responseText);
+			if(data.result.cansub == 1) {
+		   		$("#subscr_"+uid).removeAttr('disabled');
+		   	} else {
+			   	$("#subscr_"+uid).attr('disabled',true);
+		   	}
+		}
+	});
+}
+function can_subscribe_all() {
+	$("#fullist input").each(function(){
+		if(this.id) {
+			var id = Number(this.id.replace(/\D+/g,""));
+			can_subscribe(this.name,id);
+		}
+	});
+}
+
+%# Планируем запуски
+$(document).ready(function() {
+	$.ajaxSetup({
+		url: "/api/",
+		type: "POST",
+		dataType: "json",
+		cache: false,
+		headers: {'Content-type': 'application/json'},
+		//   global: false //
+	});
+	can_subscribe_all();
+});
+</script>
+</%doc>
