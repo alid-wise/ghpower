@@ -1,0 +1,88 @@
+<%args>
+	$dbh
+	$auth
+	$id => 0
+</%args>
+<%init>
+use Data::Dumper;
+use POSIX;
+
+if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# admin или manager
+	$r->status_line('');
+	$m->clear_buffer;
+	$m->abort(404);
+}
+my ($Data, $report_name, @fields, $sth);
+if($id == 1) {
+	$report_name = 'Членские взносы';
+	@fields = ('Взнос','Дата погашения','Начислено','Собрано','Долги');
+	$sth = $dbh->prepare("select T.name,T.edate,sum(A.amount),sum(A.amount-A.debt),sum(A.debt) from b_credit A inner join b_tariff T on A.b_tariff_id=T.id group by T.name,T.edate order by T.edate DESC");
+	$sth->execute();
+	my ($total_amount,$total_debt,$total_credit) = (0,0,0);
+	while(my $r = $sth->fetchrow_arrayref) {
+		my @a = ({class=>'text-info',data=>$r->[0]},
+		{class=>'text-right',data=>$m->comp("lib.msn:pretty_date", date=>$r->[1])},
+		{class=>'text-right',data=>$m->comp("lib.msn:pretty", value=>$r->[2])},
+		{class=>'text-right',data=>$m->comp("lib.msn:pretty", value=>$r->[3])},
+		{class=>'text-right',data=>$m->comp("lib.msn:pretty", value=>$r->[4])});
+		$total_credit += $r->[2];
+		$total_amount += $r->[3];
+		$total_debt += $r->[4];
+		push @$Data, \@a;
+	}
+	$sth->finish;
+	my @a = ({data=>''},
+		{class=>'bold',data=>'Всего:'},
+		{class=>'bold',data=>$m->comp("lib.msn:pretty", value=>$total_credit)},
+		{class=>'bold',data=>$m->comp("lib.msn:pretty", value=>$total_amount)},
+		{class=>'bold',data=>$m->comp("lib.msn:pretty", value=>$total_debt)});
+	push @$Data, \@a;
+	
+} # id=1
+
+
+
+</%init>
+<div class="masthead">
+	<ul class="nav nav-pills pull-left">
+		<li class="active"><a href="/">Home</a></li>
+		<li><a href="reports.html?id=0">Отчеты</a></li>
+	</ul>
+</div>
+<hr>
+<h1>&nbsp;</h1>
+%if($id) {
+<h1><% $report_name %></h1>
+<table class="table-condensed">
+<thead>
+<tr>
+<th>N</th>
+%foreach(@fields) {
+<th><%$_%></th>
+%}
+</tr>
+</thead>
+<tbody>
+%my $i=1;
+%foreach my $row (@$Data) {
+<tr>
+<td><%$i%></td>
+%foreach my $item (@$row) {
+<td <% $item->{class} ? 'class="'.$item->{class}.'"':'' %>><% $item->{data} %></td>
+%}
+</tr>
+%$i++;}
+</tbody>
+</table>
+
+
+
+
+
+%} else {
+<div class="row">
+<ul>
+<li><a href="?id=1">Членские взносы</a></li>
+</ul>
+</div>
+%}
