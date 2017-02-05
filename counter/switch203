@@ -28,17 +28,18 @@ $| = 1;
 #       (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #       OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#	Copyright (C) 2008,2009 Aleksandr Deviatkin aka alid
+#	Copyright (C) 2008,2017 Aleksandr Deviatkin aka alid
 
 
 
 #
 # Управление реле счетчика Меркурий-203.2Т
 # 2009-03-28 alid
+# 2017-02-05 Mercury203.pm
 #
 
-use lib "$ENV{MY}/counter";
-use Mercury;
+use lib "$ENV{MY}/lib";
+use Mercury203;
 
 my (@args, %opts);
 foreach(@ARGV){
@@ -53,27 +54,14 @@ my $addr = sprintf("%08x",$saddr);
 $addr =~ s/(\w\w)(\w\w)(\w\w)(\w\w)/$1 $2 $3 $4/;
 print "Addr: [$addr]\n"	if $verb;
 
-#my $mbtx = "$ENV{MY}/counter/mbtx";
-#my $crcu = "$ENV{MY}/counter/crc";
-#my $STALL_DEFAULT=2;	# how many seconds to wait for new input
-#my $MAXLENGTH = 255;	# наибольшая длина пакета
-
-#my $port=Device::SerialPort->new("$device");
-my $connect = Mercury->new($device,'M203',$addr,'','',$retries,$verb);
-my ($status,$cnt,@data);
+my $unit = Mercury203->new($device,$addr,'','',$retries,$verb);
 
 if($verb) {
 	print "Connection testing ... "	if $verb;
-	$status = $connect->tst();
+	my $status = $unit->tst();
 	print "$status\n"	if $verb;
 	die	"[$addr] Connection failed: [$status]"	unless($status=~/ok/);
 }
-
-# Читаем текущее состояние
-($status,$cnt,@data) = $connect->get('6d');
-die "[$addr] 6dh request failed: [$status]"	unless($status=~/ok/);
-print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
-my $RELE = $data[5];
 
 if(defined $command) {	# Задана команда
 	my $cmd;
@@ -86,131 +74,10 @@ if(defined $command) {	# Задана команда
 	} else {
 		die "Wrong command: $command";
 	}
-	($status,$cnt,@data) = $connect->get("71 $cmd");
-	die "[$addr] 71h request failed: [$status]"	unless($status=~/ok/);
-	print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
-#	die "[$addr] 71h switch settings failed: [$status][$cnt][".join(' ',@data)."]"	unless($data[4] eq $cmd);
-
-
-
-} else {	# Команда не задана - просто показать состояние
-	if($RELE =~ /55/) {
-		print "[$RELE] limit\n";
-	} elsif($RELE =~ /aa/i) {
-		print "[$RELE] off\n";
-	} else {
-		print "[$RELE] on\n";
-	}
+	print "[$saddr] ".$unit->set_switch($cmd)."\n";
 }
+# Читаем текущее состояние
+print "[$saddr] ".$unit->get_switch()."\n";
 
-__END__
-# get time from device
-#if($verb || !$adj) {
-#	($status,$cnt,@data) = get($device,$addr,'21');
-#	die "[$addr] 21h request failed: [$status]"	unless($status=~/ok/);
-#	print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
-#	my ($year,$mons,$mday,$hour,$min,$sec,$dow) = ("20".$data[11],$data[10],$data[9],$data[6],$data[7],$data[8],$data[5]);
-#	($status,$cnt,@data) = get($device,$addr,'24');
-#	die "[$addr] 24h request failed: [$status]"	unless($status=~/ok/);
-#	print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
-#	print "$year-$mons-$mday $hour:$min:$sec ".(($data[5] eq '00')?'summer':'winter')." weekday: $dow\n";
-#}
-#if($adj) {
-#	print "Time-date correction: $wd $ye-$mon-$md $hh:$mm:$ss\n"	if($verb);
-#	my $cmd = '02';
-#	my $Y;
-#	if($ye =~ /(\d\d)$/) { $Y = $1; }
-#	($status,$cnt,@data) = get($device,$addr,"$cmd $wd $hh $mm $ss $md $mon $Y");
-#	die "[$addr] 02h request failed: [$status]"	unless($status=~/ok/);
-#	print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
-#	die "[$addr] 02h time correction failed: [$status][$cnt][".join(' ',@data)."]"	unless($data[4] eq $cmd);
-#}
-
-###################### subs
-# проверка связи
-sub tst {
-	my ($device,$port,$addr) = @_;
-	my $cmd = '2f';
-	my $i = $retries;
-	my $res;
-	do {
-		_send($device,$addr,$cmd);
-		$res = isok($device,$port,$addr);
-		return $res	if($res =~ /ok/);
-		$i--;
-	} while($i);
-	return $res;
-}
-
-##########################################################################
-sub isok {	# серийный номер должен совпадать с адресом
-	my ($device,$port,$addr) = @_;
-	my ($status,$cnt,@data) = _recv($port);
-	if($status =~ /ok/) {
-		unless($cnt eq '11' && $data[4] eq '2f') {
-			$status = 'fail';
-		}
-	}
-	return $status;
-}
-
-# проверка crc
-sub iscrc {
-	my (@data) = @_;
-	my $icrc = pop(@data).pop(@data);
-	my $str = join(" ",@data);
-	if(`echo '$str' | $crcu` =~ /^\[(\w\w\w\w)\]\s/) {
-		return 'ok'	if(uc($1) eq uc($icrc));
-	}
-	return 'crc-error';
-}
-
-sub _send {
-	my ($device,$addr, @str) = @_;
-	open(SO, "| $mbtx -s $device -q");
-	print SO "$addr ".join(' ',@str)."\n";
-	close SO;
-}
-
-sub _recv {
-	my ($port) = @_;
-	my $timeout=$STALL_DEFAULT * 10;
-	$port->read_char_time(0);     # don't wait for each character
-	$port->read_const_time(200); # 0,15 second per unfulfilled "read" call
-	my $status='ok';
-	my $chars=0;
-	my @data;
-	my $buffer="";
-	my ($count,$saw);
-	while ($timeout>0) {
-		($count,$saw)=$port->read($MAXLENGTH); # will read _up to_ $MAXLENGTH chars
-		if ($count > 0) {
-			$chars+=$count;
-			$buffer.=$saw;
-			@data = map {/(..)/gm} unpack("H*",$buffer);
-			last;
-		}
-		else {
-			$timeout--;
-		}
-	}
-	if ($timeout==0) {
-		$status = 0;	# Waited $STALL_DEFAULT seconds and never saw what I wanted
-	}
-	$status = iscrc(@data)	if(@data);
-	return($status,$count,@data);
-}
-
-sub get {
-	my ($device,$addr,$ts) = @_;
-	my $i = $retries;
-	do {
-		_send($device,$addr,$ts);
-		($status,$cnt,@data) = _recv($port);
-		$i--;
-		$i=0	if($status =~ /ok/);
-	} while($i);
-	return($status,$cnt,@data);
-}
-
+$unit->quit();
 

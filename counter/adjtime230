@@ -28,23 +28,24 @@ $| = 1;
 #       (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #       OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#	Copyright (C) 2008-2011 Aleksandr Deviatkin aka alid
+#	Copyright (C) 2008-2017 Aleksandr Deviatkin aka alid
 
 #
 # Корректировка часов счетчика Меркурий-230
 # 2008-04-15 alid
 # 2011-08-02 alid
+# 2017-02-05 Mercury203.pm
 #
 
-use lib "$ENV{MY}/counter";
-use Mercury;
+use lib "$ENV{MY}/lib";
+use Mercury230;
 
 my (@args, %opts);
 foreach(@ARGV){
    if(/^\-(\S)(.*)/){	$opts{$1} = $2;	} else {	push @args, $_;	}
 }
-my ($saddr, $passwd, $device) = (@args);
-die "Usage: $0 addr password serial-dev"	unless(defined $saddr && $passwd && $device);
+my ($saddr, $passwd, $passwd2, $device) = (@args);
+die "Usage: $0 addr password1 password2 serial-dev"	unless(defined $saddr && $passwd && $device);
 my $verb = exists $opts{v};
 my $adj = exists $opts{a};
 my $set = exists $opts{F};			# принудительная установка времени (нужен пароль второго уровня доступа)
@@ -52,64 +53,34 @@ my $retries = (exists $opts{r}) ? $opts{r} : 10;
 
 my $addr = sprintf("%x",$saddr);
 $passwd=sprintf("%x %x %x %x %x %x", split("",$passwd,6));
-print "Addr: [$addr] Pw: [$passwd]\n"	if $verb;
+$passwd2=sprintf("%x %x %x %x %x %x", split("",$passwd2,6))	if($passwd2);
+print "Addr: [$addr] Pw: [$passwd] [$passwd2]\n"	if $verb;
 
-my $level= $set? 2:1;
-my $STALL_DEFAULT=10; # how many seconds to wait for new input
-my $MAXLENGTH = 255;	# наибольшая длина пакета
-
-my ($status,$cnt,@data);
-my $connect = Mercury->new($device,'M230',$addr,$passwd,$level,$retries,$verb);
+my $unit = Mercury230->new($device,$addr,$passwd,$passwd2,$retries,$verb);
 
 if($verb) {
-	print "Connection testing ... "	if $verb;
-	$status = $connect->tst();
-	print "$status\n"	if $verb;
+	print "Connection testing ... ";
+	my $status = $unit->tst();
+	print "$status\n";
 	die	"[$addr] Connection failed: [$status]"	unless($status=~/ok/);
 }
-
-print "Session opening (level $level) ... "	if $verb;
-$status = $connect->sopen();
-
-print "$status\n"	if $verb;
-die	"[$addr] Session failed: [$status]"	unless($status=~/ok/);
-
 my ($ss,$mm,$hh,$md,$mon,$ye,$wd) = (localtime(time()))[0,1,2,3,4,5,6];
 $ye += 1900; $ye = sprintf("%4d",$ye); $ye = substr($ye,2,2);
 $mon++;
 ($ss,$mm,$hh,$mon,$md,$wd) = map {sprintf("%02d",$_)} ($ss,$mm,$hh,$mon,$md,$wd);
-
-my $cmd;
-# get time from device
-#сек, мин, час, день, число, месяц, год, зима(1)/лето(0)
-if($verb || !$adj) {
-	$cmd = '04 00';
-	$connect->_send($cmd);
-	($status,$cnt,@data) = $connect->_recv();
-	die "[$addr] request failed: [$status]"	unless($status=~/ok/);
-	print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
-	print "[$saddr] [x$addr] 20".$data[7]."-".$data[6]."-".$data[5]." ".$data[4]." ".$data[3].":".$data[2].":".$data[1]." ".(($data[8] eq '00')?'summer':'winter')."\n" unless($set);
-}
 if($adj) {
 	print "Time correction: $hh:$mm:$ss\n"	if($verb);
-	$cmd = '03 0D';
-	$connect->_send("$cmd $ss $mm $hh");
-	$status = $connect->isok();
+	my $status = $unit->adj_time($hh,$mm,$ss);
 	print "$status\n"	if $verb;
-	die	"[x$addr] Session failed: [$status]"	unless($status=~/ok/);
+	die	"[$addr] Session failed: [$status]"	unless($status=~/ok/);
 }
 elsif($set) {
 	print "Time setting: $ye-$mon-$md $wd $hh:$mm:$ss\n"	if($verb);
-	$cmd = '03 0C';
-	$connect->_send("$cmd $ss $mm $hh $wd $md $mon $ye 0");
-	$status = $connect->isok();
+	my $status = $unit->set_time($ye,$mon,$md,$wd,$hh,$mm,$ss);
 	print "$status\n"	if $verb;
-	die	"[x$addr] Session failed: [$status]"	unless($status=~/ok/);
+	die	"[$addr] Session failed: [$status]"	unless($status=~/ok/);
+} else {	# Только считать время
+	print $unit->get_time()."\n";
 }
-
-print "Session closing ... "	if $verb;
-$status = $connect->sclose();
-print "$status\n"	if $verb;
-$connect->quit();
-
+$unit->quit();
 

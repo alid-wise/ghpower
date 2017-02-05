@@ -3,7 +3,7 @@ use strict;
 $| = 1;
 
 #
-#       Copyright (C) 2008-2012 Александр Девяткин, "Зелёная горка"
+#       Copyright (C) 2008-2017 Александр Девяткин, "Зелёная горка"
 #
 #       Разрешается повторное распространение и использование как в виде исходного
 #       кода, так и в двоичной форме, с изменениями или без, при соблюдении следующих
@@ -35,7 +35,7 @@ $| = 1;
 #	ИЗВЕЩЕНЫ О ВОЗМОЖНОСТИ ТАКИХ УБЫТКОВ.
 #
 
-#       Copyright (C) 2008-2012 Aleksandr Deviatkin, "Green Hill"
+#       Copyright (C) 2008-2017 Aleksandr Deviatkin, "Green Hill"
 #
 #       Redistribution and use in source and binary forms, with or without
 #       modification, are permitted provided that the following conditions are
@@ -68,10 +68,11 @@ $| = 1;
 # Получаем текущие данные из счетчика Меркурий-203.2Т
 # 2009-03-22 alid
 # 2011-08-02 alid
+# 2017-02-05 Mercury203.pm
 #
 
-use lib "$ENV{MY}/counter";
-use Mercury;
+use lib "$ENV{MY}/lib";
+use Mercury203;
 
 my (@args, %opts);
 foreach(@ARGV){
@@ -87,68 +88,20 @@ my $addr = sprintf("%08x",$saddr);
 $addr =~ s/(\w\w)(\w\w)(\w\w)(\w\w)/$1 $2 $3 $4/;
 print "Addr: [$addr]\n"	if $verb;
 
-my $STALL_DEFAULT=2;	# how many seconds to wait for new input
-my $MAXLENGTH = 255;	# наибольшая длина пакета
-
-my ($status,$cnt,@data);
-my $connect = Mercury->new($device,'M203',$addr,'','',$retries,$verb);
+my $unit = Mercury203->new($device,$addr,'','',$retries,$verb);
 
 if($verb) {
 	print "Connection testing ... "	if $verb;
-	$status = $connect->tst();
+	my $status = $unit->tst();
 	print "$status\n"	if $verb;
 	die	"[".hex($addr)."] Connection failed: [$status]"	unless($status=~/ok/);
 }
 
-my $Data;
-
-#
-# Накопленная энергия
-#
-print "Stored energy ########################\n"	if $verb;
-($status,$cnt,@data) = $connect->get('27');
-
-die "[$addr] [$device] 27h request failed: [$status]"	unless($status=~/ok/);
-print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
-
-my @a;
-foreach my $i (5,9) {
-	my $num = join("",$data[0+$i],$data[1+$i],$data[2+$i],$data[3+$i]);
-	push @{$Data->{se}}, $num/100;
+my $Data = $unit->get_data();
+unless($Data && $Data->{mv}) {
+	print '';
+	exit 255;
 }
-print "se [27h]: ".join(' ',@{$Data->{se}})."\n"	if $verb;
-
-#
-# Текущие параметры
-#
-print "Monitoring ########################\n"	if $verb;
-# мощность
-($status,$cnt,@data) = $connect->get('26');
-
-die "[".hex($addr)."] 26h request failed: [$status]"	unless($status=~/ok/);
-print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
-push @{$Data->{mp}}, join("",$data[5],$data[6])*10;
-print "mp [26h]: ".join(' ',@{$Data->{mp}})."\n"	if $verb;
-
-# частота
-($status,$cnt,@data) = $connect->get('81');
-
-die "[".hex($addr)."] 81h request failed: [$status]"	unless($status=~/ok/);
-print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
-push @{$Data->{mf}}, join("",$data[5],$data[6])/100;
-print "mf [81h]: ".join(' ',@{$Data->{mf}})."\n"	if $verb;
-
-# напряжение, ток, мощность (1 сек)
-($status,$cnt,@data) = $connect->get('63');
-die "[".hex($addr)."] 63h request failed: [$status]"	unless($status=~/ok/);
-print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
-push @{$Data->{mv}}, join("",$data[5],$data[6])/10;
-print "mv [63h]: ".join(' ',@{$Data->{mv}})."\n"	if $verb;
-push @{$Data->{mc}}, join("",$data[7],$data[8])/100;
-print "mv [63h]: ".join(' ',@{$Data->{mc}})."\n"	if $verb;
-push @{$Data->{ms}}, join("",$data[9],$data[10],$data[11])*1;
-print "ms [63h]: ".join(' ',@{$Data->{ms}})."\n"	if $verb;
-
 ###### data output
 print "addr;mv1;mc1;mf;mps;mss;se1ai;se2ai\n"	if($showhead);
 print "$saddr;".$Data->{mv}[0].";".
@@ -159,4 +112,5 @@ print "$saddr;".$Data->{mv}[0].";".
 	join(";",@{$Data->{se}}).
 	"\n";
 
-$connect->quit();
+$unit->quit();
+

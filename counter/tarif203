@@ -3,7 +3,7 @@ use strict;
 $| = 1;
 
 #
-#       Copyright (C) 2008-2012 Александр Девяткин, "Зелёная горка"
+#       Copyright (C) 2008-2017 Александр Девяткин, "Зелёная горка"
 #
 #       Разрешается повторное распространение и использование как в виде исходного
 #       кода, так и в двоичной форме, с изменениями или без, при соблюдении следующих
@@ -35,7 +35,7 @@ $| = 1;
 #	ИЗВЕЩЕНЫ О ВОЗМОЖНОСТИ ТАКИХ УБЫТКОВ.
 #
 
-#       Copyright (C) 2008-2012 Aleksandr Deviatkin, "Green Hill"
+#       Copyright (C) 2008-2017 Aleksandr Deviatkin, "Green Hill"
 #
 #       Redistribution and use in source and binary forms, with or without
 #       modification, are permitted provided that the following conditions are
@@ -67,10 +67,11 @@ $| = 1;
 #
 # Управление тарифным расписанием счетчика Меркурий-203.2Т
 # 2011-08-05 alid
+# 2017-02-05 Mercury203.pm
 #
 
-use lib "$ENV{MY}/counter";
-use Mercury;
+use lib "$ENV{MY}/lib";
+use Mercury203;
 
 my %mon = ( 'Jan' => 0, 'Feb' => 1, 'Mar' => 2, 'Apr' => 3, 'May' => 4, 'Jun' => 5, 'Jul' => 6, 'Aug' => 7, 'Sep' => 8, 'Oct' => 9, 'Nov' => 10, 'Dec' => 11, );
 my %wday = ( 'Mon' => 1, 'Tue' => 2, 'Wed' => 3, 'Thu' => 4, 'Fri' => 5, 'Sat' => 6, 'Sun' => 7. );
@@ -80,7 +81,7 @@ my (@args, %opts);
 foreach(@ARGV){
    if(/^\-(\S)(.*)/){	$opts{$1} = $2;	} else {	push @args, $_;	}
 }
-my $load = exists $opts{f};
+my $load = exists $opts{F};
 my ($saddr, $device) = (@args);
 die "Usage: $0 addr serial-dev"	unless(defined $saddr && $device);
 
@@ -88,9 +89,9 @@ my $addr = sprintf("%08x",$saddr);
 $addr =~ s/(\w\w)(\w\w)(\w\w)(\w\w)/$1 $2 $3 $4/;
 
 my ($status,$cnt,@data);
-my $connect = Mercury->new($device,'M203',$addr,'','',$retries);
+my $unit = Mercury203->new($device,$addr,'','',$retries);
 
-$status = $connect->tst();
+$status = $unit->tst();
 die	"[$addr] Connection failed: [$status]"	unless($status=~/ok/);
 
 if($load) {	# Загрузка тарифного расписания в счетчик
@@ -123,7 +124,7 @@ if($load) {	# Загрузка тарифного расписания в сче
 		}
 	}
 	foreach my $cs (@Data) {
-		($status,$cnt,@data) = $connect->get("11 $cs");
+		($status,$cnt,@data) = $unit->set_tar($cs);
 		die "[$addr] 1h request failed: [$status]"	unless($status=~/ok/);
 	}
 } else {	# Чтение тарифного расписания из счетчика
@@ -131,7 +132,7 @@ if($load) {	# Загрузка тарифного расписания в сче
 		print "$mon\n";
 		foreach my $wd (sort {$wday{$a} <=> $wday{$b}} keys %wday) {
 			my $ii2 = sprintf("%X%X", $mon{$mon}, $wday{$wd});
-			($status,$cnt,@data) = $connect->get("31 $ii2");
+			($status,$cnt,@data) = $unit->get_tar($ii2);
 			die "[$addr] 31h request failed: [$status]"	unless($status=~/ok/);
 			print "$wd";
 			foreach my $i (5,7,9,11,13,15,17,19) {
@@ -145,6 +146,6 @@ if($load) {	# Загрузка тарифного расписания в сче
 	}
 }
 
-$connect->quit();
+$unit->quit();
 
 

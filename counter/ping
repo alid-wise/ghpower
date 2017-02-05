@@ -68,10 +68,12 @@ $| = 1;
 # ping
 # Проверка доступности счетчика
 # 2011-12-18 alid
+# 2017-02-05 Mercury203 & Mercury230
 #
 
-use lib "$ENV{MY}/counter";
-use Mercury;
+use lib "$ENV{MY}/lib";
+use Mercury203;
+use Mercury230;
 use Time::HiRes qw( usleep ualarm gettimeofday tv_interval clock_gettime clock_getres clock );
 
 my (@args, %opts);
@@ -96,15 +98,18 @@ elsif($type eq 'M230') {
 }
 print "Addr: [$addr] $type\n"	if $verb;
 
-my $STALL_DEFAULT=2;	# how many seconds to wait for new input
-my $MAXLENGTH = 255;	# наибольшая длина пакета
 
 my ($status,$cnt,@data);
 
 while(1) {
 	my $start = [gettimeofday];
 	print "Connection testing ... "	if $verb;
-	my $connect = Mercury->new($device,$type,$addr,$passwd,1,$retries,$verb);
+	my $connect;
+	if($type eq 'M230') {
+		$connect = Mercury230->new($device,$addr,$passwd,'',$retries,$verb);
+	} else {
+		$connect = Mercury203->new($device,$addr,'','',$retries,$verb);
+	}
 	$status = $connect->tst();
 	$connect->quit();
 	print "$status";

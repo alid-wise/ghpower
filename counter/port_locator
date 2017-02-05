@@ -3,7 +3,7 @@ use strict;
 $| = 1;
 
 #
-#       Copyright (C) 2008-2012 Александр Девяткин, "Зелёная горка"
+#       Copyright (C) 2008-2017 Александр Девяткин, "Зелёная горка"
 #
 #       Разрешается повторное распространение и использование как в виде исходного
 #       кода, так и в двоичной форме, с изменениями или без, при соблюдении следующих
@@ -35,7 +35,7 @@ $| = 1;
 #	ИЗВЕЩЕНЫ О ВОЗМОЖНОСТИ ТАКИХ УБЫТКОВ.
 #
 
-#       Copyright (C) 2008-2012 Aleksandr Deviatkin, "Green Hill"
+#       Copyright (C) 2008-2017 Aleksandr Deviatkin, "Green Hill"
 #
 #       Redistribution and use in source and binary forms, with or without
 #       modification, are permitted provided that the following conditions are
@@ -68,8 +68,8 @@ $| = 1;
 # port_locator
 # Вычисление распределения групп по портам iface
 # 2014-05-12 alid
+# 2017-02-05 Mercury203.pm & Mercury230.pm
 #
-
 
 use lib "$ENV{MY}/counter";
 use Mercury;
@@ -212,17 +212,20 @@ sub iftest {
 	}
 	print "Addr: [$addr] $G->{ctype}\n"	if $verb;
 
-	my $STALL_DEFAULT=2;	# how many seconds to wait for new input
-	my $MAXLENGTH = 255;	# наибольшая длина пакета
-
 	my $status = '';
 
 	print "Connection testing $device addr: ".$G->{addr}."... "	if $verb;
 	eval {
-		my $connect = Mercury->new($device,$G->{ctype},$addr,$G->{passwd},1,$retries,$verb);
+		my $connect;
+		if($G->{ctype} eq 'M203') {
+			$connect = Mercury203->new($device,$addr,$G->{passwd},'',$retries,$verb);
+		}
+		elsif($G->{ctype} eq 'M230') {
+			$connect = Mercury230->new($device,$addr,$G->{passwd},'',$retries,$verb);
+		}
 		$status = $connect->tst();
 		$connect->quit();
-		};
+	};
 
 	print "$status"	if $verb;
 	if($status=~/ok/) {

@@ -3,7 +3,7 @@ use strict;
 $| = 1;
 
 #
-#       Copyright (C) 2008-2012 Александр Девяткин, "Зелёная горка"
+#       Copyright (C) 2008-2017 Александр Девяткин, "Зелёная горка"
 #
 #       Разрешается повторное распространение и использование как в виде исходного
 #       кода, так и в двоичной форме, с изменениями или без, при соблюдении следующих
@@ -35,7 +35,7 @@ $| = 1;
 #	ИЗВЕЩЕНЫ О ВОЗМОЖНОСТИ ТАКИХ УБЫТКОВ.
 #
 
-#       Copyright (C) 2008-2012 Aleksandr Deviatkin, "Green Hill"
+#       Copyright (C) 2008-2017 Aleksandr Deviatkin, "Green Hill"
 #
 #       Redistribution and use in source and binary forms, with or without
 #       modification, are permitted provided that the following conditions are
@@ -70,11 +70,12 @@ $| = 1;
 #
 # 2016-02-17 Возможность отключения коррекции часов счетчика (maintenance=-1)
 # 2016-03-04 Установка времени вместо коррекции для М230
+# 2017-02-05 Minor changes
+#
 
 use DBI;
 use Carp;
 use Time::Local;
-use lib "$ENV{MY}/counter";
 use lib "$ENV{MY}/lib";
 use Lock;
 use GHPowerUtils;
@@ -159,9 +160,9 @@ sub collector {
 	my $cget203 = "$ENV{MY}counter/mon203";
 	my $cget230 = "$ENV{MY}counter/mon230";
 	my $charting = "$ENV{MY}/counter/line-graph $database $mgid";
-	my $adjtime230 = "$ENV{MY}counter/adjtime -F";
-	my $gettime230 = "$ENV{MY}counter/adjtime";
-	my $adjtime203 = "$ENV{MY}counter/adjtime203 -a";
+	my $adjtime230 = "$ENV{MY}counter/adjtime230 -F";
+	my $gettime230 = "$ENV{MY}counter/adjtime230";
+	my $adjtime203 = "$ENV{MY}counter/adjtime203 -F";
 
 	my $lock = Lock->new("/tmp/counter.collector.$mgid.lock",1);
 	die "collector: Locked for mgroup $mgid ($mgrp->{name})"	if($lock->set);
@@ -252,23 +253,13 @@ sub collector {
 			}
 			if($maintenance_do) {
 				my $ret;
-				eval{ $ret = system("$adjtime230 ".$counter->{addr}." ".$counter->{passwd2}." ".$counter->{dev}." ".($verb ? '-v':'').""); };
-#				$tmok = ($@ || ($ret != 0)) ? "0":"1";
-#				if($@ || ($ret != 0)) {	# Произошла ошибка; надо проверить время счетчика
-					eval{ $ret = `$gettime230 $counter->{addr} $counter->{passwd} $counter->{dev}`; };
-					my ($gdate) = ($ret=~/(\d{4}\-\d{2}\-\d{2}\s+\d+\s+[\d\:]+)/);
-					my $delta = abs(UTime($gdate) - time());
-					$tmok = ($delta < 10) ? "1":"0";	# Ошибка не более 10 секунд
-					$maintenance_cnt = 1	unless($tmok);	# Не откладывать надолго следующую коррекцию часов
-#				} else {
-#					$tmok = 1;
-#				}
+				eval{ $ret = system("$adjtime230 ".$counter->{addr}." "..$counter->{passwd}." ".$counter->{passwd2}." ".$counter->{dev}." ".($verb ? '-v':'').""); };
+				eval{ $ret = `$gettime230 $counter->{addr} $counter->{passwd} $counter->{passwd2} $counter->{dev}`; };
+				my ($gdate) = ($ret=~/(\d{4}\-\d{2}\-\d{2}\s+\d+\s+[\d\:]+)/);
+				my $delta = abs(UTime($gdate) - time());
+				$tmok = ($delta < 10) ? "1":"0";	# Ошибка не более 10 секунд
+				$maintenance_cnt = 1	unless($tmok);	# Не откладывать надолго следующую коррекцию часов
 			}
-#			my $ret;
-#			eval{ $ret = `$gettime230 $counter->{addr} $counter->{passwd} $counter->{dev}`; };
-#			my ($gdate) = ($ret=~/(\d{4}\-\d{2}\-\d{2}\s+\d+\s+[\d\:]+)/);
-#			my $delta = abs(UTime($gdate) - time());
-#			$tmok = ($delta < 10) ? "1":"0";	# Ошибка не более 10 секунд
 		} else {
 			print " ERROR: unknown device type [".$counter->{type}."]\n"	if $verb;
 			next;
@@ -296,15 +287,5 @@ sub collector {
 
 	alarm(0);
 	exit(0);
-}
-
-__END__
-sub Now {
-        my ($stamp, %opts) = @_;
-        $stamp = time()         unless defined $stamp;
-        my ($sec, $min, $hour, $mday, $mon, $year) = localtime( $stamp );
-        return $opts{iso} ?
-                sprintf("%.4d-%.2d-%.2d %.2d:%.2d:%.2d", $year+1900, $mon+1, $mday, $hour, $min, $sec) :
-                sprintf("%.2d.%.2d.%.4d %.2d:%.2d:%.2d", $mday, $mon+1, $year+1900, $hour, $min, $sec) ;
 }
 

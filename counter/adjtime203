@@ -28,16 +28,16 @@ $| = 1;
 #       (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #       OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#	Copyright (C) 2008-2011 Aleksandr Deviatkin aka alid
+#	Copyright (C) 2008-2017 Aleksandr Deviatkin aka alid
 
 #
 # Корректировка часов счетчика Меркурий-203.2Т
 # 2009-03-25 alid
 # 2011-08-02 alid
-#
+# 2017-02-05 Mercury203.pm
 
-use lib "$ENV{MY}/counter";
-use Mercury;
+use lib "$ENV{MY}/lib";
+use Mercury203;
 
 my (@args, %opts);
 foreach(@ARGV){
@@ -47,24 +47,21 @@ my ($saddr, $device, $flag) = (@args);
 die "Usage: $0 addr serial-dev"	unless(defined $saddr && $device);
 
 my $verb = exists $opts{v};
-my $adj = exists $opts{a};
+my $set = exists $opts{F};
 my $retries = (exists $opts{r}) ? $opts{r} : 10;
 
 my $addr = sprintf("%08x",$saddr);
 $addr =~ s/(\w\w)(\w\w)(\w\w)(\w\w)/$1 $2 $3 $4/;
 print "Addr: [$addr]\n"	if $verb;
 
-my $STALL_DEFAULT=2;	# how many seconds to wait for new input
-my $MAXLENGTH = 255;	# наибольшая длина пакета
-
 my ($status,$cnt,@data);
-my $connect = Mercury->new($device,'M203',$addr,'','',$retries,$verb);
+my $unit = Mercury203->new($device,$addr,'','',$retries,$verb);
 
 if($verb) {
 	print "Connection testing ... "	if $verb;
-	$status = $connect->tst();
+	$status = $unit->tst();
 	print "$status\n"	if $verb;
-	die	"[$addr] Connection failed: [$status]"	unless($status=~/ok/);
+	die	"[$saddr] Connection failed: [$status]"	unless($status=~/ok/);
 }
 
 my ($ss,$mm,$hh,$md,$mon,$ye,$wd) = (localtime(time()))[0,1,2,3,4,5,6];
@@ -72,36 +69,18 @@ $ye += 1900;
 $mon++;
 ($ss,$mm,$hh,$mon,$md,$wd) = map {sprintf("%02d",$_)} ($ss,$mm,$hh,$mon,$md,$wd);
 
-# get time from device
-if($verb || !$adj) {
-	($status,$cnt,@data) = $connect->get('21');
-	die "[$addr] 21h request failed: [$status]"	unless($status=~/ok/);
-	print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
-	my ($year,$mons,$mday,$hour,$min,$sec,$dow) = ("20".$data[11],$data[10],$data[9],$data[6],$data[7],$data[8],$data[5]);
-	($status,$cnt,@data) = $connect->get('24');
-	die "[$addr] 24h request failed: [$status]"	unless($status=~/ok/);
-	print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
-	print "[$saddr][x$addr] $year-$mons-$mday $hour:$min:$sec [".(($data[5] eq '00')? 'none':'auto')."] weekday: $dow\n";
-}
-if($adj) {
+if($set) {
 	print "Time-date correction: $wd $ye-$mon-$md $hh:$mm:$ss\n"	if($verb);
-	my $cmd = '02';
-	my $Y;
-	if($ye =~ /(\d\d)$/) { $Y = $1; }
-	($status,$cnt,@data) = $connect->get("$cmd $wd $hh $mm $ss $md $mon $Y");
-	die "[$addr] 02h request failed: [$status]"	unless($status=~/ok/);
-	print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
-	die "[$addr] 02h time correction failed: [$status][$cnt][".join(' ',@data)."]"	unless($data[4] eq $cmd);
-}
-if(defined $flag) {
-	$flag = sprintf("%02X", $flag);	# автоматический переход на летнее время
-	my $cmd = '05';
-	($status,$cnt,@data) = $connect->get("$cmd $flag");
-	die "[$addr] 02h request failed: [$status]"	unless($status=~/ok/);
-	print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
-	die "[$addr] 05h time flag failed: [$status][$cnt][".join(' ',@data)."]"	unless($data[4] eq $cmd);
-}
+	my $status = $unit->set_time($ye,$mon,$md,$wd,$hh,$mm,$ss);
+	die "[$saddr] request failed: [$status]"	unless($status=~/ok/);
 
-
-$connect->quit();
+	if(defined $flag) {	#	 автоматический переход на летнее время
+		print "Set flag: $flag\n"	if($verb);
+		my $status = $unit->set_time_flag($flag);
+		die "[$saddr] request failed: [$status]"	unless($status=~/ok/);
+	}
+} else {
+	print "[$saddr] ".$unit->get_time()."\n";
+}
+$unit->quit();
 

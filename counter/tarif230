@@ -3,7 +3,7 @@ use strict;
 $| = 1;
 
 #
-#       Copyright (C) 2008-2012 Александр Девяткин, "Зелёная горка"
+#       Copyright (C) 2008-2017 Александр Девяткин, "Зелёная горка"
 #
 #       Разрешается повторное распространение и использование как в виде исходного
 #       кода, так и в двоичной форме, с изменениями или без, при соблюдении следующих
@@ -35,7 +35,7 @@ $| = 1;
 #	ИЗВЕЩЕНЫ О ВОЗМОЖНОСТИ ТАКИХ УБЫТКОВ.
 #
 
-#       Copyright (C) 2008-2012 Aleksandr Deviatkin, "Green Hill"
+#       Copyright (C) 2008-2017 Aleksandr Deviatkin, "Green Hill"
 #
 #       Redistribution and use in source and binary forms, with or without
 #       modification, are permitted provided that the following conditions are
@@ -68,19 +68,20 @@ $| = 1;
 # Формат тарифного расписания счетчика Меркурий-230 в протоколе не описан,
 # поэтому здесь только управление флагом автоматического перехода на летнее время
 # 2011-09-11 alid
+# 2017-02-05 модуль Mercury230.pm
 #
 
-use lib "$ENV{MY}/counter";
-use Mercury;
+use lib "$ENV{MY}/lib";
+use Mercury230;
 
 my (@args, %opts);
 foreach(@ARGV){
    if(/^\-(\S)(.*)/){	$opts{$1} = $2;	} else {	push @args, $_;	}
 }
 my ($saddr, $passwd, $device, $flag) = (@args);
-die "Usage: $0 addr password serial-dev"	unless(defined $saddr && $passwd && $device);
+die "Usage: $0 addr password2 serial-dev [flag]"	unless(defined $saddr && $passwd && $device);
 $flag |= 0; $flag = ($flag ? 0:1); $flag = sprintf("%02X", $flag);
-my $set = exists $opts{f};
+my $set = exists $opts{F};
 my $verb = exists $opts{v};
 my $retries = (exists $opts{r}) ? $opts{r} : 10;
 
@@ -88,47 +89,21 @@ my $addr = sprintf("%x",$saddr);
 $passwd=sprintf("%x %x %x %x %x %x", split("",$passwd,6));
 print "Addr: [$addr] Pw: [$passwd]\n"	if $verb;
 
-my $level=2;
-my $STALL_DEFAULT=10; # how many seconds to wait for new input
-my $MAXLENGTH = 255;	# наибольшая длина пакета
-
-my ($status,$cnt,@data);
-my $connect = Mercury->new($device,'M230',$addr,$passwd,$level,$retries,$verb);
+my $unit = Mercury230->new($device,$addr,'',$passwd,$retries,$verb);
 
 if($verb) {
-	print "Connection testing ... "	if $verb;
-	$status = $connect->tst();
-	print "$status\n"	if $verb;
+	print "Connection testing ... ";
+	my $status = $unit->tst();
+	print "$status\n";
 	die	"[$addr] Connection failed: [$status]"	unless($status=~/ok/);
-}
-
-print "Session opening (level $level) ... "	if $verb;
-$status = $connect->sopen();
-
-print "$status\n"	if $verb;
-die	"[$addr] Session failed: [$status]"	unless($status=~/ok/);
-
-my $cmd;
-# get flag from device
-if($verb || !$set) {
-	$cmd = '08 09';
-	$connect->_send($cmd);
-	($status,$cnt,@data) = $connect->_recv();
-	die "[$addr] request failed: [$status]"	unless($status=~/ok/);
-	print "[$status][$cnt][".join(' ',@data)."]\n"	if $verb;
-	print "Automatic select winter/summer time: ".(($data[2] & 0x8)? "0":"1")."\n";
 }
 if($set) {
 	print "Setting summer time detection flag to: $flag\n"	if($verb);
-	$cmd = '03 18';
-	$connect->_send("$cmd $flag");
-	$status = $connect->isok();
+	my $status = $unit->set_time_flag($flag);
 	print "$status\n"	if $verb;
 	die	"[$addr] Session failed: [$status]"	unless($status=~/ok/);
 }
-print "Session closing ... "	if $verb;
-$status = $connect->sclose();
-print "$status\n"	if $verb;
-$connect->quit();
-
+# Читаем флаг
+print $unit->get_time_flag()."\n";
+$unit->quit();
 
