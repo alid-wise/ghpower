@@ -92,7 +92,7 @@ sub new {
 	die "Mercury230: Locked"	if($self->{lock}->set);
 	$self->{port} = Device::SerialPort->new($device,0);
 	$self->{ctx} = Digest::CRC->new(width=>16, init=>0xffff, xorout=>0x0000, poly=>0x8005, refin=>1, refout=>1, cont=>0);
-	$self->{addr} = $addr;
+	$self->{addr} = $addr;	# HEX! $addr=sprintf("%x",$saddr);
 	$self->{pass} = $pass;
 	$self->{pass2} = $pass2;
 	$self->{timeout} = $STALL_DEFAULT * 10;
@@ -215,7 +215,7 @@ sub get_time {
 	my ($cnt,@data);
 	($status,$cnt,@data) = $self->_recv();
 	return $status	unless($status=~/ok/);
-	return "[$self->{addr}] 20".$data[7]."-".$data[6]."-".$data[5]." ".$data[4]." ".$data[3].":".$data[2].":".$data[1]." ".(($data[8] eq '00')?'summer':'winter');
+	return "[x$self->{addr}] 20".$data[7]."-".$data[6]."-".$data[5]." ".$data[4]." ".$data[3].":".$data[2].":".$data[1]." ".(($data[8] eq '00')?'summer':'winter');
 }
 sub adj_time {
 	my $self = shift;
@@ -245,7 +245,7 @@ sub get_time_flag {
 	my ($cnt,@data);
 	($status,$cnt,@data) = $self->_recv();
 	return $status	unless($status=~/ok/);
-	return "[$self->{addr}] ".(($data[2] & 0x8)? "0":"1");
+	return "[x$self->{addr}] ".(($data[2] & 0x8)? "0":"1");
 }
 sub set_time_flag {
 	my $self = shift;

@@ -92,7 +92,7 @@ sub new {
 	die "Mercury: Locked"	if($self->{lock}->set);
 	$self->{port} = Device::SerialPort->new($device,0);
 	$self->{ctx} = Digest::CRC->new(width=>16, init=>0xffff, xorout=>0x0000, poly=>0x8005, refin=>1, refout=>1, cont=>0);
-	$self->{addr} = $addr;
+	$self->{addr} = $addr;	# HEX! my $addr=sprintf("%08x",$saddr); $addr=~s/(\w\w)(\w\w)(\w\w)(\w\w)/$1 $2 $3 $4/;
 	$self->{pass} = $pass;
 	$self->{pass2} = $pass2;
 	$self->{timeout} = $STALL_DEFAULT * 10;
