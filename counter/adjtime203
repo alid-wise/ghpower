@@ -44,7 +44,7 @@ my (@args, %opts);
 foreach(@ARGV){
    if(/^\-(\S)(.*)/){	$opts{$1} = $2;	} else {	push @args, $_;	}
 }
-my ($saddr, $device, $flag) = (@args);
+my ($addr, $device, $flag) = (@args);
 die "Usage: $0 addr serial-dev"	unless(defined $saddr && $device);
 
 my $verb = exists $opts{v};
@@ -52,8 +52,8 @@ my $set = exists $opts{F};
 my $diff = exists $opts{d};	# Ошибка часов
 my $retries = (exists $opts{r}) ? $opts{r} : 10;
 
-my $addr = sprintf("%08x",$saddr);
-$addr =~ s/(\w\w)(\w\w)(\w\w)(\w\w)/$1 $2 $3 $4/;
+#my $addr = sprintf("%08x",$saddr);
+#$addr =~ s/(\w\w)(\w\w)(\w\w)(\w\w)/$1 $2 $3 $4/;
 print "Addr: [$addr]\n"	if $verb;
 
 my ($status,$cnt,@data);
@@ -63,7 +63,7 @@ if($verb) {
 	print "Connection testing ... "	if $verb;
 	$status = $unit->tst();
 	print "$status\n"	if $verb;
-	die	"[$saddr] Connection failed: [$status]"	unless($status=~/ok/);
+	die	"[$addr] Connection failed: [$status]"	unless($status=~/ok/);
 }
 
 my ($ss,$mm,$hh,$md,$mon,$ye,$wd) = (localtime(time()))[0,1,2,3,4,5,6];
@@ -74,12 +74,12 @@ $mon++;
 if($set) {
 	print "Time-date correction: $wd $ye-$mon-$md $hh:$mm:$ss\n"	if($verb);
 	my $status = $unit->set_time($ye,$mon,$md,$wd,$hh,$mm,$ss);
-	die "[$saddr] request failed: [$status]"	unless($status=~/ok/);
+	die "[$addr] request failed: [$status]"	unless($status=~/ok/);
 
 	if(defined $flag) {	#	 автоматический переход на летнее время
 		print "Set flag: $flag\n"	if($verb);
 		my $status = $unit->set_time_flag($flag);
-		die "[$saddr] request failed: [$status]"	unless($status=~/ok/);
+		die "[$addr] request failed: [$status]"	unless($status=~/ok/);
 	}
 }
 elsif($diff) {
@@ -88,9 +88,9 @@ elsif($diff) {
 	my ($dt) = ($res =~ m/(\d{4}\-\d{2}\-\d{2}\s+\d{2}\:\d{2}\:\d{2})/);
 	my $stime = UTime("$dt");
 	my $delta = $stime - time();
-	print "[$saddr] $delta\n";
+	print "[$addr] $delta\n";
 } else {
-	print "[$saddr] ".$unit->get_time()."\n";
+	print $unit->get_time()."\n";
 }
 $unit->quit();
 

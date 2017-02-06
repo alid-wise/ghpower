@@ -3,7 +3,7 @@ use strict;
 $| = 1;
 
 #
-#       Copyright (C) 2008-2012 Александр Девяткин, "Зелёная горка"
+#       Copyright (C) 2008-2017 Александр Девяткин, "Зелёная горка"
 #
 #       Разрешается повторное распространение и использование как в виде исходного
 #       кода, так и в двоичной форме, с изменениями или без, при соблюдении следующих
@@ -35,7 +35,7 @@ $| = 1;
 #	ИЗВЕЩЕНЫ О ВОЗМОЖНОСТИ ТАКИХ УБЫТКОВ.
 #
 
-#       Copyright (C) 2008-2012 Aleksandr Deviatkin, "Green Hill"
+#       Copyright (C) 2008-2017 Aleksandr Deviatkin, "Green Hill"
 #
 #       Redistribution and use in source and binary forms, with or without
 #       modification, are permitted provided that the following conditions are
@@ -85,17 +85,17 @@ my $loop = exists $opts{l};
 my $retries = (exists $opts{r}) ? $opts{r} : 10;
 my $passwd = $opts{p} || '111111';
 my $type = exists $opts{3} ? 'M230' : 'M203';
-my ($saddr, $device) = (@args);
+my ($addr, $device) = (@args);
 die "Usage: $0 addr device [-3]"	unless(defined $saddr && $device);
 
-my $addr;
-if($type eq 'M203') {
-	$addr = sprintf("%08x",$saddr);
-	$addr =~ s/(\w\w)(\w\w)(\w\w)(\w\w)/$1 $2 $3 $4/;
-}
-elsif($type eq 'M230') {
-	$addr = sprintf("%x",$saddr);
-}
+#my $addr;
+#if($type eq 'M203') {
+#	$addr = sprintf("%08x",$saddr);
+#	$addr =~ s/(\w\w)(\w\w)(\w\w)(\w\w)/$1 $2 $3 $4/;
+#}
+#elsif($type eq 'M230') {
+#	$addr = sprintf("%x",$saddr);
+#}
 print "Addr: [$addr] $type\n"	if $verb;
 
 

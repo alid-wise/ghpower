@@ -45,7 +45,7 @@ my (@args, %opts);
 foreach(@ARGV){
    if(/^\-(\S)(.*)/){	$opts{$1} = $2;	} else {	push @args, $_;	}
 }
-my ($saddr, $passwd, $passwd2, $device) = (@args);
+my ($addr, $passwd, $passwd2, $device) = (@args);
 die "Usage: $0 addr password1 password2 serial-dev"	unless(defined $saddr && $passwd && $device);
 my $verb = exists $opts{v};
 my $adj = exists $opts{a};
@@ -53,10 +53,10 @@ my $diff = exists $opts{d};			# Ошибка часов (в сек)
 my $set = exists $opts{F};			# принудительная установка времени (нужен пароль второго уровня доступа)
 my $retries = (exists $opts{r}) ? $opts{r} : 10;
 
-my $addr = sprintf("%x",$saddr);
-$passwd=sprintf("%x %x %x %x %x %x", split("",$passwd,6));
-$passwd2=sprintf("%x %x %x %x %x %x", split("",$passwd2,6))	if($passwd2);
-print "Addr (hex): [$addr] Pw: [$passwd] [$passwd2]\n"	if $verb;
+#my $addr = sprintf("%x",$saddr);
+#$passwd=sprintf("%x %x %x %x %x %x", split("",$passwd,6));
+#$passwd2=sprintf("%x %x %x %x %x %x", split("",$passwd2,6))	if($passwd2);
+print "Addr: [$addr] Pw: [$passwd] [$passwd2]\n"	if $verb;
 
 my $unit = Mercury230->new($device,$addr,$passwd,$passwd2,$retries,$verb);
 
@@ -64,7 +64,7 @@ if($verb) {
 	print "Connection testing ... ";
 	my $status = $unit->tst();
 	print "$status\n";
-	die	"[$saddr] Connection failed: [$status]"	unless($status=~/ok/);
+	die	"[$addr] Connection failed: [$status]"	unless($status=~/ok/);
 }
 my ($ss,$mm,$hh,$md,$mon,$ye,$wd) = (localtime(time()))[0,1,2,3,4,5,6];
 $ye += 1900; $ye = sprintf("%4d",$ye); $ye = substr($ye,2,2);
@@ -74,13 +74,13 @@ if($adj) {
 	print "Time correction: $hh:$mm:$ss\n"	if($verb);
 	my $status = $unit->adj_time($hh,$mm,$ss);
 	print "$status\n"	if $verb;
-	die	"[$saddr] Session failed: [$status]"	unless($status=~/ok/);
+	die	"[$addr] Session failed: [$status]"	unless($status=~/ok/);
 }
 elsif($set) {
 	print "Time setting: $ye-$mon-$md $wd $hh:$mm:$ss\n"	if($verb);
 	my $status = $unit->set_time($ye,$mon,$md,$wd,$hh,$mm,$ss);
 	print "$status\n"	if $verb;
-	die	"[$saddr] Session failed: [$status]"	unless($status=~/ok/);
+	die	"[$addr] Session failed: [$status]"	unless($status=~/ok/);
 }
 elsif($diff) {	# Показать ошибку часов
 	my $res = $unit->get_time();
@@ -88,10 +88,10 @@ elsif($diff) {	# Показать ошибку часов
 	my ($d,$t) = ($res =~ m/(\d{4}\-\d{2}\-\d{2})\s+\d{1,2}\s+(\d{2}\:\d{2}\:\d{2})/);
 	my $stime = UTime("$d $t");
 	my $delta = $stime - time();
-	print "[$saddr] $delta\n";
+	print "[$addr] $delta\n";
 
 } else {	# Только считать время
-	print "[$saddr] ".$unit->get_time()."\n";
+	print $unit->get_time()."\n";
 }
 $unit->quit();
 

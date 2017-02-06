@@ -45,13 +45,13 @@ my (@args, %opts);
 foreach(@ARGV){
    if(/^\-(\S)(.*)/){	$opts{$1} = $2;	} else {	push @args, $_;	}
 }
-my ($saddr, $device, $command) = (@args);
+my ($addr, $device, $command) = (@args);
 die "Usage: $0 addr serial-dev [on,0ff,1,0]"	unless(defined $saddr && $device);
 my $verb = exists $opts{v};
 my $retries = (exists $opts{r}) ? $opts{r} : 10;
 
-my $addr = sprintf("%08x",$saddr);
-$addr =~ s/(\w\w)(\w\w)(\w\w)(\w\w)/$1 $2 $3 $4/;
+#my $addr = sprintf("%08x",$saddr);
+#$addr =~ s/(\w\w)(\w\w)(\w\w)(\w\w)/$1 $2 $3 $4/;
 print "Addr: [$addr]\n"	if $verb;
 
 my $unit = Mercury203->new($device,$addr,'','',$retries,$verb);
@@ -74,10 +74,10 @@ if(defined $command) {	# Задана команда
 	} else {
 		die "Wrong command: $command";
 	}
-	print "[$saddr] ".$unit->set_switch($cmd)."\n";
+	print "[$addr] ".$unit->set_switch($cmd)."\n";
 }
 # Читаем текущее состояние
-print "[$saddr] ".$unit->get_switch()."\n";
+print $unit->get_switch()."\n";
 
 $unit->quit();
 

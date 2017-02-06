@@ -81,11 +81,11 @@ foreach(@ARGV){
 my $verb = exists $opts{v};
 my $retries = (exists $opts{r}) ? $opts{r} : 10;
 my $showhead = exists $opts{s};	# Показать формат выходных данных
-my ($saddr, $device) = (@args);
+my ($addr, $device) = (@args);
 die "Usage: $0 addr serial-dev"	unless(defined $saddr && $device);
 
-my $addr = sprintf("%08x",$saddr);
-$addr =~ s/(\w\w)(\w\w)(\w\w)(\w\w)/$1 $2 $3 $4/;
+#my $addr = sprintf("%08x",$saddr);
+#$addr =~ s/(\w\w)(\w\w)(\w\w)(\w\w)/$1 $2 $3 $4/;
 print "Addr: [$addr]\n"	if $verb;
 
 my $unit = Mercury203->new($device,$addr,'','',$retries,$verb);
@@ -94,7 +94,7 @@ if($verb) {
 	print "Connection testing ... "	if $verb;
 	my $status = $unit->tst();
 	print "$status\n"	if $verb;
-	die	"[".hex($addr)."] Connection failed: [$status]"	unless($status=~/ok/);
+	die	"[$addr] Connection failed: [$status]"	unless($status=~/ok/);
 }
 
 my $Data = $unit->get_data();
@@ -104,7 +104,7 @@ unless($Data && (ref($Data) eq 'HASH') && $Data->{mv}) {
 }
 ###### data output
 print "addr;mv1;mc1;mf;mps;mss;se1ai;se2ai\n"	if($showhead);
-print "$saddr;".$Data->{mv}[0].";".
+print "$addr;".$Data->{mv}[0].";".
 	$Data->{mc}[0].";".
 	$Data->{mf}[0].";".
 	$Data->{mp}[0].";".		# Мощность P

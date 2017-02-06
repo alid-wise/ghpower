@@ -82,11 +82,11 @@ foreach(@ARGV){
    if(/^\-(\S)(.*)/){	$opts{$1} = $2;	} else {	push @args, $_;	}
 }
 my $load = exists $opts{F};
-my ($saddr, $device) = (@args);
+my ($addr, $device) = (@args);
 die "Usage: $0 addr serial-dev"	unless(defined $saddr && $device);
 
-my $addr = sprintf("%08x",$saddr);
-$addr =~ s/(\w\w)(\w\w)(\w\w)(\w\w)/$1 $2 $3 $4/;
+#my $addr = sprintf("%08x",$saddr);
+#$addr =~ s/(\w\w)(\w\w)(\w\w)(\w\w)/$1 $2 $3 $4/;
 
 my ($status,$cnt,@data);
 my $unit = Mercury203->new($device,$addr,'','',$retries);

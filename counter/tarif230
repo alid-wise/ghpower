@@ -78,15 +78,15 @@ my (@args, %opts);
 foreach(@ARGV){
    if(/^\-(\S)(.*)/){	$opts{$1} = $2;	} else {	push @args, $_;	}
 }
-my ($saddr, $passwd, $device, $flag) = (@args);
+my ($addr, $passwd, $device, $flag) = (@args);
 die "Usage: $0 addr password2 serial-dev [flag]"	unless(defined $saddr && $passwd && $device);
 $flag |= 0; $flag = ($flag ? 0:1); $flag = sprintf("%02X", $flag);
 my $set = exists $opts{F};
 my $verb = exists $opts{v};
 my $retries = (exists $opts{r}) ? $opts{r} : 10;
 
-my $addr = sprintf("%x",$saddr);
-$passwd=sprintf("%x %x %x %x %x %x", split("",$passwd,6));
+#my $addr = sprintf("%x",$saddr);
+#$passwd=sprintf("%x %x %x %x %x %x", split("",$passwd,6));
 print "Addr: [$addr] Pw: [$passwd]\n"	if $verb;
 
 my $unit = Mercury230->new($device,$addr,'',$passwd,$retries,$verb);

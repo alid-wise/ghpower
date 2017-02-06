@@ -203,15 +203,15 @@ sub iftest {
 	my ($device, $G) = @_;
 	my $retries = 10;
 
-	my $addr;
-	if($G->{ctype} eq 'M203') {
-		$addr = sprintf("%08x",$G->{addr});
-		$addr =~ s/(\w\w)(\w\w)(\w\w)(\w\w)/$1 $2 $3 $4/;
-	}
-	elsif($G->{ctype} eq 'M230') {
-		$addr = sprintf("%x",$G->{addr});
-	}
-	print "Addr: [$addr] $G->{ctype}\n"	if $verb;
+#	my $addr;
+#	if($G->{ctype} eq 'M203') {
+#		$addr = sprintf("%08x",$G->{addr});
+#		$addr =~ s/(\w\w)(\w\w)(\w\w)(\w\w)/$1 $2 $3 $4/;
+#	}
+#	elsif($G->{ctype} eq 'M230') {
+#		$addr = sprintf("%x",$G->{addr});
+#	}
+	print "Addr: [$G->{addr}] $G->{ctype}\n"	if $verb;
 
 	my $status = '';
 
@@ -219,10 +219,10 @@ sub iftest {
 	eval {
 		my $connect;
 		if($G->{ctype} eq 'M203') {
-			$connect = Mercury203->new($device,$addr,$G->{passwd},'',$retries,$verb);
+			$connect = Mercury203->new($device,$G->{addr},$G->{passwd},'',$retries,$verb);
 		}
 		elsif($G->{ctype} eq 'M230') {
-			$connect = Mercury230->new($device,$addr,$G->{passwd},'',$retries,$verb);
+			$connect = Mercury230->new($device,$G->{addr},$G->{passwd},'',$retries,$verb);
 		}
 		$status = $connect->tst();
 		$connect->quit();
