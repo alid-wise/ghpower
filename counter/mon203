@@ -98,7 +98,7 @@ if($verb) {
 }
 
 my $Data = $unit->get_data();
-unless($Data && $Data->{mv}) {
+unless($Data && (ref($Data) eq 'HASH') && $Data->{mv}) {
 	print '';
 	exit 255;
 }

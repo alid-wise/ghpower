@@ -38,6 +38,7 @@ $| = 1;
 
 use lib "$ENV{MY}/lib";
 use Mercury203;
+use GHPowerUtils;
 
 my (@args, %opts);
 foreach(@ARGV){
@@ -48,6 +49,7 @@ die "Usage: $0 addr serial-dev"	unless(defined $saddr && $device);
 
 my $verb = exists $opts{v};
 my $set = exists $opts{F};
+my $diff = exists $opts{d};	# Ошибка часов
 my $retries = (exists $opts{r}) ? $opts{r} : 10;
 
 my $addr = sprintf("%08x",$saddr);
@@ -79,6 +81,14 @@ if($set) {
 		my $status = $unit->set_time_flag($flag);
 		die "[$saddr] request failed: [$status]"	unless($status=~/ok/);
 	}
+}
+elsif($diff) {
+	my $res = $unit->get_time();
+	print "$res\n"  if $verb;
+	my ($dt) = ($res =~ m/(\d{4}\-\d{2}\-\d{2}\s+\d{2}\:\d{2}\:\d{2})/);
+	my $stime = UTime("$dt");
+	my $delta = $stime - time();
+	print "[$saddr] $delta\n";
 } else {
 	print "[$saddr] ".$unit->get_time()."\n";
 }
