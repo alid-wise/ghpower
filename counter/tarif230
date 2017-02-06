@@ -79,7 +79,7 @@ foreach(@ARGV){
    if(/^\-(\S)(.*)/){	$opts{$1} = $2;	} else {	push @args, $_;	}
 }
 my ($addr, $passwd, $device, $flag) = (@args);
-die "Usage: $0 addr password2 serial-dev [flag]"	unless(defined $saddr && $passwd && $device);
+die "Usage: $0 addr password2 serial-dev [flag]"	unless(defined $addr && $passwd && $device);
 $flag |= 0; $flag = ($flag ? 0:1); $flag = sprintf("%02X", $flag);
 my $set = exists $opts{F};
 my $verb = exists $opts{v};

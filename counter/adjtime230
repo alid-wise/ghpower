@@ -46,7 +46,7 @@ foreach(@ARGV){
    if(/^\-(\S)(.*)/){	$opts{$1} = $2;	} else {	push @args, $_;	}
 }
 my ($addr, $passwd, $passwd2, $device) = (@args);
-die "Usage: $0 addr password1 password2 serial-dev"	unless(defined $saddr && $passwd && $device);
+die "Usage: $0 addr password1 password2 serial-dev"	unless(defined $addr && $passwd && $device);
 my $verb = exists $opts{v};
 my $adj = exists $opts{a};
 my $diff = exists $opts{d};			# Ошибка часов (в сек)

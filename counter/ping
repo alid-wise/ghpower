@@ -86,7 +86,7 @@ my $retries = (exists $opts{r}) ? $opts{r} : 10;
 my $passwd = $opts{p} || '111111';
 my $type = exists $opts{3} ? 'M230' : 'M203';
 my ($addr, $device) = (@args);
-die "Usage: $0 addr device [-3]"	unless(defined $saddr && $device);
+die "Usage: $0 addr device [-3]"	unless(defined $addr && $device);
 
 #my $addr;
 #if($type eq 'M203') {

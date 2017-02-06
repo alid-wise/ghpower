@@ -190,7 +190,8 @@ foreach my $id (@Glist) {
 		eval{ $tmlast = system("rrdtool","last","$dpath/$mgid/$id.rrd"); };
 		chomp $tmlast; $tmlast ||= 0;
 		if($tm > $tmlast) {
-		eval{ my $res = system("rrdtool","update","$dpath/$mgid/$id.rrd","$tm:$val"); };
+		eval{ my $res = system("rrdtool update $dpath/$mgid/$id.rrd $tm:$val >/dev/null 2>\&1"); };
+#		eval{ my $res = system("rrdtool","update","$dpath/$mgid/$id.rrd","$tm:$val"); };
 #		warn "Can't update counter database: $!"	if $res;
 		}
 	}
@@ -252,7 +253,8 @@ foreach my $id (@Glist) {
 			chomp $tmlast; $tmlast ||= 0;
 
 			if($tm > $tmlast) {
-				eval{ my $res = system("rrdtool","update","$dpath/$mgid/$id.3f.rrd","$tm:$mp1:$mp2:$mp3"); };
+				eval{ my $res = system("rrdtool update $dpath/$mgid/$id.3f.rrd $tm:$mp1:$mp2:$mp3 >/dev/null 2>\&1"); };
+#				eval{ my $res = system("rrdtool","update","$dpath/$mgid/$id.3f.rrd","$tm:$mp1:$mp2:$mp3"); };
 #				warn "Can't update counter database: $!"	if $res;
 			}
 		}

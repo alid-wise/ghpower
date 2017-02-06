@@ -83,7 +83,7 @@ my $verb = exists $opts{v};
 my $retries = (exists $opts{r}) ? $opts{r} : 10;
 my $showhead = exists $opts{s};	# Показать формат выходных данных
 my ($addr, $passwd, $device, $ktrans) = (@args);
-die "Usage: $0 addr password serial-dev"	unless(defined $saddr && $passwd && $device);
+die "Usage: $0 addr password serial-dev"	unless(defined $addr && $passwd && $device);
 
 #my $addr = sprintf("%x",$saddr);
 #$passwd=sprintf("%x %x %x %x %x %x", split("",$passwd,6));

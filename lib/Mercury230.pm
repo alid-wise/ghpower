@@ -94,8 +94,8 @@ sub new {
 	$self->{ctx} = Digest::CRC->new(width=>16, init=>0xffff, xorout=>0x0000, poly=>0x8005, refin=>1, refout=>1, cont=>0);
 	$self->{saddr} = $addr;
 	$self->{addr} =	sprintf("%x",$addr);	# HEX!
-	$self->{pass} = $pass;
-	$self->{pass2} = $pass2;
+	$self->{pass} = sprintf("%x %x %x %x %x %x", split("",$pass,6));	# $pass;
+	$self->{pass2} = sprintf("%x %x %x %x %x %x", split("",$pass2,6)) if($pass2);	# pass2;
 	$self->{timeout} = $STALL_DEFAULT * 10;
 	$self->{verb} = $verb || 0;
 	$self->{retries} = $retries || 1;

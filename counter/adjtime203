@@ -45,7 +45,7 @@ foreach(@ARGV){
    if(/^\-(\S)(.*)/){	$opts{$1} = $2;	} else {	push @args, $_;	}
 }
 my ($addr, $device, $flag) = (@args);
-die "Usage: $0 addr serial-dev"	unless(defined $saddr && $device);
+die "Usage: $0 addr serial-dev"	unless(defined $addr && $device);
 
 my $verb = exists $opts{v};
 my $set = exists $opts{F};

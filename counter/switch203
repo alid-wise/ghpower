@@ -46,7 +46,7 @@ foreach(@ARGV){
    if(/^\-(\S)(.*)/){	$opts{$1} = $2;	} else {	push @args, $_;	}
 }
 my ($addr, $device, $command) = (@args);
-die "Usage: $0 addr serial-dev [on,0ff,1,0]"	unless(defined $saddr && $device);
+die "Usage: $0 addr serial-dev [on,0ff,1,0]"	unless(defined $addr && $device);
 my $verb = exists $opts{v};
 my $retries = (exists $opts{r}) ? $opts{r} : 10;
 

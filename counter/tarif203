@@ -83,7 +83,7 @@ foreach(@ARGV){
 }
 my $load = exists $opts{F};
 my ($addr, $device) = (@args);
-die "Usage: $0 addr serial-dev"	unless(defined $saddr && $device);
+die "Usage: $0 addr serial-dev"	unless(defined $addr && $device);
 
 #my $addr = sprintf("%08x",$saddr);
 #$addr =~ s/(\w\w)(\w\w)(\w\w)(\w\w)/$1 $2 $3 $4/;
