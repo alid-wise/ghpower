@@ -161,8 +161,9 @@ sub collector {
 	my $cget230 = "$ENV{MY}counter/mon230";
 	my $charting = "$ENV{MY}/counter/line-graph $database $mgid";
 	my $adjtime230 = "$ENV{MY}counter/adjtime230 -F";
-	my $gettime230 = "$ENV{MY}counter/adjtime230";
+	my $gettime230 = "$ENV{MY}counter/adjtime230 -d";
 	my $adjtime203 = "$ENV{MY}counter/adjtime203 -F";
+	my $gettime203 = "$ENV{MY}counter/adjtime203 -d";
 
 	my $lock = Lock->new("/tmp/counter.collector.$mgid.lock",1);
 	die "collector: Locked for mgroup $mgid ($mgrp->{name})"	if($lock->set);
@@ -233,7 +234,11 @@ sub collector {
 			if($maintenance_do) {
 				my $ret;
 				eval{ $ret = system("$adjtime203 ".$counter->{addr}." ".$counter->{dev}." ".($verb ? '-v':'')); };
-				$tmok = ($@ || ($ret != 0)) ? "0":"1";
+				eval{ $ret = `$gettime203 $counter->{addr} $counter->{dev}`; };
+				my ($delta) = ($ret=~/([\d\-]+)$/);
+				$tmok = ($delta < 10) ? "1":"0";	# Ошибка не более 10 секунд
+				$maintenance_cnt = 1	unless($tmok);	# Не откладывать надолго следующую коррекцию часов
+#				$tmok = ($@ || ($ret != 0)) ? "0":"1";
 			}
 		}
 		elsif($counter->{type} =~ /M230/) {
@@ -255,8 +260,9 @@ sub collector {
 				my $ret;
 				eval{ $ret = system("$adjtime230 ".$counter->{addr}." "..$counter->{passwd}." ".$counter->{passwd2}." ".$counter->{dev}." ".($verb ? '-v':'').""); };
 				eval{ $ret = `$gettime230 $counter->{addr} $counter->{passwd} $counter->{passwd2} $counter->{dev}`; };
-				my ($gdate) = ($ret=~/(\d{4}\-\d{2}\-\d{2}\s+\d+\s+[\d\:]+)/);
-				my $delta = abs(UTime($gdate) - time());
+#				my ($gdate) = ($ret=~/(\d{4}\-\d{2}\-\d{2}\s+\d+\s+[\d\:]+)/);
+#				my $delta = abs(UTime($gdate) - time());
+				my ($delta) = ($ret=~/([\d\-]+)$/);
 				$tmok = ($delta < 10) ? "1":"0";	# Ошибка не более 10 секунд
 				$maintenance_cnt = 1	unless($tmok);	# Не откладывать надолго следующую коррекцию часов
 			}
