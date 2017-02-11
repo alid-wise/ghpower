@@ -104,7 +104,7 @@ if($ise > $limit) {
 	foreach my $cid (keys %{$cntr}) {
 		next	if $cid == $main_counter_id;
 		my $Counter = $ghpower->Counter_info($cid);
-		$List .= $Counter->{dn}.", ".join(",",@{$Counter->{Dom}->{owner}})."\n";
+		$List .= $Counter->{dn}.", ".(ref $Counter->{Dom}->{owner} eq 'ARRAY' ? join(",",@{$Counter->{Dom}->{owner}}) : $Counter->{Dom}->{owner})."\n";
 		$List .= "Мощность: ".$cntr->{$cid}->{lpower}." kWA (разрешено $Counter->{plimit})\n\n";
 	}
 
