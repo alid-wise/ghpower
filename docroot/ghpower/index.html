@@ -198,20 +198,28 @@ $(document).ready(function() {
 %	my ($sec,$min,$hour,$mday,$mon,$year) = (localtime)[0,1,2,3,4,5];
 
 %if($auth->{gid} eq 1) {
-<style type="text/css">
-	#ping
-		{
-		width: 50%;
-		position: fixed;
-		// top: 0;
-		left: 50%;
-		//position: absolute;
-		top: expression(
-			document.getElementsByTagName( 'body' )[0].scrollTop + "px"
-		);
-	}
-</style>
-<iframe name="ping" id="ping" align="right" frameborder="0" width="50%" style:"position:fixed;">iframe не поддерживается</iframe>
+%# Модальное окно для пинга
+<div id="PingModal" class="modal fade" tabindex="-1">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header"><button class="close" type="button" data-dismiss="modal">×</button>
+				<h4 class="modal-title">Ping - доступность счетчика</h4>
+			</div>
+			<div class="modal-body"><iframe class="iframe" frameborder="0" width="100%"></iframe></div>
+			<div class="modal-footer"><button class="btn btn-default" type="button" data-dismiss="modal">Закрыть</button></div>
+		</div>
+	</div>
+</div>
+<script language="javascript">
+	$('#PingModal').on('show.bs.modal', function (event) { 
+	var ping = $(event.relatedTarget);
+	var id = ping.data('content');
+	var src = 'ping.html?id='+id;
+//	$(this).find('.modal-body').load(src, function() {	});
+	$(this).find('iframe').attr("src", src);
+	$('#pingModal').modal('handleUpdate');
+});
+</script>
 %}
 
 <div class="masthead">
@@ -304,7 +312,7 @@ $(document).ready(function() {
 <td bgcolor="<% defined $item->{state} ? ($item->{state} ? "red":"green") : "yellow" %>"><input type="checkbox" name="id_<%$item->{id}%>" <% ($ARGS{"id_".$item->{id}} || $item->{active}) ? "checked":""%> disabled></td>
 <td>
 %if($auth->{gid} eq 1) {
-<a href="ping.html?id=<%$item->{id}%>" target="ping">ping</a>
+<a  data-content="<%$item->{id}%>" data-backdrop="true" data-toggle="modal" data-target="#PingModal">ping</a>
 %}
 </td>
 <td><input type="checkbox" name="subscr_<%$item->{id}%>" <% ($ARGS{"subscr_".$item->{id}} || $item->{subscr}) ? "checked":""%> disabled id="cansub_<%$item->{id}%>"></td>

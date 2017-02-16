@@ -57,8 +57,9 @@ if($ping) {
 	close PING;
 }
 </%init>
-<form method="POST" action="ping.html">
-<input class="close" type="submit" name="cancel" value="X">
+%#<form method="POST" action="ping.html">
+<form method="POST">
+%#<input class="close" type="submit" name="cancel" value="X">
 <table border="0">
 <tr>
 <td valign="top"><textarea name="memo" cols="30" rows="6"><%$data%></textarea></td>
