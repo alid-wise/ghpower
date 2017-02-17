@@ -258,10 +258,8 @@ sub collector {
 			}
 			if($maintenance_do) {
 				my $ret;
-				eval{ $ret = system("$adjtime230 ".$counter->{addr}." "..$counter->{passwd}." ".$counter->{passwd2}." ".$counter->{dev}." ".($verb ? '-v':'').""); };
+				eval{ $ret = system("$adjtime230 ".$counter->{addr}." ".$counter->{passwd}." ".$counter->{passwd2}." ".$counter->{dev}." ".($verb ? '-v':'').""); };
 				eval{ $ret = `$gettime230 $counter->{addr} $counter->{passwd} $counter->{passwd2} $counter->{dev}`; };
-#				my ($gdate) = ($ret=~/(\d{4}\-\d{2}\-\d{2}\s+\d+\s+[\d\:]+)/);
-#				my $delta = abs(UTime($gdate) - time());
 				my ($delta) = ($ret=~/([\d\-]+)$/);
 				$tmok = ($delta < 10) ? "1":"0";	# Ошибка не более 10 секунд
 				$maintenance_cnt = 1	unless($tmok);	# Не откладывать надолго следующую коррекцию часов
