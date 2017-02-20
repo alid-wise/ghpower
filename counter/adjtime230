@@ -64,7 +64,10 @@ if($verb) {
 	print "Connection testing ... ";
 	my $status = $unit->tst();
 	print "$status\n";
-	die	"[$addr] Connection failed: [$status]"	unless($status=~/ok/);
+	unless($status=~/ok/) {
+		$unit->quit();
+		die	"[$addr] Connection failed: [$status]";
+	}
 }
 my ($ss,$mm,$hh,$md,$mon,$ye,$wd) = (localtime(time()))[0,1,2,3,4,5,6];
 $ye += 1900; $ye = sprintf("%4d",$ye); $ye = substr($ye,2,2);
@@ -74,13 +77,19 @@ if($adj) {
 	print "Time correction: $hh:$mm:$ss\n"	if($verb);
 	my $status = $unit->adj_time($hh,$mm,$ss);
 	print "$status\n"	if $verb;
-	die	"[$addr] Session failed: [$status]"	unless($status=~/ok/);
+	unless($status=~/ok/) {
+		$unit->quit();
+		die	"[$addr] Session failed: [$status]";
+	}
 }
 elsif($set) {
 	print "Time setting: $ye-$mon-$md $wd $hh:$mm:$ss\n"	if($verb);
 	my $status = $unit->set_time($ye,$mon,$md,$wd,$hh,$mm,$ss);
 	print "$status\n"	if $verb;
-	die	"[$addr] Session failed: [$status]"	unless($status=~/ok/);
+	unless($status=~/ok/) {
+		$unit->quit();
+		die	"[$addr] Session failed: [$status]";
+	}
 }
 elsif($diff) {	# Показать ошибку часов
 	my $res = $unit->get_time();
