@@ -63,7 +63,10 @@ if($verb) {
 	print "Connection testing ... "	if $verb;
 	$status = $unit->tst();
 	print "$status\n"	if $verb;
-	die	"[$addr] Connection failed: [$status]"	unless($status=~/ok/);
+	unless($status=~/ok/) {
+		$unit->quit();
+		die	"[$addr] Connection failed: [$status]";
+	}
 }
 
 my ($ss,$mm,$hh,$md,$mon,$ye,$wd) = (localtime(time()))[0,1,2,3,4,5,6];
@@ -79,7 +82,10 @@ if($set) {
 	if(defined $flag) {	#	 автоматический переход на летнее время
 		print "Set flag: $flag\n"	if($verb);
 		my $status = $unit->set_time_flag($flag);
-		die "[$addr] request failed: [$status]"	unless($status=~/ok/);
+		unless($status=~/ok/) {
+			$unit->quit();
+			die "[$addr] request failed: [$status]";
+		}
 	}
 }
 elsif($diff) {
