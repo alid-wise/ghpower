@@ -236,7 +236,7 @@ sub collector {
 				eval{ $ret = system("$adjtime203 ".$counter->{addr}." ".$counter->{dev}." ".($verb ? '-v':'')); };
 				eval{ $ret = `$gettime203 $counter->{addr} $counter->{dev}`; };
 				my ($delta) = ($ret=~/([\d\-]+)$/);
-				$tmok = ($delta < 10) ? "1":"0";	# Ошибка не более 10 секунд
+				$tmok = (abs($delta) < 10) ? "1":"0";	# Ошибка не более 10 секунд
 				$maintenance_cnt = 1	unless($tmok);	# Не откладывать надолго следующую коррекцию часов
 #				$tmok = ($@ || ($ret != 0)) ? "0":"1";
 			}
@@ -261,7 +261,7 @@ sub collector {
 				eval{ $ret = system("$adjtime230 ".$counter->{addr}." ".$counter->{passwd}." ".$counter->{passwd2}." ".$counter->{dev}." ".($verb ? '-v':'').""); };
 				eval{ $ret = `$gettime230 $counter->{addr} $counter->{passwd} $counter->{passwd2} $counter->{dev}`; };
 				my ($delta) = ($ret=~/([\d\-]+)$/);
-				$tmok = ($delta < 10) ? "1":"0";	# Ошибка не более 10 секунд
+				$tmok = (abs($delta) < 10) ? "1":"0";	# Ошибка не более 10 секунд
 				$maintenance_cnt = 1	unless($tmok);	# Не откладывать надолго следующую коррекцию часов
 			}
 		} else {
