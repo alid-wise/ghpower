@@ -66,7 +66,7 @@ if($ARGS{add_fee} && $dn && $ARGS{submit}) {	# Индивидуальное на
 		$dbh->rollback	unless($OK);
 	}
 	unless($OK) {
-		undef $ARGS{submit}; undef $ARGS{add_fee};
+		undef $ARGS{submit};# undef $ARGS{add_fee};
 	}
 }
 
@@ -129,80 +129,121 @@ if($dn) {	# Имеем дело с одним конкретным юзером
 }
 </%init>
 %if($OK) {
-<h3 id="resok">Запись сохранена</h3>
-<p><a href="b_pays.html?dn=<% $dn | u %>">Home</a></p>
+<div id="resok">
+<h3>Запись сохранена</h3>
+<p><a href="b_pays.html?dn=<% $dn | u %>" target="_main">закрыть</a></p>
+</div>
 <script type=text/javascript>
 $(document).ready(function() {
-	$("#resok").fadeOut(1200, function() {document.location = "b_pays.html?dn=<% $dn | u %>"; });
+%#	$("#resok").fadeOut(1200, function() { document.location = "b_pays.html?dn=<% $dn | u %>"; });
+	$("#resok").fadeOut(1200, function() { window.open("b_pays.html?dn=<% $dn | u %>","_parent"); });
 });
 </script>
 %} elsif($ARGS{add_fee} && $dn) {	# Индивидуальное начисление
-<p><b><%$Street%>, <%$House%></b><br></p>
-<form method="POST" name="newfee">
-<table border="1">
-<tr><td colspan="2" align="right"><input class="close" type="submit" name="cancel" value="X"></td></tr>
+%#<p><b><%$Street%>, <%$House%></b><br></p>
+<form method="POST">
+	<div class="form-group">
+		<label class="col-sm-2 control-label" for="new_fee">Тариф:</label>
 %	# Список тарифов
 %	my %b_tariff_type = $m->comp("lib.msn:b_tariff_type");
 %	my $sth = $dbh->prepare("select id,name,amount,type,edate from b_tariff A where not exists (select id from b_credit B where B.b_tariff_id=A.id and dn=?) order by edate desc limit 100");
 %	$sth->execute($dn);
-<tr>
-<td>Тариф:</td>
-<td><select name="new_fee">
-<option></option>
+		<select name="new_fee" class="form-control">
+			<option></option>
 %	while(my $r = $sth->fetchrow_hashref) {
-<option value="<% $r->{id} %>"><% $r->{name} %>&nbsp;(сумма: <% $m->comp("lib.msn:pretty", value=>$r->{amount}) %> <% $b_tariff_type{$r->{type}} %>; дата: <% $m->comp("lib.msn:pretty_date", date=>$r->{edate}) %>)</option>
+			<option value="<% $r->{id} %>"><% $r->{name} %>&nbsp;(сумма: <% $m->comp("lib.msn:pretty", value=>$r->{amount}) %> <% $b_tariff_type{$r->{type}} %>; дата: <% $m->comp("lib.msn:pretty_date", date=>$r->{edate}) %>)</option>
 %	} $sth->finish;
-</select></td></tr>
-<tr>
-<td>Примечания:</td>
-<td><input type="text" name="memo" value="<% $ARGS{memo} %>"></td>
-</tr>
-<tr><td colspan="2" align="center"><nobr><input type="submit" name="submit" value="Начислить"></nobr></td></tr>
-</table>
-<p>Прим.: Сумма начисления округляется до целого числа.</p>
-<input type="hidden" name="add_fee" value="1">
+		</select>
+	</div>
+	<div class="form-group">
+		<label class="col-sm-2 control-label" for="memo">Примечания:</label>
+			<input type="text" name="memo" value="<% $ARGS{memo} %>" class="form-control">
+	</div>
+	<div class="form-group">
+		<label class="col-sm-2 control-label" for="">Прим.: Сумма начисления округляется до целого числа.</label>
+	</div>
+
+	<input type="submit" name="submit" value="Начислить" style="display: none;">
+	<input type="hidden" name="add_fee" value="1">
 </form>
+<script type="text/javascript">
+	function sendform(){
+		document.forms[0].submit.click();
+	}
+</script>
 
 %} elsif($dn) {
 %	if($id) {	# Новый платеж
-<script src="calendar.js" type="text/javascript"></script>
-<p><b><%$Street%>, <%$House%></b></p>
-<form method="POST" name="newpay">
-<table border="1">
-<tr><td colspan="2" align="right"><input class="close" type="submit" name="cancel" value="X"></td></tr>
-<tr><td colspan="2"><% $Pay->{name} %></td></tr>
-
-<tr>
-<td><div style=color:<% $Err{pdate} ? "red":"black"%>>Дата платежа:</div></td>
-<td><input type="text" name="pdate" value="<% $ARGS{pdate} || $m->comp("lib.msn:now")->{pretty} || "dd.mm.yyyy"%>" onfocus="this.select();_Calendar.lcs(this)" onclick="event.cancelBubble=true;this.select();_Calendar.lcs(this)"></td>
-</tr>
-
-
-<tr>
-<td><div style=color:<% ($Err{payment} || $Err{badpayment}) ? "red":"black"%>>Сумма:</div></td>
-<td><input type="text" name="payment" value="<% $ARGS{payment} || $Pay->{debt} %>"></td>
-</tr>
-<tr>
-<td>Примечание:</td>
-<td><input type="text" name="memo" value="<% $ARGS{memo} || $Pay->{memo} %>"></td>
-</tr>
-<td colspan="2" align="center"><nobr><input type="submit" name="submit" value="Сохранить"></nobr></td>
-</table>
+<script src="calendar.js?2" type="text/javascript"></script>
+%#<p><b><%$Street%>, <%$House%></b></p>
+<form method="POST">
+	<h4><% $Pay->{name} %></h4>
+	<div class="form-group">
+		<label class="control-label" for="pdate" style=color:<% $Err{pdate} ? "red":"black"%>>Дата платежа:</label>
+		<input type="text" name="pdate" value="<% $ARGS{pdate} || $m->comp("lib.msn:now")->{pretty} || "dd.mm.yyyy"%>" onfocus="this.select();_Calendar.lcs(this)" onclick="event.cancelBubble=true;this.select();_Calendar.lcs(this)"  class="form-control">
+	</div>
+	<div class="form-group">
+		<label class="control-label" for="payment" style=color:<% ($Err{payment} || $Err{badpayment}) ? "red":"black"%>>Сумма:</label>
+		<div class="input-group">
+		<span class="input-group-addon">&#8381;</span>
+		<input type="text" name="payment" value="<% $ARGS{payment} || $Pay->{debt} %>" class="form-control">
+		<span class="input-group-addon">.00</span>
+		</div>
+	</div>
+	<div class="form-group">
+		<label class="control-label" for="memo">Примечания:</label>
+		<input type="text" name="memo" value="<% $ARGS{memo} || $Pay->{memo} %>" class="form-control">
+	</div>
 <% $Err{badpayment} ? "<p class=\"error\">Сумма платежа не может превышать суммы долга.</p>":""%>
-<input type="hidden" name="id" value="<%$id%>">
+	<input type="hidden" name="id" value="<%$id%>">
+	<input type="submit" name="submit" value="Сохранить" style="display: none;">
 </form>
+<script type="text/javascript">
+	function sendform(){
+		document.forms[0].submit.click();
+	}
+</script>
 %	} else {
+
+
+%# Модальное окно для формы платежа
+<div id="PayModal" class="modal fade" tabindex="-1">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header"><button id="mclose" class="close" type="button" data-dismiss="modal">×</button>
+				<h4 class="modal-title">&nbsp;</h4>
+			</div>
+			<div class="modal-body">
+				<div class="embed-responsive embed-responsive-16by9">
+					<iframe></iframe>
+				</div>
+			</div>
+			<div class="modal-footer">
+			<button class="btn btn-default" type="button" data-dismiss="modal">закрыть</button>
+			<button class="btn btn-primary" type="submit" onclick="window.frames[0].sendform();">Сохранить</button>
+			</div>
+		</div>
+	</div>
+</div>
+<script language="javascript">
+$('#PayModal').on('show.bs.modal', function (event) { 
+	var pay = $(event.relatedTarget);
+	var payid = pay.data('content');
+	var src = 'b_pays.html?dn=<% $dn | u %>&'+payid;
+	$(this).find('iframe').attr("src", src);
+});
+</script>
+
+
 
 
 <div class="masthead">
 	<ul class="nav nav-pills pull-left">
 		<li class="active"><a href="b_pays.html">Назад в список платежей</a></li>
 	</ul>
-%#	<h3 class="muted">GHPower</h3>
 </div>
-<hr>
-<p><br></p>
-<p><b><%$Street%>, <%$House%></b><br>
+<p>&nbsp;<br>&nbsp;</p>
+<h3><%$Street%>, <%$House%></h3>
 Площадь: <% $Usr->{x121address}[0] %><br>
 % my @a; map { push @a, $_->{cn}[0]; } @{$Usr->{owners}};
 Владелец: <% join ",", @a %><br>
@@ -215,7 +256,8 @@ $(document).ready(function() {
 <td valign="top">
 %my $n = 1;
 <h3>Начисления&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<input type="submit" name="add_fee" value="+" title="добавить индивидуальное начисление"></h3>
+<input type="button" class="btn btn-primary btn-sm" data-content="add_fee=1" data-backdrop="true" data-toggle="modal" data-target="#PayModal"
+SSStype="submit" name="add_fee" value="+" title="добавить индивидуальное начисление"></h3>
 <table border="1">
 <tr>
 <th>N</th><th>Дата</th><th>Взнос</th><th>Сумма</th><th>Долг</th><th>Примечания</th><th>Действие</th>
@@ -229,7 +271,8 @@ $(document).ready(function() {
 <td align="right"><% $m->comp("lib.msn:pretty", value=>$cred->{p_amount}) %></td>
 <td align="right"><div <%$mark%>><% $m->comp("lib.msn:pretty", value=>$cred->{debt}) %></div></td>
 <td><% $cred->{memo} %></td>
-<td><% $cred->{debt} ? "<input type=\"submit\" name=\"padd_".$cred->{id}."\" value=\"платеж\" title=\"добавить платеж\">":""%></td>
+<td><% $cred->{debt} ? "<input type=\"button\" class=\"btn btn-primary btn-xs\" data-content=\"padd_$cred->{id}\" data-backdrop=\"true\" data-toggle=\"modal\" data-target=\"#PayModal\" value=\"платеж\" title=\"добавить платеж\">":""%>
+ </td>
 </tr>
 %$n++;}
 </table>
@@ -255,6 +298,8 @@ $(document).ready(function() {
 </tr>
 </table>
 </form>
+
+
 %	}
 %} else {	# Полный список
 <div class="masthead">
@@ -263,10 +308,9 @@ $(document).ready(function() {
 		<li><a href="b_tariff.html">Тарифы</a></li>
 %#		<li><a href="?export=1">Экспорт</a></li>
 	</ul>
-%#	<h3 class="muted">GHPower</h3>
 </div>
-<hr>
-<p><br></p>
+%#<hr>
+<p>&nbsp;<br>&nbsp;</p>
 
 <h2>Членские и другие взносы</h2>
 <table border="1" class="table-condensed" id="fullist">
@@ -313,13 +357,6 @@ $(document).ready(function() {
 <hr>
 <p><nobr><b>Итого:</b>&nbsp;&nbsp;&nbsp;<b><% $total2 ?  $m->comp("lib.msn:pretty", value=>$total2) : "0"%></b></nobr></p>
 %}	# Полный список
-
-%#<pre>
-%#<% Dumper %ARGS %>
-%#<% Dumper $Pay %>
-%#<% Dumper $Usr %>
-%#</pre>
-
 
 <%doc>
 <script type=text/javascript>

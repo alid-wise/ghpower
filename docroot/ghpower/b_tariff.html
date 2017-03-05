@@ -30,7 +30,7 @@ map { $_ =~ s/\D//g; } ( $id );
 
 my %b_tariff_type = $m->comp("lib.msn:b_tariff_type");
 
-my %Err;
+my ($OK,%Err);
 
 if($ARGS{submit}) {
 
@@ -55,9 +55,10 @@ if($ARGS{submit}) {
 		if($ARGS{drop}) { # Удаляем запись
 			my $del = $dbh->prepare("delete from b_tariff where id=? and sdate is null");
 			$del->execute($id);
-			$r->status_line('');
-			$m->clear_buffer;
-			$m->redirect($self);
+#			$r->status_line('');
+#			$m->clear_buffer;
+#			$m->redirect($self);
+			$OK++;
 		} else {
 			my $sth = $dbh->prepare("SELECT auth,name,amount,type,edate,sdate,memo,modtime FROM b_tariff WHERE id=? LIMIT 1");
 			$sth->execute($id);
@@ -66,20 +67,19 @@ if($ARGS{submit}) {
 			if($b_sdate) {		# Править можно только название и комментарий
 				my $upd = $dbh->prepare("update b_tariff set auth=$auth->{id},modtime=now(),name=?,memo=? where id=?");
 				$upd->execute($name,$memo,$id);
-				$r->status_line('');
-				$m->clear_buffer;
-				$m->redirect($self);
+#				$r->status_line('');
+#				$m->clear_buffer;
+#				$m->redirect($self);
+				$OK++;
 			} else {
 				unless(%Err) {
 					my $upd = $dbh->prepare("update b_tariff set auth=$auth->{id},modtime=now(),name=?,type=?,edate=?,amount=?,memo=? where id=?");
 					$upd->execute($name,$type,$edate,$amount,$memo,$id);
 
-
-
-
-					$r->status_line('');
-					$m->clear_buffer;
-					$m->redirect($self);
+#					$r->status_line('');
+#					$m->clear_buffer;
+#					$m->redirect($self);
+					$OK++;
 				}
 			}
 		}
@@ -87,10 +87,11 @@ if($ARGS{submit}) {
 		my $ins = $dbh->prepare("insert into b_tariff (auth,name,type,amount,edate,memo) values ($auth->{id},?,?,?,?,?)");
 		unless(%Err) {
 			$ins->execute($name,$type,$amount,$edate,$memo);
-#			undef $ARGS{add_new};
-			$r->status_line('');
-			$m->clear_buffer;
-			$m->redirect($self);
+##			undef $ARGS{add_new};
+#			$r->status_line('');
+#			$m->clear_buffer;
+#			$m->redirect($self);
+			$OK++;
 		}
 	}
 
@@ -127,62 +128,135 @@ while(my $r = $sth->fetchrow_hashref) { $T->{$r->{id}} = $r; }
 $sth->finish;
 
 </%init>
-<script src="calendar.js" type="text/javascript"></script>
 
 %#<pre>
 %#<%Dumper %ARGS%>
 %#</pre>
 
-%if($id || $ARGS{add_new}) {
+%if($OK) {
+<div id="resok">
+<h3>Запись сохранена</h3>
+<p><a href="b_tariff.html" target="_main">закрыть</a></p>
+</div>
+<script type=text/javascript>
+$(document).ready(function() {
+%#	$("#resok").fadeOut(1200, function() { document.location = "b_tariff.html"; });
+	$("#resok").fadeOut(1200, function() { window.open("b_tariff.html","_parent"); });
+});
+</script>
 
-<form method=POST>
-<table border="1">
-<tr><td colspan="2" align="right"><input class="close" type="submit" name="cancel" value="X"></td></tr>
-<tr>
-<td>Название:</td>
-<td><input type="text" name="name" value="<% $ARGS{name} || ($ARGS{submit} ? "":$T->{$id}->{name}) %>"></td>
-</tr>
-<tr>
-<td><div style=color:<% $Err{type} ? "red":"black"%>>Тип:</div></td>
-<td><select name="type" <% $T->{$id}->{sdate} ? "disabled":"" %>>
+
+
+%}elsif($id || $ARGS{add_new}) {
+<script src="calendar.js?2" type="text/javascript"></script>
+<form method=POST class="form-inline">
+  <div class="form-group">
+    <label for="name" class="control-label col-xs-3">Название:</label>
+    <div class="col-xs-8">
+      <input type="text" class="form-control input-sm" id="name" name="name" value="<% $ARGS{name} || ($ARGS{submit} ? "":$T->{$id}->{name}) %>">
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="edate" class="control-label col-xs-3" style=color:<% $Err{edate} ? "red":"black"%>>Дата погашения:</label>
+    <div class="col-xs-8">
+      <input type="text" class="form-control input-sm" id="edate" name="edate" value="<% $ARGS{edate} || $m->comp("lib.msn:pretty_date",date=>$T->{$id}->{edate}) || "dd.mm.yyyy"%>" <% $T->{$id}->{sdate} ? "disabled":"" %> onfocus="this.select();_Calendar.lcs(this)" onclick="event.cancelBubble=true;this.select();_Calendar.lcs(this)" <% $T->{$id}->{sdate} ? "disabled":"" %>>
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="type" class="control-label col-xs-3" style=color:<% $Err{type} ? "red":"black"%>>Тип:</label>
+    <div class="col-xs-8">
+		<select id="type" name="type" class="form-control input-sm" <% $T->{$id}->{sdate} ? "disabled":"" %> class="form-control">
 %foreach(sort keys %b_tariff_type) {
 %	my $tp = (defined $ARGS{type}) ? $ARGS{type} : $T->{$id}->{type};
-	<option value="<% $_ %>" <% $tp eq $_ ? "selected":"" %>><% $b_tariff_type{$_} %></option>
+			<option value="<% $_ %>" <% $tp eq $_ ? "selected":"" %>><% $b_tariff_type{$_} %></option>
 %}
-</select></td>
-</tr>
-<tr>
-<td><div style=color:<% $Err{amount} ? "red":"black"%>>Тариф:</div></td>
-<td><input type="text" name="amount" value="<% (defined $ARGS{amount}) ? $ARGS{amount} : ($ARGS{submit} ? "":$T->{$id}->{amount}) %>" <% $T->{$id}->{sdate} ? "disabled":"" %>></td>
-</tr>
-<tr>
-<td><div style=color:<% $Err{edate} ? "red":"black"%>>Дата погашения:</div></td>
-<td><input type="text" name="edate" value="<% $ARGS{edate} || $m->comp("lib.msn:pretty_date",date=>$T->{$id}->{edate}) || "dd.mm.yyyy"%>" onfocus="this.select();_Calendar.lcs(this)" onclick="event.cancelBubble=true;this.select();_Calendar.lcs(this)" <% $T->{$id}->{sdate} ? "disabled":"" %>></td>
-</tr>
-<tr>
-<td>Примечания:</td>
-<td align="center"><input type="text" name="memo" value="<% $ARGS{memo} || ($ARGS{submit} ? "":$T->{$id}->{memo}) %>"></td>
-</tr>
-<tr>
-<td>Дата начисления:</td>
-%#<td align="center"><input type="checkbox" name="accept" <% $ARGS{accept} ? "checked":"" %> <% $T->{$id}->{sdate} ? "checked disabled":"" %>></td>
-<td align="center"><% $m->comp("lib.msn:pretty_date",date=>$T->{$id}->{sdate}) %></tr>
-<tr>
+		</select>
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="amount" class="control-label col-xs-3" style=color:<% $Err{amount} ? "red":"black"%>>Тариф:</label>
+    <div class="col-xs-8">
+		<div class="input-group">
+		<span class="input-group-addon">&#8381;</span>
+		<input type="text" class="form-control input-sm" id="amount" name="amount" value="<% (defined $ARGS{amount}) ? $ARGS{amount} : ($ARGS{submit} ? "":$T->{$id}->{amount}) %>" <% $T->{$id}->{sdate} ? "disabled":"" %>>
+		<span class="input-group-addon">.00</span>
+		</div>
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="memo" class="control-label col-xs-3">Примечание:</label>
+    <div class="col-xs-8">
+      <input type="text" class="form-control input-sm" id="memo" name="memo" value="<% $ARGS{memo} || ($ARGS{submit} ? "":$T->{$id}->{memo}) %>">
+    </div>
+  </div>
+%if($id && $T->{$id}->{sdate}) {
+  <div class="form-group">
+    <label for="sdate" class="control-label col-xs-3">Дата начисления:</label>
+    <div class="col-xs-8">
+      <input type="text" class="form-control input-sm" id="sdate" value="<% $m->comp("lib.msn:pretty_date",date=>$T->{$id}->{sdate}) %>" disabled>
+    </div>
+  </div>
+%}
 %if($ARGS{add_new} || ($T->{$id}->{sdate})) {
-	<td colspan="2" align="center"><nobr><input type="submit" name="submit" value="Сохранить"></nobr></td>
 	<input type="hidden" name="add_new" value="1">
 %} else {
-	<td colspan="2" align="center"><nobr><input type="checkbox" name="drop">удалить&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="submit" name="submit" value="OK"></nobr></td>
+  <div class="form-group">
+    <div class="col-xs-offset-8 col-xs-2">
+      <div class="checkbox">
+        <label><input type="checkbox" id="drop" name="drop"> удалить</label>
+      </div>
+    </div>
+  </div>
 %}
-</tr>
+
 %if($id) {
-<tr>
-<td colspan=2 align=right><small>modtime: <%$T->{$id}->{modtime} =~ /(.+)\.\d+/%></small></td>
-</tr>
+  <div class="form-group">
+    <div class="col-xs-offset-0 col-xs-10 navbar-fixed-bottom">
+      <div class="checkbox">
+        <label class="control-label" for=""><small>modtime: <%$T->{$id}->{modtime} =~ /(.+)\.\d+/%></small></label>
+      </div>
+    </div>
+  </div>
 %}
-</table>
+<input type="submit" name="submit" value="OK" style="display: none;">
+
 </form>
+<script type="text/javascript">
+	function sendform(){
+		document.forms[0].submit.click();
+	}
+</script>
+
 %} else {
+
+
+%# Модальное окно для формы
+<div id="TarModal" class="modal fade" tabindex="-1">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header"><button id="mclose" class="close" type="button" data-dismiss="modal">×</button>
+				<h4 class="modal-title">&nbsp;</h4>
+			</div>
+			<div class="modal-body">
+				<div class="embed-responsive embed-responsive-16by9">
+					<iframe></iframe>
+				</div>
+			</div>
+			<div class="modal-footer">
+			<button class="btn btn-default" type="button" data-dismiss="modal">закрыть</button>
+			<button class="btn btn-primary" type="submit" onclick="window.frames[0].sendform();">Сохранить</button>
+			</div>
+		</div>
+	</div>
+</div>
+<script language="javascript">
+$('#TarModal').on('show.bs.modal', function (event) { 
+	var pay = $(event.relatedTarget);
+	var payid = pay.data('content');
+	var src = 'b_tariff.html?'+payid;
+	$(this).find('iframe').attr("src", src);
+});
+</script>
 
 <div class="masthead">
 	<ul class="nav nav-pills pull-left">
@@ -190,21 +264,23 @@ $sth->finish;
 %#		<li><a href="index.html">Список счетчиков</a></li>
 %#		<li><a href="?export=1">Экспорт</a></li>
 	</ul>
-%#	<h3 class="muted">GHPower</h3>
 </div>
 <p><br><br><br></p>
 <form method=POST>
-<input type="submit" name="add_new" value="добавить" title="добавить">
+
+<input type="button" class="btn btn-primary btn-sm" data-content="add_new=1" data-backdrop="true" data-toggle="modal" data-target="#TarModal" 
+name="add_new" value="добавить" title="добавить новый тариф">
+
 <p><br></p>
-%}
+%#}
 <table>
 <tr><th>No</th><th>Дата погашения</th><th>Название</th><th>Тип</th><th>Тариф</th><th>Дата начисления</th></tr>
-%foreach my $tid (sort { $T->{$b}->{edate} cmp $T->{$a}->{edate}} keys %{$T}) {
+%foreach my $tid (sort { $T->{$b}->{edate} cmp $T->{$a}->{edate} || $T->{$a}->{name} cmp $T->{$b}->{name} } keys %{$T}) {
 %	next unless $tid;
 <tr>
 <td><% $tid %></td>
 <td><% $m->comp("lib.msn:pretty_date",date=>$T->{$tid}->{edate}) %></td>
-<td><a href="?id=<% $T->{$tid}->{id} %>"><% $T->{$tid}->{name} || "-" %></a></td>
+<td><a href="#TarModal" data-toggle="modal" data-content="id=<% $T->{$tid}->{id} %>"><% $T->{$tid}->{name} || "-" %></a></td>
 <td><% $b_tariff_type{$T->{$tid}->{type}} %></td>
 <td align="right"><b><% $m->comp("lib.msn:pretty", value=>sprintf("%0.2f",$T->{$tid}->{amount})) %></b></td>
 <td><% $T->{$tid}->{sdate} ? $m->comp("lib.msn:pretty_date",date=>$T->{$tid}->{sdate}) : "<input type=\"submit\" name=\"accept_".$tid."\" value=\"начислить\">" %></td>
@@ -212,4 +288,5 @@ $sth->finish;
 %}
 </table>
 </form>
+%}
 
