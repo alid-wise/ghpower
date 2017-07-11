@@ -289,6 +289,12 @@ CREATE TABLE daily (
 	date date,
 	se1 numeric,
 	se2 numeric,
+	exp1 numeric,	-- расходы
+	exp2 numeric,
+	amount numeric,
+	balance numeric,
+	mode integer,	-- 1 - однотарифный, 2 - двухтарифный
+	tariff_id integer,
 	PRIMARY KEY (id)
 );
 create INDEX daily_cid_i ON daily (cid);

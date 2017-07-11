@@ -93,7 +93,7 @@ sub Counter_info {
   my $id = shift;
 
   my $ret = undef;
-  my $sth = $self->{dbh}->prepare("SELECT A.subscr,A.dn,A.id as id,A.name as name,A.addr as addr,A.mgroup as mgroup,A.mgroup as gid,A.passwd as passwd,A.model as model,A.plimit,A.memo,A.active,A.modtime,A.year,A.sn,A.setdate,B.name AS model,B.type as type,D.dev AS iface,D.id AS if,F.name AS tower FROM counters A INNER JOIN counter_type B ON A.model=B.id INNER JOIN mgroup C ON A.mgroup=C.id INNER JOIN iface D ON C.if_id=D.id LEFT OUTER JOIN towers F ON F.id=A.tower_id WHERE A.id=? LIMIT 1");
+  my $sth = $self->{dbh}->prepare("SELECT A.subscr,A.dn,A.id as id,A.name as name,A.addr as addr,A.mgroup as mgroup,A.mgroup as gid,A.passwd as passwd,A.model as model,A.plimit,A.memo,A.active,A.modtime,A.year,A.sn,A.setdate,B.name AS model,B.type as type,D.dev AS iface,D.id AS if,F.name AS tower,A.ktrans AS ktrans FROM counters A INNER JOIN counter_type B ON A.model=B.id INNER JOIN mgroup C ON A.mgroup=C.id INNER JOIN iface D ON C.if_id=D.id LEFT OUTER JOIN towers F ON F.id=A.tower_id WHERE A.id=? LIMIT 1");
   $sth->execute($id);
   while(my $r = $sth->fetchrow_hashref) {
     $ret = $r;

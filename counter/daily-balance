@@ -1,0 +1,230 @@
+#!/usr/bin/perl
+
+#
+#       Copyright (C) 2008-2012 Александр Девяткин, "Зелёная горка"
+#
+#       Разрешается повторное распространение и использование как в виде исходного
+#       кода, так и в двоичной форме, с изменениями или без, при соблюдении следующих
+#       условий:
+#
+#       * При повторном распространении исходного кода должно оставаться указанное
+#         выше уведомление об авторском праве, этот список условий и последующий
+#         отказ от гарантий.
+#       * При повторном распространении двоичного кода должна сохраняться указанная
+#         выше информация об авторском праве, этот список условий и последующий отказ
+#         от гарантий в документации и/или в других материалах, поставляемых при
+#         распространении.
+#       * Ни название "Зелёная горка", ни имена ее сотрудников не могут быть
+#         использованы в качестве поддержки или продвижения продуктов, основанных
+#         на этом ПО без предварительного письменного разрешения.
+#
+#       ЭТА ПРОГРАММА ПРЕДОСТАВЛЕНА ВЛАДЕЛЬЦАМИ АВТОРСКИХ ПРАВ И/ИЛИ ДРУГИМИ СТОРОНАМИ
+#	"КАК ОНА ЕСТЬ" БЕЗ КАКОГО-ЛИБО ВИДА ГАРАНТИЙ, ВЫРАЖЕННЫХ ЯВНО ИЛИ ПОДРАЗУМЕВАЕМЫХ,
+#	ВКЛЮЧАЯ, НО НЕ ОГРАНИЧИВАЯСЬ ИМИ, ПОДРАЗУМЕВАЕМЫЕ ГАРАНТИИ КОММЕРЧЕСКОЙ ЦЕННОСТИ
+#	И ПРИГОДНОСТИ ДЛЯ КОНКРЕТНОЙ ЦЕЛИ. НИ В КОЕМ СЛУЧАЕ, ЕСЛИ НЕ ТРЕБУЕТСЯ
+#	СООТВЕТСТВУЮЩИМ ЗАКОНОМ, ИЛИ НЕ УСТАНОВЛЕНО В УСТНОЙ ФОРМЕ, НИ ОДИН ВЛАДЕЛЕЦ
+#	АВТОРСКИХ ПРАВ И НИ ОДНО ДРУГОЕ ЛИЦО, КОТОРОЕ МОЖЕТ ИЗМЕНЯТЬ И/ИЛИ ПОВТОРНО
+#	РАСПРОСТРАНЯТЬ ПРОГРАММУ, КАК БЫЛО СКАЗАНО ВЫШЕ, НЕ НЕСЁТ ОТВЕТСТВЕННОСТИ,
+#	ВКЛЮЧАЯ ЛЮБЫЕ ОБЩИЕ, СЛУЧАЙНЫЕ, СПЕЦИАЛЬНЫЕ ИЛИ ПОСЛЕДОВАВШИЕ УБЫТКИ,
+#	ВСЛЕДСТВИЕ ИСПОЛЬЗОВАНИЯ ИЛИ НЕВОЗМОЖНОСТИ ИСПОЛЬЗОВАНИЯ ПРОГРАММЫ (ВКЛЮЧАЯ,
+#	НО НЕ ОГРАНИЧИВАЯСЬ ПОТЕРЕЙ ДАННЫХ, ИЛИ ДАННЫМИ, СТАВШИМИ НЕПРАВИЛЬНЫМИ, ИЛИ
+#	ПОТЕРЯМИ ПРИНЕСЕННЫМИ ИЗ-ЗА ВАС ИЛИ ТРЕТЬИХ ЛИЦ, ИЛИ ОТКАЗОМ ПРОГРАММЫ РАБОТАТЬ
+#	СОВМЕСТНО С ДРУГИМИ ПРОГРАММАМИ), ДАЖЕ ЕСЛИ ТАКОЙ ВЛАДЕЛЕЦ ИЛИ ДРУГОЕ ЛИЦО БЫЛИ
+#	ИЗВЕЩЕНЫ О ВОЗМОЖНОСТИ ТАКИХ УБЫТКОВ.
+#
+
+#       Copyright (C) 2008-2012 Aleksandr Deviatkin, "Green Hill"
+#
+#       Redistribution and use in source and binary forms, with or without
+#       modification, are permitted provided that the following conditions are
+#       met:
+#       
+#       * Redistributions of source code must retain the above copyright
+#         notice, this list of conditions and the following disclaimer.
+#       * Redistributions in binary form must reproduce the above
+#         copyright notice, this list of conditions and the following disclaimer
+#         in the documentation and/or other materials provided with the
+#         distribution.
+#       * Neither the name of the Green Hill nor the names of its
+#         contributors may be used to endorse or promote products derived from
+#         this software without specific prior written permission.
+#       
+#       THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+#       "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+#       LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+#       A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+#       OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#       SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+#       LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+#       DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+#       THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#       (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#       OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+
+$|=1;
+use strict;
+use DBI;
+use Date::Manip;
+use lib $ENV{MY}."/lib";
+use GHPower;
+#use Data::Dumper;
+
+
+#
+# Заполнение таблицы daily
+# ежедневный подсчет баланса (деньги)
+# 2017-07-10 alid
+# Участвуют только счетчики, для которых есть суточные показания (daily-table должен отрабатывать раньше)
+#
+
+my (@args, %opts);
+foreach(@ARGV){
+	if(/^\-(\S)(\S*)/) { $opts{$1} = $2; } else {  push @args, $_; }
+}
+my ($database, $counter_id, $date) = (@args);
+die "Usage: $0 database [counter_id]"		unless($database);
+my $verb = exists $opts{v};
+my $force = exists $opts{F};		# Коммитить записи
+my $pgport = 5432;
+
+my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1, AutoCommit => 0});
+my $sth;
+
+# Тарифы
+my $Tariff;
+$sth = $dbh->prepare("select id,sdate,t0,t1,t2,k from tariff order by sdate desc");
+$sth->execute();
+while(my $r = $sth->fetchrow_hashref) {
+	push @$Tariff, $r;
+}
+$sth->finish;
+
+my $ghpower = GHPower->new($dbh);
+
+my @clist;	# список счетчиков
+if($counter_id) {
+	push @clist, $counter_id;
+} else {
+	$sth = $dbh->prepare("select id from counters where setdate<now() and active=1");
+	$sth->execute();
+	while((my $r) = $sth->fetchrow_array) {
+		push @clist, $r;
+	}
+	$sth->finish;
+}
+
+
+my $gp = $dbh->prepare("SELECT id,date,prev1,prev2,current1,current2,amount,balance,mode,init FROM payments WHERE cid=? ORDER BY modtime DESC LIMIT 1");
+my $up = $dbh->prepare("UPDATE daily SET exp1=?, exp2=?, amount=?, balance=?, mode=?, tariff_id=? WHERE id=?");
+
+foreach my $cid (@clist) {
+	# Коэффициент kt (из параметров счетчика)
+	my $kt = $ghpower->Counter_info($cid)->{ktrans};
+	# Последний платеж по этому счетчику
+	$gp->execute($cid);
+	my ($lastpay) = $gp->fetchrow_hashref;
+	$gp->finish;
+
+	my ($date,$t_mode,$p_balance);
+	unless ($lastpay->{date}) {	# Платежей не было
+		print "There are no payments for $cid. Nothing to do.\n"	if($verb);
+		next;
+	} else {
+		$date = $lastpay->{date};
+		$t_mode = $lastpay->{mode};	# 1 - однотарифный, 2 - двухтарифный
+		$p_balance = $lastpay->{balance};
+	}
+
+	print "cid=$cid date=$date ktrans=$kt t_mode=$t_mode p_balance=$p_balance\n"	if($verb);
+
+	# Список дат
+	my @dates;
+	# Для заданного счетчика, ищем от даты последнего платежа
+	$sth = $dbh->prepare("select date from daily where amount is null and cid=$cid and date>? order by date");
+	$sth->execute($date);
+	while((my $r) = $sth->fetchrow_array) {
+		push @dates, $r;
+	}
+	$sth->finish;
+	next	unless(@dates);	# делать нечего
+	# Баланс на начальную дату
+	$sth = $dbh->prepare("select id,se1,se2,balance from daily where cid=? and date=? limit 1");
+	my $pdate = UnixDate(DateCalc($dates[0],"-1 day"), "%Y-%m-%d");
+	$sth->execute($cid,$pdate);
+	# Начальная точка
+	my (undef,undef,undef,$balance) = $sth->fetchrow_array;
+	$sth->finish;
+
+	unless($balance) {
+		$balance = $p_balance;		# При инициализации - в начальной точке баланса еще нет
+	}
+
+	print "start point: pdate=$pdate balance=$balance\n"	if($verb);
+
+	# Первая рабочая дата
+	my $w_date = shift @dates;
+	# Читаем текущую дату (показания счетчика на конец предыдущего дня)
+	$sth->execute($cid,$w_date);
+	my ($w_id,$w_se1,$w_se2,undef) = $sth->fetchrow_array;
+	$sth->finish;
+	$w_se1 ||= 0;
+	$w_se2 ||= 0;
+
+	foreach my $dt (@dates) {
+		# Тарифы на рабочую дату
+		my %tariff = get_tariff($w_date);
+		# Читаем следующую дату (показания счетчика на конец текущего дня)
+		$sth->execute($cid,$dt);
+		my ($n_id,$n_se1,$n_se2,undef) = $sth->fetchrow_array;
+		$sth->finish;
+		last 	unless($n_id);	# Следующей записи еще нет
+
+		my ($exp1,$exp2,$amount) = (0,0,0);
+		if($n_se1) {
+			$exp1 = $n_se1 - $w_se1;
+			if($t_mode == 1) {	# однотарифник
+				$amount += $exp1 * $tariff{t0};
+			} else {	# двухтарифник
+				$amount += $exp1 * $tariff{t1};
+			}
+		}
+
+		if($n_se2) {
+			$exp2 = $n_se2 - $w_se2;
+			if($t_mode == 1) {	# однотарифник
+				$amount += $exp2 * $tariff{t0};
+			} else {	# двухтарифник
+				$amount += $exp2 * $tariff{t2};
+			}
+		}
+		$amount *= $kt;	# Коэффициент счетчика (трансформатор)
+		$amount *= $tariff{k};	# Поправочный коэффициент
+		$balance -= $amount;
+		print "cid=$cid dt=$w_date se1=$w_se1 se2=$w_se2 exp1=$exp1 exp2=$exp2 amnt=$amount bal=$balance mode=$tariff{mode} tar=$tariff{id}\n"	if($verb);
+		$up->execute($exp1,$exp2,$amount,$balance,$t_mode,$tariff{id},$w_id);
+
+		$w_date = $dt;
+		$w_id = $n_id;
+		$w_se1 = $n_se1;
+		$w_se2 = $n_se2;
+	}
+	$dbh->commit	if($force);
+}
+$dbh->disconnect;
+
+########## subs
+# Тариф на заданную дату
+sub get_tariff {
+	my ($date) = shift;
+	my %h;
+	foreach my $h (@$Tariff) {
+		%h = %$h;
+		last if(($date eq $h->{sdate}) || ($date gt $h->{sdate}));
+	}
+	return %h;
+}
+
+
+
