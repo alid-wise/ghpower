@@ -229,6 +229,8 @@ sub getcounter_last {
   return $ret;
 }
 
+
+##### DEPRECATED
 # Стоимость потраченного электричества
 # без учета изменения тарифов
 sub getcost_simple {
@@ -249,6 +251,25 @@ sub getcost_simple {
     $ret2 = ($flow2 * $T->{C}->{t2}) * $T->{C}->{k};
   }
   return ($ret,$ret1,$ret2);
+}
+#########
+
+# Баланс по указанному счетчику
+sub get_cbalance {
+  my $self = shift;
+  my ($cid) = @_;
+  my $sth = $self->{dbh}->prepare("SELECT id,date,balance FROM balance WHERE cid=? ORDER BY date desc LIMIT 1");
+  $sth->execute($cid);
+  my ($id,$date,$balance) = $sth->fetchrow_array;
+  $sth->finish;
+  return ($id,$date,$balance);
+}
+
+# Обновление баланса указанного счетчика
+sub re_cbalance {
+  my $self = shift;
+  my ($cid) = @_;
+  return(system("MY=$ENV{MY} $ENV{MY}/counter/daily-balance -F $ENV{database} $cid"));
 }
 
 
