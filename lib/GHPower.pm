@@ -365,12 +365,7 @@ sub get_balance {
 	# платеж был
 	my $C = $self->getcounter_last($cid);
 	map {s/\,/\./} ($C->{se1},$C->{se2});
-	my ($c_date,$c1,$c2) = ($C->{date},$C->{se1},$C->{se2});
-	my $flow1 = sprintf("%.02f", $c1 - $p_current1);
-	my $flow2 = sprintf("%.02f", $c2 - $p_current2);
-
-	my ($bal,undef,undef) = $self->getcost_simple($flow1, $flow2, $t_mode);
-	my $BALANCE = $p_balance - $bal;
+  my (undef,undef,$BALANCE) = $self->get_cbalance($cid);
 	return ($BALANCE,$C->{se1},$C->{se2},$t_mode);
 }
 
