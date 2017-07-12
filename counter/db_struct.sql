@@ -291,14 +291,13 @@ CREATE TABLE daily (
 	se2 numeric,
 	exp1 numeric,	-- расходы
 	exp2 numeric,
-	amount numeric,
-	balance numeric,
+	amount numeric,	-- стоимость
 	mode integer,	-- 1 - однотарифный, 2 - двухтарифный
 	tariff_id integer,
 	PRIMARY KEY (id)
 );
 create INDEX daily_cid_i ON daily (cid);
-create INDEX daily_date_i ON daily (date);
+create INDEX daily_date_i ON daily (ASC date);
 
 --
 -- Платежи
@@ -325,6 +324,22 @@ CREATE TABLE payments (
 CREATE INDEX payments_date_i ON payments (date ASC);
 CREATE INDEX payments_cid_i ON payments (cid);
 
+--
+-- Баланс
+--
+CREATE TABLE balance (
+    id serial NOT NULL,
+    cid integer,
+    date date,
+    balance decimal,
+    primary key (id)
+);
+CREATE INDEX balance_date_i ON balance (date ASC);
+CREATE INDEX balance_cid_i ON balance (cid);
+
+---
+--- Тарифы на электричество
+---
 CREATE TABLE tariff (
     id serial NOT NULL,
     auth integer,
