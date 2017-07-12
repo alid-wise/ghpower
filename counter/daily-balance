@@ -73,10 +73,11 @@ use GHPower;
 
 
 #
-# Заполнение таблицы daily
+# Заполнение таблицы daily и balance
 # ежедневный подсчет баланса (деньги)
 # 2017-07-10 alid
 # Участвуют только счетчики, для которых есть суточные показания (daily-table должен отрабатывать раньше)
+# Минимально - должен быть хотя бы один платеж (можно нулевой), из него берется дата и начальный баланс
 #
 
 my (@args, %opts);
@@ -117,31 +118,47 @@ if($counter_id) {
 
 
 my $gp = $dbh->prepare("SELECT id,date,prev1,prev2,current1,current2,amount,balance,mode,init FROM payments WHERE cid=? ORDER BY modtime DESC LIMIT 1");
-my $up = $dbh->prepare("UPDATE daily SET exp1=?, exp2=?, amount=?, balance=?, mode=?, tariff_id=? WHERE id=?");
+my $up = $dbh->prepare("UPDATE daily SET exp1=?, exp2=?, amount=?, mode=?, tariff_id=? WHERE id=?");
+my $bl = $dbh->prepare("SELECT date,balance FROM balance WHERE cid=? ORDER BY date DESC LIMIT 1");
+my $gc = $dbh->prepare("SELECT id,se1,se2 FROM daily WHERE cid=? and date=? limit 1");
+my $ib = $dbh->prepare("INSERT INTO balance (cid,date,balance) VALUES (?,?,?)");
 
 foreach my $cid (@clist) {
-	# Коэффициент kt (из параметров счетчика)
-	my $kt = $ghpower->Counter_info($cid)->{ktrans};
-	# Последний платеж по этому счетчику
-	$gp->execute($cid);
-	my ($lastpay) = $gp->fetchrow_hashref;
-	$gp->finish;
-
-	my ($date,$t_mode,$p_balance);
-	unless ($lastpay->{date}) {	# Платежей не было
-		print "There are no payments for $cid. Nothing to do.\n"	if($verb);
-		next;
-	} else {
+	my $t_mode;
+	# Текущий баланс для этого счетчика
+	$bl->execute($cid);
+	my ($date,$balance) = $bl->fetchrow_array;
+	$bl->finish;
+	unless($date && $balance) {	# Баланса еще нет
+		# Пытаемся получить из последнего платежа
+		# Последний платеж по этому счетчику
+		$gp->execute($cid);
+		my ($lastpay) = $gp->fetchrow_hashref;
+		$gp->finish;
+		unless ($lastpay->{date}) {	# Платежей не было
+			print "There are no payments for $cid. Nothing to do.\n"	if($verb);
+			next;
+		}
 		$date = $lastpay->{date};
 		$t_mode = $lastpay->{mode};	# 1 - однотарифный, 2 - двухтарифный
-		$p_balance = $lastpay->{balance};
+		$balance = $lastpay->{balance};
 	}
+	# Режим оплаты
+	unless($t_mode) {	# если еще не получили на предыдущем шаге
+		$gp->execute($cid);
+		my ($lastpay) = $gp->fetchrow_hashref;
+		$gp->finish;
+		$t_mode = $lastpay->{mode};	# 1 - однотарифный, 2 - двухтарифный
+	}
+	$t_mode ||= 2;
 
-	print "cid=$cid date=$date ktrans=$kt t_mode=$t_mode p_balance=$p_balance\n"	if($verb);
+	# Коэффициент kt (из параметров счетчика)
+	my $kt = $ghpower->Counter_info($cid)->{ktrans};
+	print "Start point: cid=$cid date=$date ktrans=$kt t_mode=$t_mode balance=$balance\n"	if($verb);
 
 	# Список дат
 	my @dates;
-	# Для заданного счетчика, ищем от даты последнего платежа
+	# ищем от даты последнего баланса
 	$sth = $dbh->prepare("select date from daily where amount is null and cid=$cid and date>? order by date");
 	$sth->execute($date);
 	while((my $r) = $sth->fetchrow_array) {
@@ -149,26 +166,13 @@ foreach my $cid (@clist) {
 	}
 	$sth->finish;
 	next	unless(@dates);	# делать нечего
-	# Баланс на начальную дату
-	$sth = $dbh->prepare("select id,se1,se2,balance from daily where cid=? and date=? limit 1");
-	my $pdate = UnixDate(DateCalc($dates[0],"-1 day"), "%Y-%m-%d");
-	$sth->execute($cid,$pdate);
-	# Начальная точка
-	my (undef,undef,undef,$balance) = $sth->fetchrow_array;
-	$sth->finish;
-
-	unless($balance) {
-		$balance = $p_balance;		# При инициализации - в начальной точке баланса еще нет
-	}
-
-	print "start point: pdate=$pdate balance=$balance\n"	if($verb);
 
 	# Первая рабочая дата
 	my $w_date = shift @dates;
 	# Читаем текущую дату (показания счетчика на конец предыдущего дня)
-	$sth->execute($cid,$w_date);
-	my ($w_id,$w_se1,$w_se2,undef) = $sth->fetchrow_array;
-	$sth->finish;
+	$gc->execute($cid,$w_date);
+	my ($w_id,$w_se1,$w_se2) = $gc->fetchrow_array;
+	$gc->finish;
 	$w_se1 ||= 0;
 	$w_se2 ||= 0;
 
@@ -176,9 +180,9 @@ foreach my $cid (@clist) {
 		# Тарифы на рабочую дату
 		my %tariff = get_tariff($w_date);
 		# Читаем следующую дату (показания счетчика на конец текущего дня)
-		$sth->execute($cid,$dt);
-		my ($n_id,$n_se1,$n_se2,undef) = $sth->fetchrow_array;
-		$sth->finish;
+		$gc->execute($cid,$dt);
+		my ($n_id,$n_se1,$n_se2) = $gc->fetchrow_array;
+		$gc->finish;
 		last 	unless($n_id);	# Следующей записи еще нет
 
 		my ($exp1,$exp2,$amount) = (0,0,0);
@@ -202,8 +206,10 @@ foreach my $cid (@clist) {
 		$amount *= $kt;	# Коэффициент счетчика (трансформатор)
 		$amount *= $tariff{k};	# Поправочный коэффициент
 		$balance -= $amount;
-		print "cid=$cid dt=$w_date se1=$w_se1 se2=$w_se2 exp1=$exp1 exp2=$exp2 amnt=$amount bal=$balance mode=$tariff{mode} tar=$tariff{id}\n"	if($verb);
-		$up->execute($exp1,$exp2,$amount,$balance,$t_mode,$tariff{id},$w_id);
+		print "cid=$cid dt=$w_date se1=$w_se1 se2=$w_se2 exp1=$exp1 exp2=$exp2 amount=$amount mode=$tariff{mode} tar=$tariff{id}\n"	if($verb);
+		$up->execute($exp1,$exp2,$amount,$t_mode,$tariff{id},$w_id);
+		print "Balance: cid=$cid dt=$w_date bal=$balance\n"	if($verb);
+		$ib->execute($cid,$w_date,$balance);
 
 		$w_date = $dt;
 		$w_id = $n_id;
