@@ -214,6 +214,7 @@ return $ghpower->Global;
 
 <%method getcost_simple>
 <%doc>
+	### DEPRECATED ###
 	Стоимость потраченного электричества
 	без учета изменения тарифов
 </%doc>
@@ -226,6 +227,34 @@ return $ghpower->Global;
 <%init>
 	my $ghpower = GHPower->new($dbh);
 	return $ghpower->getcost_simple($flow1, $flow2, $mode);
+</%init>
+</%method>
+
+<%method get_cbalance>
+<%doc>
+	Текущий баланс счетчика
+</%doc>
+<%args>
+	$dbh
+	$cid
+</%args>
+<%init>
+	my $ghpower = GHPower->new($dbh);
+	return $ghpower->get_cbalance($cid);
+</%init>
+</%method>
+
+<%method re_cbalance>
+<%doc>
+	Обновление баланса счетчика
+</%doc>
+<%args>
+	$dbh
+	$cid
+</%args>
+<%init>
+	my $ghpower = GHPower->new($dbh);
+	return $ghpower->re_cbalance($cid);
 </%init>
 </%method>
 

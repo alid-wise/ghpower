@@ -11,6 +11,7 @@ use DBI;
 use utf8;
 use open qw(:std :utf8);
 
+$ENV{database} = $dbname;
 my $dbh = DBI->connect("dbi:Pg:dbname=$dbname", "", "", {RaiseError => 1, pg_enable_utf8 => 1});
 #my $sth = $dbh->prepare("select A.id,A.name,A.login,A.email,A.modtime,A.gid,G.name AS group from auth A inner join groups G on A.gid = G.id WHERE A.login=? AND active=1");
 my $auth;
