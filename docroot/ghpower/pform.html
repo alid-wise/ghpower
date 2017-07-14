@@ -137,6 +137,7 @@ if($ARGS{submit}) {
 			my ($ex_id) = $ex->fetchrow_array;
 			$ex->finish;
 			unless($ex_id) {
+				my $ins = $dbh->prepare("INSERT INTO payments (auth,cid,date,prev1,prev2,current1,current2,amount,cost,balance,init,mdate,mode,memo) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 				$ins->execute($auth->{id},$cid,$p_date,$ARGS{i_t1} || 0,$ARGS{i_t2} || 0, $E->{se1ai}, $E->{se2ai} ,$p_balance,0,$p_balance,$init,$p_date,$ARGS{t_mode},$memo);
 				if($init eq 1) {
 					$dbh->do("DELETE FROM payments WHERE auth=".$auth->{id}." AND cid=$cid AND init=2");
