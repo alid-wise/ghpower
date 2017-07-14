@@ -54,11 +54,11 @@ if($ARGS{add_fee} && $dn && $ARGS{submit}) {	# Индивидуальное на
 				$amount = sprintf("%0.f",$amount);
 				my $ins = $dbh->prepare("INSERT INTO b_credit (auth,date,dn,b_tariff_id,amount,debt,memo) VALUES ($auth->{id},now(),?,?,?,?,?)");
 				$ins->execute($dn,$bid,$amount,$amount,$ARGS{memo});
-				# Флаг тарифу, если еще не поставлен
-				unless($b_sdate) {
-					  my $upd = $dbh->prepare("UPDATE b_tariff SET sdate=now() WHERE id=?");
-					  $upd->execute($bid);
-				}
+#				# Флаг тарифу, если еще не поставлен
+#				unless($b_sdate) {
+#					  my $upd = $dbh->prepare("UPDATE b_tariff SET sdate=now() WHERE id=?");
+#					  $upd->execute($bid);
+#				}
 				$dbh->commit;
 				$OK++;
 			}

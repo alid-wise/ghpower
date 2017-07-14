@@ -97,7 +97,8 @@ if($ARGS{submit}) {
 	map { $_ =~ s/\,/\./g; } ( $ARGS{i_balance}, $ARGS{i_t1}, $ARGS{i_t2} );
 #	$memo = $dbh->quote($ARGS{memo});
 	$memo = $ARGS{memo};
-	my $ins = $dbh->prepare("INSERT INTO payments (auth,cid,date,prev1,prev2,current1,current2,amount,cost,balance,init,mdate,mode,memo) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+#	my $ins = $dbh->prepare("INSERT INTO payments (auth,cid,date,prev1,prev2,current1,current2,amount,cost,balance,init,mdate,mode,memo) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+	my $ins = $dbh->prepare("INSERT INTO payments (auth,cid,date,prev1,prev2,current1,current2,amount,cost,balance,init,mdate,mode,memo) VALUES (?,?,?,?,?,?,?,?,?,(select balance from balance where id=?),?,?,?,?)");
 	my $upd = $dbh->prepare("UPDATE balance SET balance = balance + ? WHERE id=?");
 	if($ARGS{init}) {	# начальная точка
 		$p_balance = $ARGS{i_balance} || 0;
@@ -160,8 +161,9 @@ if($ARGS{submit}) {
 		if($amount =~ /^(\d+)\.*(\d){0,2}$/) {
 			my ($ctm) = ($C->{tm} =~ /(\d{4}\-\d{2}\-\d{2})/);
 			$dbh->begin_work();
-			$ins->execute($auth->{id},$cid,$Today->{today},$Usr->{p_se1},$Usr->{p_se2},$Usr->{se1},$Usr->{se2},$amount,$Usr->{cost},$amount - $Usr->{cost} + $Usr->{p_balance},0,$ctm, $t_mode, $memo);
+#			$ins->execute($auth->{id},$cid,$Today->{today},$Usr->{p_se1},$Usr->{p_se2},$Usr->{se1},$Usr->{se2},$amount,$Usr->{cost},$amount - $Usr->{cost} + $Usr->{p_balance},0,$ctm, $t_mode, $memo);
 			$upd->execute($amount,$Usr->{balance}->{id});
+			$ins->execute($auth->{id},$cid,$Today->{today},$Usr->{p_se1},$Usr->{p_se2},$Usr->{se1},$Usr->{se2},$amount,$Usr->{cost},$Usr->{balance}->{id},0,$ctm, $t_mode, $memo);
 			$dbh->commit;
 			$m->out('<script type="text/javascript">parent.location.href = parent.location.href;</script>');
 			$m->out('<script type="text/javascript">parent.location.reload();</script>');
@@ -179,8 +181,8 @@ if($ARGS{submit}) {
 } else {
 
 	# будем показывать историю платежей
-#	my $ls = $dbh->prepare("SELECT id,date,prev1,prev2,current1,current2,amount,balance,modtime,mode,init,memo FROM payments WHERE cid=? ORDER BY modtime DESC");
-	my $ls = $dbh->prepare("SELECT id,date,prev1,prev2,current1,current2,amount,modtime,mode,init,memo FROM payments WHERE cid=? ORDER BY modtime DESC");
+	my $ls = $dbh->prepare("SELECT id,date,prev1,prev2,current1,current2,amount,balance,modtime,mode,init,memo FROM payments WHERE cid=? ORDER BY modtime DESC");
+#	my $ls = $dbh->prepare("SELECT id,date,prev1,prev2,current1,current2,amount,modtime,mode,init,memo FROM payments WHERE cid=? ORDER BY modtime DESC");
 	$ls->execute($cid);
 	while(my $r = $ls->fetchrow_hashref) {
 		push @$List, $r;
@@ -244,12 +246,13 @@ if($ARGS{submit}) {
 <h3>История платежей</h3>
 <table border="1">
 
-<tr><th><i>Дата</i></th><th><i>Тариф-1</i></th><th><i>Тариф-2</i></th><th><i>Сумма платежа</i></th><th><i>Примечания</i></th></tr>
+<tr><th><i>Дата</i></th><th><i>Тариф-1</i></th><th><i>Тариф-2</i></th><th><i>Баланс</i><th><i>Сумма платежа</i></th><th><i>Примечания</i></th></tr>
 %	foreach my $row (@$List) {
 <tr>
 <td <% $row->{init} ? "class=\"initpay\"":"" %> ><% $m->comp("lib.msn:pretty_date", date=>$row->{date}) %></td>
 <td align="right"><% $m->comp("lib.msn:pretty", value=>$row->{current1}) %></td>
 <td align="right"><% $m->comp("lib.msn:pretty", value=>$row->{current2}) %></td>
+<td align="right"><% $m->comp("lib.msn:pretty", value=>$row->{balance}) %></td>
 <td align="right"><% $m->comp("lib.msn:pretty", value=>$row->{amount}) %></td>
 <td align="right" title="<%$row->{memo}%>"><% $row->{memo} %></td>
 </tr>

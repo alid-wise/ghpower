@@ -122,7 +122,7 @@ if($ARGS{submit}) {
 }
 
 my $T;
-my $sth = $dbh->prepare("SELECT id,auth,name,amount,type,edate,sdate,memo,modtime FROM b_tariff ORDER BY id DESC");
+my $sth = $dbh->prepare("SELECT id,auth,name,amount,type,edate,sdate,memo,modtime, (select count(*) from b_credit where b_tariff_id=A.id) AS cnt FROM b_tariff A ORDER BY id DESC");
 $sth->execute();
 while(my $r = $sth->fetchrow_hashref) { $T->{$r->{id}} = $r; }
 $sth->finish;
@@ -159,13 +159,15 @@ $(document).ready(function() {
   <div class="form-group">
     <label for="edate" class="control-label col-xs-3" style=color:<% $Err{edate} ? "red":"black"%>>Дата погашения:</label>
     <div class="col-xs-8">
-      <input type="text" class="form-control input-sm" id="edate" name="edate" value="<% $ARGS{edate} || $m->comp("lib.msn:pretty_date",date=>$T->{$id}->{edate}) || "dd.mm.yyyy"%>" <% $T->{$id}->{sdate} ? "disabled":"" %> onfocus="this.select();_Calendar.lcs(this)" onclick="event.cancelBubble=true;this.select();_Calendar.lcs(this)" <% $T->{$id}->{sdate} ? "disabled":"" %>>
+%#      <input type="text" class="form-control input-sm" id="edate" name="edate" value="<% $ARGS{edate} || $m->comp("lib.msn:pretty_date",date=>$T->{$id}->{edate}) || "dd.mm.yyyy"%>" <% $T->{$id}->{sdate} ? "disabled":"" %> onfocus="this.select();_Calendar.lcs(this)" onclick="event.cancelBubble=true;this.select();_Calendar.lcs(this)" <% $T->{$id}->{sdate} ? "disabled":"" %>>
+      <input type="text" class="form-control input-sm" id="edate" name="edate" value="<% $ARGS{edate} || $m->comp("lib.msn:pretty_date",date=>$T->{$id}->{edate}) || "dd.mm.yyyy"%>" <% $T->{$id}->{sdate} ? "disabled":"" %> onfocus="this.select();_Calendar.lcs(this)" onclick="event.cancelBubble=true;this.select();_Calendar.lcs(this)" <% $T->{$id}->{cnt} ? "disabled":"" %>>
     </div>
   </div>
   <div class="form-group">
     <label for="type" class="control-label col-xs-3" style=color:<% $Err{type} ? "red":"black"%>>Тип:</label>
     <div class="col-xs-8">
-		<select id="type" name="type" class="form-control input-sm" <% $T->{$id}->{sdate} ? "disabled":"" %> class="form-control">
+%#		<select id="type" name="type" class="form-control input-sm" <% $T->{$id}->{sdate} ? "disabled":"" %> class="form-control">
+		<select id="type" name="type" class="form-control input-sm" <% $T->{$id}->{cnt} ? "disabled":"" %> class="form-control">
 %foreach(sort keys %b_tariff_type) {
 %	my $tp = (defined $ARGS{type}) ? $ARGS{type} : $T->{$id}->{type};
 			<option value="<% $_ %>" <% $tp eq $_ ? "selected":"" %>><% $b_tariff_type{$_} %></option>
@@ -178,7 +180,8 @@ $(document).ready(function() {
     <div class="col-xs-8">
 		<div class="input-group">
 		<span class="input-group-addon">&#8381;</span>
-		<input type="text" class="form-control input-sm" id="amount" name="amount" value="<% (defined $ARGS{amount}) ? $ARGS{amount} : ($ARGS{submit} ? "":$T->{$id}->{amount}) %>" <% $T->{$id}->{sdate} ? "disabled":"" %>>
+%#		<input type="text" class="form-control input-sm" id="amount" name="amount" value="<% (defined $ARGS{amount}) ? $ARGS{amount} : ($ARGS{submit} ? "":$T->{$id}->{amount}) %>" <% $T->{$id}->{sdate} ? "disabled":"" %>>
+		<input type="text" class="form-control input-sm" id="amount" name="amount" value="<% (defined $ARGS{amount}) ? $ARGS{amount} : ($ARGS{submit} ? "":$T->{$id}->{amount}) %>" <% $T->{$id}->{cnt} ? "disabled":"" %>>
 		<span class="input-group-addon">.00</span>
 		</div>
     </div>
@@ -274,7 +277,7 @@ name="add_new" value="добавить" title="добавить новый та�
 <p><br></p>
 %#}
 <table>
-<tr><th>No</th><th>Дата погашения</th><th>Название</th><th>Тип</th><th>Тариф</th><th>Дата начисления</th></tr>
+<tr><th>No</th><th>Дата погашения</th><th>Название</th><th>Тип</th><th>Тариф</th><th>Дата начисления</th><th>Участков</th></tr>
 %foreach my $tid (sort { $T->{$b}->{edate} cmp $T->{$a}->{edate} || $T->{$a}->{name} cmp $T->{$b}->{name} } keys %{$T}) {
 %	next unless $tid;
 <tr>
@@ -284,6 +287,7 @@ name="add_new" value="добавить" title="добавить новый та�
 <td><% $b_tariff_type{$T->{$tid}->{type}} %></td>
 <td align="right"><b><% $m->comp("lib.msn:pretty", value=>sprintf("%0.2f",$T->{$tid}->{amount})) %></b></td>
 <td><% $T->{$tid}->{sdate} ? $m->comp("lib.msn:pretty_date",date=>$T->{$tid}->{sdate}) : "<input type=\"submit\" name=\"accept_".$tid."\" value=\"начислить\">" %></td>
+<td align="right"><% $T->{$tid}->{cnt} %></td>
 
 %}
 </table>

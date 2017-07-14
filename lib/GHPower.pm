@@ -396,6 +396,7 @@ sub set_fee {
   }
   $self->{dbh}->begin_work;
   my $ins = $self->{dbh}->prepare("INSERT INTO b_credit (auth,date,dn,b_tariff_id,amount,debt) VALUES ($auth,now(),?,?,?,?)");
+  my $chk = $self->{dbh}->prepare("SELECT b_tariff_id FROM b_credit WHERE dn=? AND b_tariff_id=? AND status<>2");
   my $sth = $self->{dbh}->prepare("SELECT type,amount FROM b_tariff WHERE id=? AND sdate IS NULL LIMIT 1");
   my $upd = $self->{dbh}->prepare("UPDATE b_tariff SET sdate=now() WHERE id=?");
 
@@ -432,6 +433,14 @@ sub set_fee {
         $amount = $b_amount;
       }
       $amount = sprintf("%0.f",$amount);  # 2016-07-30 Татьяна: Начисление округляется до целого числа
+      # Повторно не начислять
+      $chk->execute($dn,$bid);
+      my ($cbid) = $chk->fetchrow_array;
+      $chk->finish;
+      if($cbid) {
+        print "[$dn] bid=$bid - Already set\n"   if($verb);
+        next;
+      }
       print "[$dn] S=$S Amount=$amount\n"   if($verb);
       $ins->execute($dn,$bid,$amount,$amount);  # b_credit
     }
