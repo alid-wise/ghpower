@@ -159,7 +159,7 @@ if($ARGS{submit}) {
 		my $amount = $ARGS{amount};
 		$amount =~ s/\,/\./g;
 		$amount =~ s/\s//g;
-		if($amount =~ /^(\d+)\.*(\d){0,2}$/) {
+		if($amount =~ /^\-*(\d+)\.*(\d){0,2}$/) {
 			my ($ctm) = ($C->{tm} =~ /(\d{4}\-\d{2}\-\d{2})/);
 			$dbh->begin_work();
 #			$ins->execute($auth->{id},$cid,$Today->{today},$Usr->{p_se1},$Usr->{p_se2},$Usr->{se1},$Usr->{se2},$amount,$Usr->{cost},$amount - $Usr->{cost} + $Usr->{p_balance},0,$ctm, $t_mode, $memo);
@@ -230,7 +230,7 @@ if($ARGS{submit}) {
 <tr><td align="right" colspan="2">Общая стоимость:</td><td colspan="2" align="right"><% $m->comp("lib.msn:pretty", value=> $Usr->{cost}) %></td></tr>
 <tr><td align="right" colspan="2">Остаток:</td><td colspan="2" align="right"><% $m->comp("lib.msn:pretty", value=> $Usr->{rest}) %></td></tr>
 <tr><td align="right" colspan="2">К оплате:</td><td colspan="2" align="right"><b><%  $m->comp("lib.msn:pretty", value=>($Usr->{topay} > 0)? $Usr->{topay} : "0") %></b></td></tr>
-<tr><td align="right" colspan="2"><div style=color:<% $Err{amount} ? "red":"black"%>>Сумма платежа:</div></td><td colspan="2"><input type="text" name="amount" value="<%$ARGS{amount} || ''%>"></td></tr>
+<tr><td align="right" colspan="2"><div style=color:<% $Err{amount} ? "red":"black"%>>Сумма платежа:<br>(может быть отрицательное число)</div></td><td colspan="2"><input type="text" name="amount" value="<%$ARGS{amount} || ''%>"></td></tr>
 %}
 <tr><td align="right" colspan="2">Примечания:</td><td colspan="2"><input type="text" name="memo" value="<%$ARGS{memo} || ""%>"></td></tr>
 <tr><td colspan="4" align="right"><input type="submit" name="submit" value="Сохранить"></td></tr>
