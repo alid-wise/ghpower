@@ -78,8 +78,13 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 
 				my ($passwd1,$passwd2) = ('','');
 				if($Ctypes->{$ARGS{model}}->{type} eq 'M230') { ($passwd1,$passwd2) = ('111111','222222'); }
-				my $ins = $dbh->prepare("insert into counters (name,addr,mgroup,sn,model,setdate,memo,active,tower_id,year,street,house,owner,passwd,passwd2,modtime,plimit,subscr,dn) values (?,?,?,?,?,?,?,?,?,?,?,?,?,\'$passwd1\',\'$passwd2\',now(),?,?,?)");
+				my $ins = $dbh->prepare("insert into counters (name,addr,mgroup,sn,model,setdate,memo,active,tower_id,year,street,house,owner,passwd,passwd2,modtime,plimit,subscr,dn) values (?,?,?,?,?,?,?,?,?,?,?,?,?,\'$passwd1\',\'$passwd2\',now(),?,?,?) RETURNING id");
 				$ins->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{street},$ARGS{house},$ARGS{owner},$ARGS{plimit},$subscr,$ARGS{dn});
+				my ($cid) = $ins->fetchrow_array;
+				# Начальные показания счетчика (на момент установки)
+				map { $_ =~ s/\,/\./; $_ =~ s/[^\d\.]//g; } ($ARGS{t1i}, $ARGS{t2i});
+				$ins = $dbh->prepare("insert into daily (cid,date,se1,se2,exp1,exp2,amount) values (?,?,?,?,0,0,0)");
+				$ins->execute($cid,$ARGS{setdate},$ARGS{t1i}, $ARGS{t2i});
 			}
 			undef $id;
 			undef $ARGS{"add_new"};
@@ -166,6 +171,12 @@ $(document).ready(function() {
 <td>Дата установки:</td>
 <td><input type="text" name="setdate" value="<%$ARGS{setdate} || (!$ARGS{submit} ? $Usr->{setdate} : "")%>" <% ($auth->{gid} >1) ? "disabled":"" %>></td>
 </tr>
+%if($ARGS{"add_new"}) {
+<tr>
+<td>Начальные показания:<br><small>(на дату установки)</small></td>
+<td><nobr><input type="text" name="t1i" value="<%$ARGS{t1i} || 0%>"><input type="text" name="t2i" value="<%$ARGS{t2i} || 0%>"></nobr></td>
+</tr>
+%}
 <tr>
 <td>Лимит мощности:</td>
 <td><input type="text" name="plimit" value="<%$ARGS{plimit} || (!$ARGS{plimit} ? $Usr->{plimit} : "")%>" <% ($auth->{gid} >1) ? "disabled":"" %>></td>
