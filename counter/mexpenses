@@ -86,9 +86,10 @@ my $pgport = 5432;
 my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1, AutoCommit => 0});
 my $sth = $dbh->prepare("SELECT id FROM counters");
 my $sel = $dbh->prepare("SELECT id,(SELECT COUNT(*) FROM mexpenses WHERE cid=? AND year=? AND month=?) FROM mexpenses WHERE cid=? AND year=? AND month=?");
-my $upd = $dbh->prepare("UPDATE mexpenses SET exp1=?,exp2=?,modtime=now() WHERE id=?");
-my $ins = $dbh->prepare("INSERT INTO mexpenses (cid,year,month,exp1,exp2) VALUES (?,?,?,?,?)");
+my $upd = $dbh->prepare("UPDATE mexpenses SET exp1=?,exp2=?,amount=?,modtime=now() WHERE id=?");
+my $ins = $dbh->prepare("INSERT INTO mexpenses (cid,year,month,exp1,exp2,amount) VALUES (?,?,?,?,?,?)");
 my $del = $dbh->prepare("DELETE FROM mexpenses WHERE cid=? AND year=? AND month=?");
+my $amt = $dbh->prepare("SELECT sum(amount) FROM daily WHERE cid=? AND date_part('year',date)=? AND date_part('month',date)=?");
 
 # Список счетчиков
 my @List;
@@ -96,7 +97,7 @@ $sth->execute();
 while(my ($r) = $sth->fetchrow_array) { push @List,$r;} $sth->finish;
 
 if($full) {	# полное обновление
-	$sth = $dbh->prepare("SELECT dt,se1ai,se2ai FROM monitor WHERE counter=? AND dt LIKE '%-01 %' ORDER BY dt DESC");
+	$sth = $dbh->prepare("SELECT dt,se1ai,se2ai FROM monitor WHERE counter=? AND date_part('day',dt)=1 ORDER BY dt DESC");
 	print "Full update\n"	if $verb;
 } else {	# только последний месяц
 	# FreeBSD only:
@@ -121,9 +122,13 @@ foreach my $cid (@List) {
 	my ($data1,$data2);
 	foreach my $year (sort {$b<=>$a} keys %$Data) {
 		foreach my $mon (sort {$b<=>$a} keys %{$Data->{$year}}) {
+
 			if(defined $data1) {
-				print "$year $mon ".($data1 - $Data->{$year}->{$mon}->{se1ai})." ".($data2 - $Data->{$year}->{$mon}->{se2ai})."\n"	if $verb;
-				setdata($cid,$year,$mon,$data1 - $Data->{$year}->{$mon}->{se1ai},$data2 - $Data->{$year}->{$mon}->{se2ai});
+				$amt->execute($cid,$year,$mon);
+				my ($amount) = $amt->fetchrow_array;
+				$amt->finish;
+				print "$year $mon ".($data1 - $Data->{$year}->{$mon}->{se1ai})." ".($data2 - $Data->{$year}->{$mon}->{se2ai})." $amount\n"	if $verb;
+				setdata($cid,$year,$mon,$data1 - $Data->{$year}->{$mon}->{se1ai},$data2 - $Data->{$year}->{$mon}->{se2ai},$amount);
 			}
 			($data1,$data2) = ($Data->{$year}->{$mon}->{se1ai},$Data->{$year}->{$mon}->{se2ai});
 		}
@@ -134,15 +139,15 @@ $dbh->commit;
 $dbh->disconnect;
 
 sub setdata {
-	my ($cid,$year,$month,$exp1,$exp2) = @_;
+	my ($cid,$year,$month,$exp1,$exp2,$amount) = @_;
 	$sel->execute($cid,$year,$month,$cid,$year,$month);
 	my ($id,$count) = ($sel->fetchrow_array);
 	$sel->finish;
 	if($id && $count == 1) {
-		$upd->execute($exp1,$exp2,$id);
+		$upd->execute($exp1,$exp2,$amount,$id);
 	} else {
 		$del->execute($cid,$year,$month)	if($count > 1);
-		$ins->execute($cid,$year,$month,$exp1,$exp2);
+		$ins->execute($cid,$year,$month,$exp1,$exp2,$amount);
 	}
 }
 

@@ -260,6 +260,7 @@ create table mexpenses (
 	month integer,
 	exp1 decimal DEFAULT 0,
 	exp2 decimal DEFAULT 0,
+	amount decimal DEFAULT 0,	-- стоимость (сумма из daily)
 	modtime timestamp without time zone DEFAULT now(),
 	primary key (id)
 );
