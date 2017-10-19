@@ -262,7 +262,12 @@ sub get_cbalance {
   $sth->execute($cid);
   my ($id,$date,$balance) = $sth->fetchrow_array;
   $sth->finish;
-  return ($id,$date,$balance);
+  $sth = $self->{dbh}->prepare("SELECT avg(amount) FROM (SELECT amount FROM mexpenses WHERE cid=? AND amount>0 ORDER BY year DESC,month DESC limit 12) A");
+  $sth->execute($cid);
+  my ($amount) = $sth->fetchrow_array;
+  $sth->finish;
+
+  return ($id,$date,$balance,$amount);
 }
 
 # Обновление баланса указанного счетчика

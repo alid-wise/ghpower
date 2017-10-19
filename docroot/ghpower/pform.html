@@ -60,7 +60,7 @@ $Usr->{se1}=$C->{t1};
 $Usr->{se2}=$C->{t2};
 
 # Текущий баланс
-($Usr->{balance}->{id},$Usr->{balance}->{date},$Usr->{balance}->{balance}) = $m->comp("lib.msn:get_cbalance", dbh=>$dbh, cid=>$cid);
+($Usr->{balance}->{id},$Usr->{balance}->{date},$Usr->{balance}->{balance},$Usr->{balance}->{avg_amount}) = $m->comp("lib.msn:get_cbalance", dbh=>$dbh, cid=>$cid);
 
 #unless($p_id) {	# первый платеж
 if(!$p_id || ($p_init eq 2)) {	# первый платеж или инициализация с неправильной датой
@@ -77,18 +77,16 @@ if(!$p_id || ($p_init eq 2)) {	# первый платеж или инициал
 	$Usr->{flow2} = sprintf("%.02f", $Usr->{se2} - $Usr->{p_se2});
 	# Сумма "К оплате"
 
-#	($Usr->{cost},$Usr->{cost1},$Usr->{cost2}) = $m->comp("lib.msn:getcost_simple", dbh=>$dbh, flow1=>$Usr->{flow1}, flow2=>$Usr->{flow2}, mode=>$t_mode);
 	my $sth = $dbh->prepare("SELECT sum(exp1),sum(exp2),sum(amount) FROM daily WHERE cid=? AND date>?");
 	$sth->execute($cid,$Usr->{p_date});
 	($Usr->{flow1},$Usr->{flow2},$Usr->{cost}) = $sth->fetchrow_array;
 	$sth->finish;
 
 
-#	$Usr->{topay} = $Usr->{cost} - $Usr->{p_balance};
-	$Usr->{topay} = 0 - $Usr->{balance}->{balance};
+#	$Usr->{topay} = 0 - $Usr->{balance}->{balance};
+	my $dp = $Usr->{balance}->{avg_amount} - $Usr->{balance}->{balance};
+	$Usr->{topay} = $dp > 0 ? $dp : 0;	# Рекомендуемый платеж
 
-
-#	$Usr->{rest} = $Usr->{p_balance} - $Usr->{cost};
 	$Usr->{rest} = $Usr->{balance}->{balance};
 
 	$Usr->{rest} = 0	if($Usr->{rest} < 0);
