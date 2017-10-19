@@ -118,7 +118,7 @@ if($ARGS{export}) {
 </%perl>
 <tr>
 <td align="right" <% $t_mode == 1 ? "class=\"onemode\"":"" %>><b <% $counters->{$cid} == 1 ? "":"class=\"inactive\""%>><%$house%></b></td>
-<td><a href="pform.html?cid=<%$cid%>" target="pform"><%join("<br>", @owners) || "-" %></a></td>
+<td><a href="pform.html?cid=<%$cid%><%$counters->{$cid} == 1 ? "":"\&closed=1"%>" target="pform"><%join("<br>", @owners) || "-" %></a></td>
 <td align="right"><div style=color:<%$BALANCE <0 ? "red":"green"%>><% $BALANCE ?  $m->comp("lib.msn:pretty", value=>$BALANCE) : ""%></div></td>
 <td align="right" <% $init eq '2' ? "class=\"badinitpay\"":"" %>><%  $m->comp("lib.msn:pretty_date", date=>$p_date)%></td>
 <td align=right>

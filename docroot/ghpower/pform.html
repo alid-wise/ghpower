@@ -3,6 +3,7 @@
 	$auth
 	$cid => undef
 	$id => undef
+	$closed => undef
 #	$list => undef
 </%args>
 <%init>
@@ -202,6 +203,9 @@ if($ARGS{submit}) {
 <form method=POST>
 <table border="1">
 <tr><td colspan="4" align="right" <% $t_mode eq '1' ? "class=\"onemode\"":"" %>><input class="close" type="submit" name="cancel" value="X"></td></tr>
+
+
+%unless($closed) {	# не показывать саму форму (например, счетчик удален)
 <tr><td colspan="4" align="right">
 </td></tr>
 <tr><td colspan="4" align="right"><b><%$Usr->{street_name}%>, <%$Usr->{domain}%></b></td></tr>
@@ -234,6 +238,10 @@ if($ARGS{submit}) {
 %}
 <tr><td align="right" colspan="2">Примечания:</td><td colspan="2"><input type="text" name="memo" value="<%$ARGS{memo} || ""%>"></td></tr>
 <tr><td colspan="4" align="right"><input type="submit" name="submit" value="Сохранить"></td></tr>
+
+
+
+%}	# $closed
 </table>
 
 <% $t_mode eq '1' ? "<p class=\"onemode\">Прим.: Однотарифная схема</p>":"" %>
