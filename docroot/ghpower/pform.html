@@ -83,9 +83,9 @@ if(!$p_id || ($p_init eq 2)) {	# первый платеж или инициал
 	$sth->finish;
 
 
-#	$Usr->{topay} = 0 - $Usr->{balance}->{balance};
+	$Usr->{topay} = 0 - $Usr->{balance}->{balance};
 	my $dp = $Usr->{balance}->{avg_amount} - $Usr->{balance}->{balance};
-	$Usr->{topay} = $dp > 0 ? $dp : 0;	# Рекомендуемый платеж
+	$Usr->{topay_a} = $dp > 0 ? $dp : 0;	# Рекомендуемый платеж
 
 	$Usr->{rest} = $Usr->{balance}->{balance};
 
@@ -231,7 +231,9 @@ if($ARGS{submit}) {
 %#<tr><td align="right" colspan="2">Стоимость:</td><td align="right"><% $m->comp("lib.msn:pretty", value=> $Usr->{cost1}) %></td><td align="right"><% $m->comp("lib.msn:pretty", value=> $Usr->{cost2}) %></td></tr>
 <tr><td align="right" colspan="2">Общая стоимость:</td><td colspan="2" align="right"><% $m->comp("lib.msn:pretty", value=> $Usr->{cost}) %></td></tr>
 <tr><td align="right" colspan="2">Остаток:</td><td colspan="2" align="right"><% $m->comp("lib.msn:pretty", value=> $Usr->{rest}) %></td></tr>
-<tr><td align="right" colspan="2">К оплате:</td><td colspan="2" align="right"><b><%  $m->comp("lib.msn:pretty", value=>($Usr->{topay} > 0)? $Usr->{topay} : "0") %></b></td></tr>
+<tr><td align="right" colspan="2">К оплате (без аванса):</td><td colspan="2" align="right"><b><%  $m->comp("lib.msn:pretty", value=>($Usr->{topay} > 0)? $Usr->{topay} : "0") %></b></td></tr>
+<tr><td align="right" colspan="2">Аванс:</td><td colspan="2" align="right"><b><%  $m->comp("lib.msn:pretty", value=>($Usr->{balance}->{avg_amount} > 0)? $Usr->{balance}->{avg_amount} : "0") %></b></td></tr>
+<tr><td align="right" colspan="2">К оплате (с авансом):</td><td colspan="2" align="right"><b><%  $m->comp("lib.msn:pretty", value=>($Usr->{topay_a} > 0)? $Usr->{topay_a} : "0") %></b></td></tr>
 <tr><td align="right" colspan="2"><div style=color:<% $Err{amount} ? "red":"black"%>>Сумма платежа:<br>(может быть отрицательное число)</div></td><td colspan="2"><input type="text" name="amount" value="<%$ARGS{amount} || ''%>"></td></tr>
 %}
 <tr><td align="right" colspan="2">Примечания:</td><td colspan="2"><input type="text" name="memo" value="<%$ARGS{memo} || ""%>"></td></tr>
