@@ -83,7 +83,7 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 				my ($cid) = $ins->fetchrow_array;
 				# Начальные показания счетчика (на момент установки)
 				map { $_ =~ s/\,/\./; $_ =~ s/[^\d\.]//g; } ($ARGS{t1i}, $ARGS{t2i});
-				$ins = $dbh->prepare("insert into daily (cid,date,se1,se2,exp1,exp2,amount) values (?,?,?,?,0,0,0)");
+				$ins = $dbh->prepare("insert into daily (cid,date,se1,se2) values (?,?,?,?)");
 				$ins->execute($cid,$ARGS{setdate},$ARGS{t1i}, $ARGS{t2i});
 			}
 			undef $id;
