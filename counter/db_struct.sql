@@ -353,6 +353,7 @@ CREATE TABLE tariff (
     primary key (id)
 );
 
+-- лог рассылки
 CREATE TABLE feed_log (
 	id serial NOT NULL,
 	auth integer,
@@ -371,6 +372,21 @@ CREATE TABLE feed_log (
 CREATE INDEX feed_log_posted_i ON feed_log (posted);
 CREATE INDEX feed_log_dn_i ON feed_log (dn);
 CREATE INDEX feed_log_cid_i ON feed_log (cid);
+
+-- ручные рассылки
+CREATE TABLE feeds (
+	id character(32) NOT NULL,
+	auth integer,
+	name varchar,
+	posted timestamp without time zone,
+	subj character varying,
+	msg character varying,
+	status smallint,
+	modtime timestamp without time zone DEFAULT now(),
+	primary key (id)
+);
+CREATE INDEX feeds_posted_i ON feeds (posted);
+
 
 
 

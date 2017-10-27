@@ -532,4 +532,16 @@ return $value;
 </%init>
 </%method>
 
-
+<%method ClipStr>
+<%doc>
+	Усечение текстовой строки
+</%doc>
+<%args>
+	$str
+	$len
+	$tail => '...'
+</%args>
+<%init>
+	return GHPowerUtils::ClipStr($str,$len,$tail);
+</%init>
+</%method>

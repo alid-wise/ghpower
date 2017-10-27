@@ -1,0 +1,197 @@
+<%args>
+	$dbh
+	$auth
+	$id => 0
+	$feed_new => 0
+</%args>
+<%init>
+use Data::Dumper;
+use POSIX;
+use Digest::MD5 qw(md5_hex);
+
+
+if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# admin или manager
+	$r->status_line('');
+	$m->clear_buffer;
+	$m->abort(404);
+}
+
+
+#$m->out("<pre>".(Dumper %ARGS)."</pre>");
+#$m->out("<p>".$feed_new."</p>");
+#$m->out("<p>".$id."</p>");
+
+
+undef $id 	if($feed_new);
+my $Usr;
+my %Err;
+if($id) {	# Показать старую рассылку
+	my $sth = $dbh->prepare("SELECT id,auth,name,posted,subj,msg,status FROM feeds WHERE id=?");
+	$sth->execute($id);
+	($Usr) = $sth->fetchrow_hashref;
+	$sth->finish;
+}
+elsif($ARGS{submit} && (length($ARGS{id_new}) == 32)) {	# Создать новую рассылку
+	# Сабж и текст сообщения не должны быть пустыми
+	if(length($ARGS{subject}) == 0) {
+		$Err{subject}++;
+		$feed_new++;
+	}
+	elsif(length($ARGS{msg}) == 0) {
+		$Err{msg}++;
+		$feed_new++;
+	}
+	else {
+
+		my $sth = $dbh->prepare("SELECT id FROM feeds WHERE id=?");
+		$sth->execute($ARGS{id_new});
+		my ($ex) = $sth->fetchrow_array;
+		$sth->finish;
+		unless ($ex) { 	# защита от повторной записи
+			# Запись в базе
+			my $ins = $dbh->prepare("INSERT INTO feeds (id,auth,name,posted,subj,msg) VALUES (?,$auth->{id},?,now(),?,?)");
+			$ins->execute($ARGS{id_new},$ARGS{feed_name},$ARGS{subject},$ARGS{msg});
+			# Здесь сама рассылка сообщений
+sleep(5);
+			# Установка статуса
+			$dbh->do("UPDATE feeds SET status=1 WHERE id=\'$ARGS{id_new}\'");
+		}
+		undef $feed_new;
+	}
+	undef $id;
+
+}	# Показать список старых рассылок
+my $sth = $dbh->prepare("SELECT id,auth,name,posted,subj,msg,status FROM feeds ORDER BY posted DESC LIMIT 100");
+$sth->execute();
+my $List;
+while(my $r = $sth->fetchrow_hashref) {
+	push @{$List}, $r;
+}
+$sth->finish;
+
+
+
+</%init>
+<div class="masthead">
+	<ul class="nav nav-pills pull-left">
+		<li class="active"><a href="/">Home</a></li>
+	</ul>
+</div>
+<hr>
+<h1>&nbsp;</h1>
+%if($feed_new || $id) {	# Новая рассылка или посмотреть старую
+<form method="POST">
+%unless ($id) {
+<input type="hidden" name="feed_new" value="1">
+<input type="hidden" name="id_new" value="<% md5_hex(rand().time()) %>">
+%}
+<p><a href="feedmail.html">Отменить</a></p>
+<table border="1">
+%if($id) {
+<tr>
+<td>Дата:</td>
+<td><% $m->comp("lib.msn:pretty_date", date=>$Usr->{posted}) %></td>
+</tr>
+<tr>
+<td>Статус:</td>
+<td><% $Usr->{status} == 1 ? "отправлено":"ошибка" %></td>
+</tr>
+%}
+
+<tr>
+<td>Название:</td>
+<td><input type="text" name="feed_name" value="<% $ARGS{feed_name} || $Usr->{name} %>" <%($id) ? "disabled":"" %>></td>
+</tr>
+
+<tr>
+<td>Тема:</td>
+<td><input type="text" name="subject" value="<% $ARGS{subject} || $Usr->{subj} %>" <%($id) ? "disabled":"" %>></td>
+</tr>
+<tr>
+<td>Текст сообщения:</td>
+<td><textarea name="msg" cols="60" rows="20" <% ($id) ? "disabled":"" %>><% $ARGS{msg} || $Usr->{msg} %></textarea></td>
+</tr>
+
+%unless($id) {
+<tr>
+<td></td>
+<td><input type="submit" name="submit" value="Отправить">&nbsp;</td>
+<td><button class="btn btn-primary" type="submit" onclick="window.frames[0].sendform();">Отправить</button></td>
+</tr>
+%}
+</table>
+</form>
+
+
+%unless($id) {
+<style>
+   #loadImg{position:absolute; z-index:1000; display:none}
+</style>
+<img id="loadImg" src="/images/ajax-loader.gif" />
+<script type="text/javascript">
+	function sendform(){
+alert();
+		// найдем элемент с изображением загрузки и уберем невидимость:
+		var imgObj = $("#loadImg");
+		imgObj.show();
+		// вычислим в какие координаты нужно поместить изображение загрузки,
+		// чтобы оно оказалось в серидине страницы:
+		//var centerY = $(window).scrollTop() + ($(window).height() + imgObj.height())/2;
+		//var centerX = $(window).scrollLeft() + ($(window).width() + imgObj.width())/2;
+		// поменяем координаты изображения на нужные:
+		//imgObj.offset(top:centerY, left:centerX);
+
+		// Отправляем форму
+		document.forms[0].submit.click();
+	}
+</script>
+
+
+
+
+
+
+%}
+
+
+%}
+%	# Список старых рассылок
+
+<form method="POST">
+<p><input class="btn" type="submit" name="feed_new" value="Новая рассылка">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+</form>
+
+<h1><%  %></h1>
+<table class="table-condensed">
+<thead>
+<tr>
+<th>N</th>
+<th>Дата</th>
+<th>Название</th>
+<th>Тема</th>
+<th>Содержание</th>
+<th>Статус</th>
+</tr>
+</thead>
+<tbody>
+%my $i=1;
+%foreach my $row (@$List) {
+<tr>
+<td><%$i%></td>
+<td><a href="?id=<% $row->{id} %>"><% $m->comp("lib.msn:pretty_date", date=>$row->{posted}) %></a></td>
+<td><% $m->comp("lib.msn:ClipStr",str=>$row->{name}, len=>30) %></td>
+<td><% $m->comp("lib.msn:ClipStr",str=>$row->{subj}, len=>30) %></td>
+<td><% $m->comp("lib.msn:ClipStr",str=>$row->{msg}, len=>30) %></td>
+<td align="center"><% ($row->{status} == 1) ? "ok" : "-"%></td>
+</tr>
+%$i++;
+%}
+</tbody>
+</table>
+
+
+
+%#<pre>
+%#<% Dumper %ARGS %>
+%#<% Dumper $feed_new %>
+%#</pre>

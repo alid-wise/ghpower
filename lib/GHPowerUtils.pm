@@ -100,8 +100,18 @@ sub Now {
                 sprintf("%.2d.%.2d.%.4d %.2d:%.2d:%.2d", $mday, $mon+1, $year+1900, $hour, $min, $sec) ;
 }
 
-
-
+sub ClipStr {
+  my ($str, $len, $tail) = @_;
+  croak "Usage: ClipStr(\$str, \$len, [\$tail])"        unless $len;
+  $tail ||= '...';
+  my $kind = '';
+  foreach( split /([ ,;:])/, $str){
+    last if length($kind.$_) > $len;
+    $kind .= $_;
+  }
+  $kind =~ s/\s*$//;
+  return $kind.(length($str) <= $len ? '' : $tail);
+}
 
 1;
 
