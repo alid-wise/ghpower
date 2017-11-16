@@ -357,6 +357,7 @@ CREATE TABLE tariff (
 CREATE TABLE feed_log (
 	id serial NOT NULL,
 	auth integer,
+	comp varchar,
 	cid integer NOT NULL,
 	dn varchar NOT NULL,
 	target character varying(255),
@@ -372,6 +373,7 @@ CREATE TABLE feed_log (
 CREATE INDEX feed_log_posted_i ON feed_log (posted);
 CREATE INDEX feed_log_dn_i ON feed_log (dn);
 CREATE INDEX feed_log_cid_i ON feed_log (cid);
+CREATE INDEX feed_log_comp_i ON feed_log (comp);
 
 -- ручные рассылки
 CREATE TABLE feeds (
