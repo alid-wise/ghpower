@@ -57,11 +57,15 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 	} else {
 		my $active = $ARGS{active}? 1:0;
 		my $subscr = $ARGS{subscr}? 1:0;
-		map { $ARGS{$_} =~ s/\D//g; $ARGS{$_} ||= 0 } ('addr','mgroup','sn','model','tower_id','year','street');
-		map { $ARGS{$_} = 0 if($ARGS{$_} > 2000000000) } ('addr','mgroup','sn','model','tower_id','year','street');
+		map { $ARGS{$_} =~ s/\D//g; $ARGS{$_} ||= 0 } ('addr','mgroup','sn','model','tower_id','year','ktrans');
+		map { $ARGS{$_} = 0 if($ARGS{$_} > 2000000000) } ('addr','mgroup','sn','model','tower_id','year','ktrans');
+		$ARGS{ktrans} ||= 1;
 		$ARGS{plimit} =~ s/\,/\./g;
 		$ARGS{plimit} =~ s/[^0-9\.]//g;
 		$ARGS{plimit} = 3.6	if(!$ARGS{plimit} or $ARGS{plimit} == 0 or $ARGS{plimit} > 10000);
+		$Err{model}++	unless($ARGS{model});
+		$Err{addr}++	unless($ARGS{addr});
+		$Err{mgroup}++	unless($ARGS{mgroup});
 		my ($mday,$mon,$year) = (localtime)[3,4,5];
 		$ARGS{setdate} ||= sprintf("%4d-%02d-%02d",$year+1900,$mon+1,$mday);
 
@@ -69,17 +73,16 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 			if($Usr) {	# Обновление
 				my $chg = ($active ne $Usr->{active})? 1:0;
 				$chg++	if($subscr ne $Usr->{subscr})? 1:0;
-				map {$chg++ if($ARGS{$_} ne $Usr->{$_})} ('name','addr','mgroup','sn','model','setdate','memo','tower_id','year','street','house','owner','plimit','dn');
+				map {$chg++ if($ARGS{$_} ne $Usr->{$_})} ('name','addr','mgroup','sn','model','setdate','memo','tower_id','year','street','house','owner','plimit','dn','ktrans');
 				if($chg) {	# есть изменения
-					my $upd = $dbh->prepare("update counters set name=?,addr=?,mgroup=?,sn=?,model=?,setdate=?,memo=?,active=?,tower_id=?,year=?,street=?,house=?,owner=?,modtime=now(),plimit=?,subscr=?,dn=? where id=?");
-					$upd->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{street},$ARGS{house},$ARGS{owner},$ARGS{plimit},$subscr,$ARGS{dn},$id);
+					my $upd = $dbh->prepare("update counters set name=?,addr=?,mgroup=?,sn=?,model=?,setdate=?,memo=?,active=?,tower_id=?,year=?,street=?,house=?,owner=?,modtime=now(),plimit=?,subscr=?,dn=?,ktrans=? where id=?");
+					$upd->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{street},$ARGS{house},$ARGS{owner},$ARGS{plimit},$subscr,$ARGS{dn},$ARGS{ktrans},$id);
 				}
 			} else {	# Новая запись
-
 				my ($passwd1,$passwd2) = ('','');
 				if($Ctypes->{$ARGS{model}}->{type} eq 'M230') { ($passwd1,$passwd2) = ('111111','222222'); }
-				my $ins = $dbh->prepare("insert into counters (name,addr,mgroup,sn,model,setdate,memo,active,tower_id,year,street,house,owner,passwd,passwd2,modtime,plimit,subscr,dn) values (?,?,?,?,?,?,?,?,?,?,?,?,?,\'$passwd1\',\'$passwd2\',now(),?,?,?) RETURNING id");
-				$ins->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{street},$ARGS{house},$ARGS{owner},$ARGS{plimit},$subscr,$ARGS{dn});
+				my $ins = $dbh->prepare("insert into counters (name,addr,mgroup,sn,model,setdate,memo,active,tower_id,year,street,house,owner,passwd,passwd2,modtime,plimit,subscr,dn,ktrans) values (?,?,?,?,?,?,?,?,?,?,?,?,?,\'$passwd1\',\'$passwd2\',now(),?,?,?,?) RETURNING id");
+				$ins->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{street},$ARGS{house},$ARGS{owner},$ARGS{plimit},$subscr,$ARGS{dn},$ARGS{ktrans});
 				my ($cid) = $ins->fetchrow_array;
 				# Начальные показания счетчика (на момент установки)
 				map { $_ =~ s/\,/\./; $_ =~ s/[^\d\.]//g; } ($ARGS{t1i}, $ARGS{t2i});
@@ -125,11 +128,11 @@ $(document).ready(function() {
 <td><input type="text" name="name" value="<%$ARGS{name} || (!$ARGS{submit} ? $Usr->{name} : "")%>" <% ($auth->{gid} >1) ? "disabled":"" %>></td>
 </tr>
 <tr>
-<td>Сетевой адрес:</td>
+<td><div style=color:<% $Err{addr} ? "red":"black"%>>Сетевой адрес:</div></td>
 <td><input type="text" name="addr" value="<%$ARGS{addr} || (!$ARGS{submit} ? $Usr->{addr} : "") %>" <% ($auth->{gid} >1) ? "disabled":"" %>></td>
 </tr>
 <tr>
-<td>Группа:</td>
+<td><div style=color:<% $Err{mgroup} ? "red":"black"%>>Группа:</div></td>
 <td><select name="mgroup" <% ($auth->{gid} >1) ? "disabled":"" %>>
 <option></option>
 %	foreach my $gid (sort {$List->{$a}->{name} cmp $List->{$b}->{name}} keys %$List) {
@@ -146,7 +149,7 @@ $(document).ready(function() {
 <td><input type="text" name="year" value="<%$ARGS{year} || (!$ARGS{submit} ? $Usr->{year} : "")%>" <% ($auth->{gid} >1) ? "disabled":"" %>></td>
 </tr>
 <tr>
-<td>Тип:</td>
+<td><div style=color:<% $Err{model} ? "red":"black"%>>Тип:</div></td>
 <td><select name="model" <% ($auth->{gid} >1) ? "disabled":"" %>>
 <option></option>
 %	foreach my $cid (sort {$Ctypes->{$a}->{name} cmp $Ctypes->{$b}->{name}} keys %$Ctypes) {
@@ -174,9 +177,13 @@ $(document).ready(function() {
 %if($ARGS{"add_new"}) {
 <tr>
 <td>Начальные показания:<br><small>(на дату установки)</small></td>
-<td><nobr><input type="text" name="t1i" value="<%$ARGS{t1i} || 0%>"><input type="text" name="t2i" value="<%$ARGS{t2i} || 0%>"></nobr></td>
+<td><nobr><input type="text" name="t1i" value="<%$ARGS{t1i} || 0%>" <% ($auth->{gid} >1) ? "disabled":"" %>><input type="text" name="t2i" value="<%$ARGS{t2i} || 0%>" <% ($auth->{gid} >1) ? "disabled":"" %>></nobr></td>
 </tr>
 %}
+<tr>
+<td>Коэффициент трансформации:</td>
+<td><input type="text" name="ktrans" value="<%$ARGS{ktrans} || (!$ARGS{ktrans} ? $Usr->{ktrans} : "1")%>" <% ($auth->{gid} >1) ? "disabled":"" %>></td>
+</tr>
 <tr>
 <td>Лимит мощности:</td>
 <td><input type="text" name="plimit" value="<%$ARGS{plimit} || (!$ARGS{plimit} ? $Usr->{plimit} : "")%>" <% ($auth->{gid} >1) ? "disabled":"" %>></td>
