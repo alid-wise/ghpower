@@ -77,7 +77,7 @@ if(!$p_id || ($p_init eq 2)) {	# первый платеж или инициал
 	$Usr->{flow2} = sprintf("%.02f", $Usr->{se2} - $Usr->{p_se2});
 	# Сумма "К оплате"
 
-	my $sth = $dbh->prepare("SELECT sum(exp1),sum(exp2),sum(amount) FROM daily WHERE cid=? AND date>?");
+	my $sth = $dbh->prepare("SELECT sum(exp1),sum(exp2),sum(amount) FROM daily WHERE cid=? AND date>=?");
 	$sth->execute($cid,$Usr->{p_date});
 	($Usr->{flow1},$Usr->{flow2},$Usr->{cost}) = $sth->fetchrow_array;
 	$sth->finish;
