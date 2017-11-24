@@ -73,8 +73,8 @@ if(!$p_id || ($p_init eq 2)) {	# первый платеж или инициал
 	$ARGS{t_mode} ||= $t_mode;
 
 } else {
-	$Usr->{flow1} = sprintf("%.02f", $Usr->{se1} - $Usr->{p_se1});
-	$Usr->{flow2} = sprintf("%.02f", $Usr->{se2} - $Usr->{p_se2});
+#	$Usr->{flow1} = sprintf("%.02f", $Usr->{se1} - $Usr->{p_se1});
+#	$Usr->{flow2} = sprintf("%.02f", $Usr->{se2} - $Usr->{p_se2});
 	# Сумма "К оплате"
 
 	my $sth = $dbh->prepare("SELECT sum(exp1),sum(exp2),sum(amount) FROM daily WHERE cid=? AND date>=?");
