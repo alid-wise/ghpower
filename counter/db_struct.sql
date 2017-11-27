@@ -380,6 +380,7 @@ CREATE TABLE feeds (
 	id character(32) NOT NULL,
 	auth integer,
 	name varchar,
+	outnum varchar, -- исходящий номер
 	posted timestamp without time zone,
 	subj character varying,
 	msg character varying,
@@ -442,3 +443,13 @@ CREATE INDEX b_pays_dn_i ON b_pays (dn);
 CREATE INDEX b_pays_credit_id_i ON b_pays (b_credit_id);
 
 
+-- Исходящие документы (генерация номеров)
+CREATE TABLE outnum (
+	id varchar NOT NULL,	-- номер документа
+	auth integer,
+	modtime timestamp without time zone DEFAULT now(),
+	docdate date,		-- дата документа
+	docto varchar,
+	subj varchar,
+	primary key (id)
+);

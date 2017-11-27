@@ -481,8 +481,53 @@ print STDERR Dumper $r;
   return($r);
 }
 
+# Получить следующий номер исходящего документа
+# Формат номера:
+# Целое число - слеш (/) - Две последние цифры года
+# Пример: 12345/17
+#
+sub get_next_outnum {
+  my $self = shift;
+  my ($auth, $date, $to, $subj) = @_;
+  $auth ||= 0;
+  my $ynum;
+  if($date =~ m/\d{2}(\d{2})-\d{2}-\d{2}/) {
+    $ynum = $1;
+  } else {
+    my $stamp = time();
+    my ($sec, $min, $hour, $mday, $mon, $year) = localtime( $stamp );
+    $date = sprintf("%.4d-%.2d-%.2d", $year+1900, $mon+1, $mday);
+    ($ynum) = (($date) =~ m/^\d{2}(\d{2})/);
+  }
 
-
+  # Последний существующий номер
+  my $sth = $self->{dbh}->prepare("SELECT id,auth,modtime,docdate,docto,subj FROM outnum WHERE id LIKE ? ORDER BY id DESC LIMIT 1");
+  $sth->execute('%/'.$ynum);
+  my ($r) = $sth->fetchrow_hashref;
+  $sth->finish;
+  my $dnum;
+  if($r->{id}) {  # генерим следующий номер
+    ($dnum) = (($r->{id}) =~ m|(\d+)/|);
+  }
+  $dnum++;
+  my $next_ountum = $dnum.'/'.$ynum;
+  my $ins = $self->{dbh}->prepare("INSERT INTO outnum (id,auth,modtime,docdate,docto,subj) VALUES (?,?,now(),?,?,?)");
+  $ins->execute($next_ountum,$auth,$date,$to,$subj);
+  return $next_ountum;
+}
+# Последний зарегистрированный исходящий номер
+sub get_last_outnum {
+  my $self = shift;
+  # Последний существующий номер
+  my $sth = $self->{dbh}->prepare("SELECT id,auth,modtime,docdate,docto,subj FROM outnum ORDER BY modtime DESC LIMIT 1");
+  $sth->execute();
+  my ($r) = $sth->fetchrow_hashref;
+  $sth->finish;
+  if($r->{id}) {
+    return $r;
+  }
+  return undef;
+}
 
 
 

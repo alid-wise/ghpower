@@ -50,8 +50,12 @@ elsif($ARGS{submit} && (length($ARGS{id_new}) == 32)) {	# Создать нов�
 		$sth->finish;
 		unless ($ex) { 	# защита от повторной записи
 			# Запись в базе
-			my $ins = $dbh->prepare("INSERT INTO feeds (id,auth,name,posted,subj,msg) VALUES (?,$auth->{id},?,now(),?,?)");
-			$ins->execute($ARGS{id_new},$ARGS{feed_name},$ARGS{subject},$ARGS{msg});
+			my $ins = $dbh->prepare("INSERT INTO feeds (id,auth,name,posted,subj,msg,outnum) VALUES (?,$auth->{id},?,now(),?,?,?)");
+			# Добавим исходящий номер
+			my $outnum = $m->comp("lib.msn:get_next_outnum", dbh => $dbh, auth => $auth->{id}, to => 'Рассылка', subj => $ARGS{subject});
+			$ARGS{msg} .= "\n\nИсх.N: $outnum\n";
+
+			$ins->execute($ARGS{id_new},$ARGS{feed_name},$ARGS{subject},$ARGS{msg},$outnum);
 			# Здесь сама рассылка сообщений
 sleep(10);
 #			my $cid = 81;	# только для этого счетчика (на время отладки)
@@ -99,7 +103,7 @@ sleep(10);
 	undef $id;
 
 }	# Показать список старых рассылок
-my $sth = $dbh->prepare("SELECT id,auth,name,posted,subj,msg,status FROM feeds ORDER BY posted DESC LIMIT 100");
+my $sth = $dbh->prepare("SELECT id,auth,name,posted,subj,msg,status,outnum FROM feeds ORDER BY posted DESC LIMIT 100");
 $sth->execute();
 my $List;
 while(my $r = $sth->fetchrow_hashref) {
@@ -202,6 +206,7 @@ $sth->finish;
 <thead>
 <tr>
 <th>N</th>
+<th>Исх.№</th>
 <th>Дата</th>
 <th>Название</th>
 <th>Тема</th>
@@ -213,7 +218,8 @@ $sth->finish;
 %my $i=1;
 %foreach my $row (@$List) {
 <tr>
-<td><%$i%></td>
+<td><% $i %></td>
+<td><% $row->{outnum} %></td>
 <td><a href="?id=<% $row->{id} %>"><% $m->comp("lib.msn:pretty_date", date=>$row->{posted}) %></a></td>
 <td><% $m->comp("lib.msn:ClipStr",str=>$row->{name}, len=>30) %></td>
 <td><% $m->comp("lib.msn:ClipStr",str=>$row->{subj}, len=>30) %></td>

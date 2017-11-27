@@ -545,3 +545,21 @@ return $value;
 	return GHPowerUtils::ClipStr($str,$len,$tail);
 </%init>
 </%method>
+
+
+<%method get_next_outnum>
+<%doc>
+	Получение следующего исходящего номера
+</%doc>
+<%args>
+	$dbh
+	$auth
+	$date => undef
+	$to => undef
+	$subj => undef
+</%args>
+<%init>
+	my $ghpower = GHPower->new($dbh);
+	return $ghpower->get_next_outnum($auth, $date, $to, $subj);
+</%init>
+</%method>
