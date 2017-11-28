@@ -59,9 +59,9 @@ elsif($ARGS{submit} && (length($ARGS{id_new}) == 32)) {	# Создать нов�
 			# Здесь сама рассылка сообщений
 sleep(10);
 #			my $cid = 81;	# только для этого счетчика (на время отладки)
-			$sth = $dbh->prepare("select id,dn from counters where active=1 and subscr=1 AND id in (81,19)");
+#			$sth = $dbh->prepare("select id,dn from counters where active=1 and subscr=1 AND id in (81,19)");
 
-#			$sth = $dbh->prepare("select id,dn from counters where active=1 and subscr=1");
+			$sth = $dbh->prepare("select id,dn from counters where active=1 and subscr=1");
 			my $log = $dbh->prepare("INSERT INTO feed_log (comp,auth,cid,dn,target,msg,status,err,posted,parts,cost) VALUES (?,?,?,?,?,?,?,?,now(),?,?)");
 			my $ghldap = new GHPowerLDAP;
 			my $ghpower = new GHPower($dbh);
