@@ -41,7 +41,7 @@ while(my $r = $sth->fetchrow_hashref) {
 $sth->finish;
 
 if($id) {
-	$sth = $dbh->prepare("select * from counters where id=?");
+	$sth = $dbh->prepare("select A.*,B.id AS balance_mgroup from counters A left outer join mgroup B on A.id=B.bid where A.id=?");
 	$sth->execute($id);
 	while(my $r = $sth->fetchrow_hashref) {
 		$Usr = $r;
@@ -52,13 +52,16 @@ if($id) {
 if($ARGS{submit} && $auth->{gid} eq 1) {
 	if($ARGS{delete} && $id) {	# удаление записи
 		$dbh->do("UPDATE counters SET active=-1 WHERE id=$id");
+		if($ARGS{balance_mgroup}) {
+			$dbh->do("UPDATE mgroup SET bid=0 WHERE bid=$id");
+		}
 		undef $id;
 		$OK++;
 	} else {
 		my $active = $ARGS{active}? 1:0;
 		my $subscr = $ARGS{subscr}? 1:0;
-		map { $ARGS{$_} =~ s/\D//g; $ARGS{$_} ||= 0 } ('addr','mgroup','sn','model','tower_id','year','ktrans');
-		map { $ARGS{$_} = 0 if($ARGS{$_} > 2000000000) } ('addr','mgroup','sn','model','tower_id','year','ktrans');
+		map { $ARGS{$_} =~ s/\D//g; $ARGS{$_} ||= 0 } ('addr','mgroup','sn','model','tower_id','year','ktrans','balance_mgroup');
+		map { $ARGS{$_} = 0 if($ARGS{$_} > 2000000000) } ('addr','mgroup','sn','model','tower_id','year','ktrans','balance_mgroup');
 		$ARGS{ktrans} ||= 1;
 		$ARGS{plimit} =~ s/\,/\./g;
 		$ARGS{plimit} =~ s/[^0-9\.]//g;
@@ -70,6 +73,7 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 		$ARGS{setdate} ||= sprintf("%4d-%02d-%02d",$year+1900,$mon+1,$mday);
 
 		unless(%Err) {
+			my $bal = $dbh->prepare("UPDATE mgroup SET bid=? WHERE id=?");
 			if($Usr) {	# Обновление
 				my $chg = ($active ne $Usr->{active})? 1:0;
 				$chg++	if($subscr ne $Usr->{subscr})? 1:0;
@@ -78,6 +82,17 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 					my $upd = $dbh->prepare("update counters set name=?,addr=?,mgroup=?,sn=?,model=?,setdate=?,memo=?,active=?,tower_id=?,year=?,street=?,house=?,owner=?,modtime=now(),plimit=?,subscr=?,dn=?,ktrans=? where id=?");
 					$upd->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{street},$ARGS{house},$ARGS{owner},$ARGS{plimit},$subscr,$ARGS{dn},$ARGS{ktrans},$id);
 				}
+				if($ARGS{balance_mgroup} && $Usr->{balance_mgroup} && ($ARGS{balance_mgroup} != $Usr->{balance_mgroup})) {
+					$dbh->do("UPDATE mgroup SET bid=null WHERE bid=$id");
+					$bal->execute($id,$ARGS{balance_mgroup});
+				}
+				elsif($ARGS{balance_mgroup} && !$Usr->{balance_mgroup}) {
+					$bal->execute($id,$ARGS{balance_mgroup});
+				}
+				elsif(!$ARGS{balance_mgroup} && $Usr->{balance_mgroup}) {
+					$dbh->do("UPDATE mgroup SET bid=null WHERE bid=$id");
+				}
+
 			} else {	# Новая запись
 				my ($passwd1,$passwd2) = ('','');
 				if($Ctypes->{$ARGS{model}}->{type} eq 'M230') { ($passwd1,$passwd2) = ('111111','222222'); }
@@ -88,6 +103,8 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 				map { $_ =~ s/\,/\./; $_ =~ s/[^\d\.]//g; } ($ARGS{t1i}, $ARGS{t2i});
 				$ins = $dbh->prepare("insert into daily (cid,date,se1,se2) values (?,?,?,?)");
 				$ins->execute($cid,$ARGS{setdate},$ARGS{t1i}, $ARGS{t2i});
+				# Для балансного счетчика
+				$bal->execute($cid, $ARGS{balance_mgroup})	if($ARGS{balance_mgroup});
 			}
 			undef $id;
 			undef $ARGS{"add_new"};
@@ -183,6 +200,15 @@ $(document).ready(function() {
 <tr>
 <td>Коэффициент трансформации:</td>
 <td><input type="text" name="ktrans" value="<%$ARGS{ktrans} || (!$ARGS{ktrans} ? $Usr->{ktrans} : "1")%>" <% ($auth->{gid} >1) ? "disabled":"" %>></td>
+</tr>
+<tr>
+<td>Баланс на луче:<br><small>(если это балансный счетчик;<br>кроме главного счетчика)</small></td>
+<td><select name="balance_mgroup" <% ($auth->{gid} >1) ? "disabled":"" %>>
+<option value="0"></option>
+%	foreach my $gid (sort {$List->{$a}->{name} cmp $List->{$b}->{name}} keys %$List) {
+<option value="<%$gid%>" <% ((!$ARGS{submit} ? $Usr->{balance_mgroup} : $ARGS{balance_mgroup}) eq $gid)? "selected":"" %>><%$List->{$gid}->{name}%></option>
+%	}
+</select></td>
 </tr>
 <tr>
 <td>Лимит мощности:</td>
