@@ -71,6 +71,8 @@ $| = 1;
 # 2017-02-05 Mercury203.pm & Mercury230.pm
 #
 
+use utf8;
+use open qw(:std :utf8);
 use lib "$ENV{MY}/lib";
 use Mercury203;
 use Mercury230;
