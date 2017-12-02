@@ -24,6 +24,16 @@ if($ARGS{submit}) {
 		map { $ARGS{$_} = undef; } ('outdate','docto','subject');
 	}
 }
+
+# Последние номера
+my $sth = $dbh->prepare("SELECT id, auth, modtime, docdate, docto, subj FROM outnum ORDER BY modtime DESC LIMIT 10");
+$sth->execute();
+my $List;
+while (my $r = $sth->fetchrow_hashref) {
+	push @$List, $r;
+}
+$sth->finish;
+
 </%init>
 <script src="calendar.js" type="text/javascript"></script>
 <div class="masthead">
@@ -34,10 +44,8 @@ if($ARGS{submit}) {
 <hr>
 <h1>&nbsp;</h1>
 %if($outnum_new) {	# Новый номер исходящего документа
-<p>Исходящий номер:<br>
-<b><% $outnum_new %></b><br>
-Дата:<br>
-<b><% $m->comp("lib.msn:pretty_date", date=>$outdate) %></b><br></p>
+<h2><nobr>Исходящий номер: <b><% $outnum_new %></b></nobr>><br>
+<nobr>Дата: <b><% $m->comp("lib.msn:pretty_date", date=>$outdate) %></b></nobr><br></h2>
 %}	# Форма генерации нового номера
 <form method="POST">
 <table id="form" name="form" border="1">
@@ -58,3 +66,17 @@ if($ARGS{submit}) {
 <td>&nbsp;<input type="submit" name="submit" class="btn btn-primary" value="Получить новый номер" onclick="window.sendform();"></td>
 </table>
 </form>
+
+<h2>Последние документы</h2>
+
+<table border="1" class="table-condensed" id="fullist">
+<tr><th>Номер</th><th>Дата</th><th>Адресат</th><th>Тема</th></tr>
+%foreach my $row (@$List) {
+<tr>
+<td><% $row->{id} %></td>
+<td><% $m->comp("lib.msn:pretty_date", date=>$row->{docdate}) %></td>
+<td><% $row->{docto} %></td>
+<td><% $row->{subj} %></td>
+</tr>	
+%}
+</table>
