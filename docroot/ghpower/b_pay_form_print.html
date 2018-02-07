@@ -1,0 +1,249 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF8"><title>Квитанция</title><style>body, td { color: #000; font-size: 12px; font-family: Arial, Tahoma; }</style></head><body>
+
+<!---/*
+Строка данных в QR-код:
+ST00012|Name=ООО "Три кита"|PersonalAcc=40702810138250123017|BankName=OAO "БAHК"|BIC=044525225|CorrespAcc=30101810400000000225|PayeelNN=6200098765|LastName=Иванов|FirstName=Иван|MiddleName=Иванович|Purpose=Оплата членского взноса|РауегАddress=г.Рязань ул.Ленина д.10
+кв.15|Sum=100000
+*/---!>
+
+
+<style type="text/css">
+  table.sbb td { color: #000000; font-size: 12px; font-family: Times New Roman, Arial, Tahoma; }
+  @media print {
+  	input {display: none; }
+  }
+</style>
+<table style="width: 180mm; height: 145mm;" class="sbb" border="0" cellpadding="0" cellspacing="0">
+    <tbody>
+        <tr valign="top">
+            <td style="border-right: medium none; border-width: 1pt medium medium 1pt; border-style: solid none none solid; border-color: rgb(0, 0, 0) -moz-use-text-color -moz-use-text-color rgb(0, 0, 0); width: 50mm; height: 70mm;" align="center"><strong>Извещение</strong><br><font style="FONT-SIZE: 53mm">&nbsp;<br></font><strong>Кассир</strong></td>
+            <td style="border-right: 1pt solid rgb(0, 0, 0); border-width: 1pt 1pt medium; border-style: solid solid none; border-color: rgb(0, 0, 0) rgb(0, 0, 0) -moz-use-text-color;" align="center">
+            <table style="margin-top: 3pt; width: 122mm;" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                    <tr>
+                        <td align="right"><small><em>Форма № ПД-4</em></small></td>
+                    </tr>
+                    <tr>
+                        <td style="border-bottom: 1pt solid rgb(0, 0, 0); font-size:10px;"><p><strong>{ORGANIZATION}</strong></p></td>
+                    </tr>
+                    <tr>
+                        <td align="center"><small>(наименование получателя платежа)</small></td>
+                    </tr>
+                </tbody>
+            </table>
+            <table style="margin-top: 3pt; width: 122mm;" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                    <tr>
+                        <td style="width: 37mm; border-bottom: 1pt solid rgb(0, 0, 0);">{INN}</td>
+                        <td style="width: 9mm;">&nbsp;</td>
+                        <td style="border-bottom: 1pt solid rgb(0, 0, 0);">{ACCOUNT_NO}</td>
+                    </tr>
+                    <tr>
+                        <td align="center"><small>(ИНН получателя платежа)</small></td>
+                        <td><small>&nbsp;</small></td>
+                        <td align="center"><small>(номер счета получателя платежа)</small></td>
+                    </tr>
+                </tbody>
+            </table>
+            <table style="margin-top: 3pt; width: 122mm;" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                    <tr>
+                        <td>в&nbsp;</td>
+                        <td style="width: 73mm; border-bottom: 1pt solid rgb(0, 0, 0);">{BANK_NAME}</td>
+                        <td align="right">БИК&nbsp;&nbsp;</td>
+                        <td style="width: 33mm; border-bottom: 1pt solid rgb(0, 0, 0);">{BIK}</td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp;</td>
+                        <td align="center"><small>(наименование банка получателя платежа)</small></td>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                    </tr>
+                </tbody>
+            </table>
+            <table style="margin-top: 3pt; width: 122mm;" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                    <tr>
+                        <td nowrap="nowrap" width="1%">Номер кор./сч. банка получателя платежа&nbsp;&nbsp;</td>
+                        <td style="border-bottom: 1pt solid rgb(0, 0, 0);" width="100%">{CORR}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <table style="margin-top: 3pt; width: 122mm;" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                    <tr>
+                        <td style="width: 60mm; border-bottom: 1pt solid rgb(0, 0, 0);">{PAY_NAME}</td>
+                        <td style="width: 2mm;">&nbsp;</td>
+                    </tr>
+                    <tr>
+                        <td align="center"><small>(наименование платежа)</small></td>
+                        <td><small>&nbsp;</small></td>
+                    </tr>
+                </tbody>
+            </table>
+            <table style="margin-top: 3pt; width: 122mm;" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                    <tr>
+                        <td nowrap="nowrap" width="1%">Ф.И.О. плательщика&nbsp;&nbsp;</td>
+                        <td style="border-bottom: 1pt solid rgb(0, 0, 0);" width="100%">{PAYER_NAME}&nbsp;</td>
+                    </tr>
+                </tbody>
+            </table>
+            <table style="margin-top: 3pt; width: 122mm;" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                    <tr>
+                        <td nowrap="nowrap" width="1%">Адрес плательщика&nbsp;&nbsp;</td>
+                        <td style="border-bottom: 1pt solid rgb(0, 0, 0);" width="100%">{PAYER_ADDR}&nbsp;</td>
+                    </tr>
+                </tbody>
+            </table>
+            <table style="margin-top: 3pt; width: 122mm;" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                    <tr>
+                        <td>Сумма платежа&nbsp;&nbsp;__&nbsp;{AMOUNT}&nbsp;руб.&nbsp;00 коп.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <table style="margin-top: 3pt; width: 122mm;" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                    <tr>
+                        <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                        <td align="right">&nbsp;&nbsp;«______»________________ 201____ г.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <table style="margin-top: 3pt; width: 122mm;" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                    <tr>
+                        <td><small>С условиями приема указанной в платежном документе суммы, в т.ч. с суммой взимаемой платы за услуги банка, ознакомлен и согласен.</small></td>
+                    </tr>
+                </tbody>
+            </table>
+            <table style="margin-top: 3pt; width: 122mm;" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                    <tr>
+                        <td align="right"><strong>Подпись плательщика _____________________</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+            </td>
+        </tr>
+        <tr valign="top">
+            <td style="border-right: medium none; border-width: 1pt medium 1pt 1pt; border-style: solid none solid solid; border-color: rgb(0, 0, 0) -moz-use-text-color rgb(0, 0, 0) rgb(0, 0, 0); width: 50mm; height: 70mm;" align="center"><font style="FONT-SIZE: 50mm">&nbsp;<br></font><strong>Квитанция</strong><br><font style="FONT-SIZE: 8pt">&nbsp;<br></font><strong>Кассир</strong></td>
+            <td style="border-right: 1pt solid rgb(0, 0, 0); border-width: 1pt; border-style: solid; border-color: rgb(0, 0, 0);" align="center">
+            <table style="margin-top: 3pt; width: 122mm;" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                    <tr>
+                        <td align="right"><small><em>Форма № ПД-4</em></small></td>
+                    </tr>
+                    <tr>
+                        <td style="border-bottom: 1pt solid rgb(0, 0, 0); font-size:10px;"><p><strong>{ORGANIZATION}</strong></p></td>
+                    </tr>
+                    <tr>
+                        <td align="center"><small>(наименование получателя платежа)</small></td>
+                    </tr>
+                </tbody>
+            </table>
+            <table style="margin-top: 3pt; width: 122mm;" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                    <tr>
+                        <td style="width: 37mm; border-bottom: 1pt solid rgb(0, 0, 0);">{INN}</td>
+                        <td style="width: 9mm;">&nbsp;</td>
+                        <td style="border-bottom: 1pt solid rgb(0, 0, 0);">{ACCOUNT_NO}</td>
+                    </tr>
+                    <tr>
+                        <td align="center"><small>(ИНН получателя платежа)</small></td>
+                        <td><small>&nbsp;</small></td>
+                        <td align="center"><small>(номер счета получателя платежа)</small></td>
+                    </tr>
+                </tbody>
+            </table>
+            <table style="margin-top: 3pt; width: 122mm;" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                    <tr>
+                        <td>в&nbsp;</td>
+                        <td style="width: 73mm; border-bottom: 1pt solid rgb(0, 0, 0);">{BANK_NAME}</td>
+                        <td align="right">БИК&nbsp;&nbsp;</td>
+                        <td style="width: 33mm; border-bottom: 1pt solid rgb(0, 0, 0);">{BIK}</td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp;</td>
+                        <td align="center"><small>(наименование банка получателя платежа)</small></td>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                    </tr>
+                </tbody>
+            </table>
+            <table style="margin-top: 3pt; width: 122mm;" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                    <tr>
+                        <td nowrap="nowrap" width="1%">Номер кор./сч. банка получателя платежа&nbsp;&nbsp;</td>
+                        <td style="border-bottom: 1pt solid rgb(0, 0, 0);" width="100%">{CORR}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <table style="margin-top: 3pt; width: 122mm;" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                    <tr>
+                        <td style="width: 60mm; border-bottom: 1pt solid rgb(0, 0, 0);">{PAY_NAME}</td>
+                        <td style="width: 2mm;">&nbsp;</td>
+                    </tr>
+                    <tr>
+                        <td align="center"><small>(наименование платежа)</small></td>
+                        <td><small>&nbsp;</small></td>
+                    </tr>
+                </tbody>
+            </table>
+            <table style="margin-top: 3pt; width: 122mm;" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                    <tr>
+                        <td nowrap="nowrap" width="1%">Ф.И.О. плательщика&nbsp;&nbsp;</td>
+                        <td style="border-bottom: 1pt solid rgb(0, 0, 0);" width="100%">{PAYER_NAME}&nbsp;</td>
+                    </tr>
+                </tbody>
+            </table>
+            <table style="margin-top: 3pt; width: 122mm;" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                    <tr>
+                        <td nowrap="nowrap" width="1%">Адрес плательщика&nbsp;&nbsp;</td>
+                        <td style="border-bottom: 1pt solid rgb(0, 0, 0);" width="100%">{PAYER_ADDR}&nbsp;</td>
+                    </tr>
+                </tbody>
+            </table>
+            <table style="margin-top: 3pt; width: 122mm;" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                    <tr>
+                        <td>Сумма платежа&nbsp;&nbsp;__&nbsp;{AMOUNT}&nbsp;руб.&nbsp;00 коп.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <table style="margin-top: 3pt; width: 122mm;" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                    <tr>
+                        <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                        <td align="right">&nbsp;&nbsp;«______»________________ 201____ г.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <table style="margin-top: 3pt; width: 122mm;" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                    <tr>
+                        <td><small>С условиями приема указанной в 
+платежном документе суммы, в т.ч. с суммой взимаемой платы за услуги 
+банка, ознакомлен и согласен.</small></td>
+                    </tr>
+                </tbody>
+            </table>
+            <table style="margin-top: 3pt; width: 122mm;" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                    <tr>
+                        <td align="right"><strong>Подпись плательщика _____________________</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+</body></html>
