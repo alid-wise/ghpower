@@ -235,6 +235,33 @@ $('#PayModal').on('show.bs.modal', function (event) {
 </script>
 
 
+%# Модальное окно печати квитанции
+<div id="PrintModal" class="modal fade" tabindex="-1">
+	<div class="modal-dialog modal-lg">
+		<div class="modal-content">
+%#			<div class="modal-header"><button id="mclose" class="close" type="button" data-dismiss="modal">×</button>
+%#				<h4 class="modal-title">&nbsp;</h4>
+%#			</div>
+			<div class="modal-body">
+				<div class="embed-responsive embed-responsive-16by9">
+					<iframe></iframe>
+				</div>
+			</div>
+			<div class="modal-footer">
+			<button class="btn btn-default" type="button" data-dismiss="modal">закрыть</button>
+			<button class="btn btn-primary" type="submit" onclick="window.print();">Печатать</button>
+			</div>
+		</div>
+	</div>
+</div>
+<script language="javascript">
+$('#PrintModal').on('show.bs.modal', function (event) { 
+	var pay = $(event.relatedTarget);
+	var payid = pay.data('content');
+	var src = 'b_pay_form_print.html?'+payid+'=';
+	$(this).find('iframe').attr("src", src);
+});
+</script>
 
 
 <div class="masthead">
@@ -271,8 +298,9 @@ SSStype="submit" name="add_fee" value="+" title="добавить индивид
 <td align="right"><% $m->comp("lib.msn:pretty", value=>$cred->{p_amount}) %></td>
 <td align="right"><div <%$mark%>><% $m->comp("lib.msn:pretty", value=>$cred->{debt}) %></div></td>
 <td><% $cred->{memo} %></td>
-<td><% $cred->{debt} ? "<input type=\"button\" class=\"btn btn-primary btn-xs\" data-content=\"padd_$cred->{id}\" data-backdrop=\"true\" data-toggle=\"modal\" data-target=\"#PayModal\" value=\"платеж\" title=\"добавить платеж\">":""%>
- </td>
+<td><% $cred->{debt} ? "<input type=\"button\" class=\"btn btn-primary btn-xs\" data-content=\"padd_$cred->{id}\" data-backdrop=\"true\" data-toggle=\"modal\" data-target=\"#PayModal\" value=\"платеж\" title=\"добавить платеж\">
+
+<input type=\"button\" class=\"btn btn-primary btn-xs\" data-content=\"print_$cred->{id}\" data-backdrop=\"true\" data-toggle=\"modal\" data-target=\"#PrintModal\" value=\"квит\" title=\"напечатать квитанцию\">":""%></td>
 </tr>
 %$n++;}
 </table>
