@@ -44,7 +44,7 @@ $sth->finish;
 <hr>
 <h1>&nbsp;</h1>
 %if($outnum_new) {	# Новый номер исходящего документа
-<h2><nobr>Исходящий номер: <b><% $outnum_new %></b></nobr>><br>
+<h2><nobr>Исходящий номер: <b><% $outnum_new %></b></nobr><br>
 <nobr>Дата: <b><% $m->comp("lib.msn:pretty_date", date=>$outdate) %></b></nobr><br></h2>
 %}	# Форма генерации нового номера
 <form method="POST">
