@@ -9,6 +9,8 @@ if($auth->{gid} ne '1' && $auth->{gid} ne '2') {    # admin или manager
     $m->clear_buffer;
     $m->abort(404);
 }
+use Imager::QRCode qw(plot_qrcode);
+use MIME::Base64;
 
 # Ищем кнопку печати квитанции
 foreach(keys %ARGS) {
@@ -40,12 +42,19 @@ my ($plname,$pfname,$pmname) = split(/\s/,$PAYER_NAME);
 
 #Строка данных в QR-код:
 my $qrstr = "ST00012|Name=$ORGANIZATION|PersonalAcc=$ACCOUNT_NO|BankName=$BANK_NAME|BIC=$BIK|CorrespAcc=$CORR|PayeeINN=$INN|LastName=$plname|FirstName=$pfname|MiddleName=$pmname|Purpose=$PAY_NAME|РауегАddress=$PAYER_ADDR|Sum=$AMOUNT";
+my $img = plot_qrcode($qrstr);
+my $data;
+$img->write(data=>\$data,type=>"png");
+my $qr = encode_base64($data);
+
+
 
 #use Data::Dumper;
 </%init>
 %#<pre>
 %#<%Dumper %ARGS%>
 %#</pre>
+<%$qrstr%>
 
 <script language="javascript">
 $(document).ready(function() { window.print(); });
@@ -57,7 +66,7 @@ $(document).ready(function() { window.print(); });
     TD { font-family: Verdana, Arial, Helvetica; font-size:12pt; border-width:0px; empty-cells:hide; padding:0px; outline:0px solid white; }
     TH { font-family: Verdana, Arial, Helvetica; font-size:12pt; border-width:0px; empty-cells:hide; padding:0px; outline:0px solid white; background-color: white;}
 
-    table.sbb td { color: #000000; font-size: 12px; font-family: Times New Roman, Arial, Tahoma; }
+    table.sbb td { color: #000000; font-size: 14px; font-family: Times New Roman, Arial, Tahoma; }
     @media print {
         input {display: none; }
     }
@@ -65,7 +74,14 @@ $(document).ready(function() { window.print(); });
 <table style="width: 180mm; height: 145mm;" class="sbb" border="0" cellpadding="0" cellspacing="0">
     <tbody>
         <tr valign="top">
-            <td style="border-right: medium none; border-width: 1pt medium medium 1pt; border-style: solid none none solid; border-color: rgb(0, 0, 0) -moz-use-text-color -moz-use-text-color rgb(0, 0, 0); width: 50mm; height: 70mm;" align="center"><strong>Извещение</strong><br><font style="FONT-SIZE: 53mm">&nbsp;<br></font><strong>Кассир</strong></td>
+            <td style="border-right: medium none; border-width: 1pt medium medium 1pt; border-style: solid none none solid; border-color: rgb(0, 0, 0) -moz-use-text-color -moz-use-text-color rgb(0, 0, 0); width: 50mm; height: 70mm;" align="center"><strong>Извещение</strong><br>
+
+
+<img src="data:image/png;base64,<%$qr%>" width="100%" alt="QR-код"/>
+
+
+
+            <font style="FONT-SIZE: 23mm">&nbsp;<br></font><strong>Кассир</strong></td>
             <td style="border-right: 1pt solid rgb(0, 0, 0); border-width: 1pt 1pt medium; border-style: solid solid none; border-color: rgb(0, 0, 0) rgb(0, 0, 0) -moz-use-text-color;" align="center">
             <table style="margin-top: 3pt; width: 122mm;" border="0" cellpadding="0" cellspacing="0">
                 <tbody>
