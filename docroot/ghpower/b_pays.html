@@ -117,6 +117,10 @@ if($dn) {	# Имеем дело с одним конкретным юзером
 				$upd->execute($debt,$id);
 				$dbh->commit;
 				$OK++;
+				# 2018-02-11
+				# Триггер рассылки
+				my $trigger = $ENV{MY}.'/tmp/ghpower.feed2.trigger';
+				system("touch $trigger && chmod 666 $trigger");
 			}
 		}
 	}

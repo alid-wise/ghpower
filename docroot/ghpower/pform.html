@@ -165,6 +165,11 @@ if($ARGS{submit}) {
 			$upd->execute($amount,$Usr->{balance}->{id});
 			$ins->execute($auth->{id},$cid,$Today->{today},$Usr->{p_se1},$Usr->{p_se2},$Usr->{se1},$Usr->{se2},$amount,$Usr->{cost},$Usr->{balance}->{id},0,$ctm, $t_mode, $memo);
 			$dbh->commit;
+			# 2018-02-11
+			# Триггер рассылки
+			my $trigger = $ENV{MY}.'/tmp/ghpower.feed.trigger';
+			system("touch $trigger && chmod 666 $trigger");
+
 			$m->out('<script type="text/javascript">parent.location.href = parent.location.href;</script>');
 			$m->out('<script type="text/javascript">parent.location.reload();</script>');
 			return;

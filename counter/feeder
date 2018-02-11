@@ -92,6 +92,16 @@ my $sms = exists $opts{s};
 my $pgport = 5432;
 my $database = $opts{D} || 'ghpower';
 my $cid = $opts{c} || 0;	# только для этого счетчика
+my $trigger = $opts{t};		# проверять триггер
+# 2018-02-11
+if($trigger) {	# Запуск по триггеру
+	unless(-e $trigger) {	# триггер не установлен
+		print "Trigger not set: $trigger\n"	if($verb);
+		exit(0);
+	}
+	unlink $trigger;
+}
+
 
 # Шаблон сообщения
 my $SUBJ = '"Зеленая горка": показания счетчика';
