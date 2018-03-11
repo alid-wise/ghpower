@@ -253,7 +253,7 @@ $('#PayModal').on('show.bs.modal', function (event) {
 			</div>
 			<div class="modal-footer">
 			<button class="btn btn-default" type="button" data-dismiss="modal">закрыть</button>
-			<button class="btn btn-primary" type="submit" onclick="window.print();">Печатать</button>
+%#			<button class="btn btn-primary" type="submit" onclick="window.print();">Печатать</button>
 			</div>
 		</div>
 	</div>
@@ -264,6 +264,7 @@ $('#PrintModal').on('show.bs.modal', function (event) {
 	var payid = pay.data('content');
 	var src = 'b_pay_form_print.html?'+payid+'=';
 	$(this).find('iframe').attr("src", src);
+	$(this).close();
 });
 </script>
 
@@ -304,7 +305,7 @@ SSStype="submit" name="add_fee" value="+" title="добавить индивид
 <td><% $cred->{memo} %></td>
 <td><% $cred->{debt} ? "<input type=\"button\" class=\"btn btn-primary btn-xs\" data-content=\"padd_$cred->{id}\" data-backdrop=\"true\" data-toggle=\"modal\" data-target=\"#PayModal\" value=\"платеж\" title=\"добавить платеж\">
 
-<input type=\"button\" class=\"btn btn-primary btn-xs\" data-content=\"print_$cred->{id}\" data-backdrop=\"true\" data-toggle=\"modal\" data-target=\"#PrintModal\" value=\"квит\" title=\"напечатать квитанцию\">":""%></td>
+<input type=\"button\" class=\"btn btn-primary btn-xs\" data-content=\"print:$cred->{id}\" data-backdrop=\"true\" data-toggle=\"modal\" data-target=\"#PrintModal\" value=\"квит\" title=\"напечатать квитанцию\">":""%></td>
 </tr>
 %$n++;}
 </table>

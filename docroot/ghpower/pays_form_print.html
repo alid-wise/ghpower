@@ -1,7 +1,7 @@
 <%args>
     $dbh
     $auth
-    $id => 0    # в таблице b_credit
+    $cid => 0    # в таблице counters
 </%args>
 <%init>
 if($auth->{gid} ne '1' && $auth->{gid} ne '2') {    # admin или manager
@@ -9,16 +9,19 @@ if($auth->{gid} ne '1' && $auth->{gid} ne '2') {    # admin или manager
     $m->clear_buffer;
     $m->abort(404);
 }
+my $PAY_NAME = 'Оплата электроэнергии';
+my $AMOUNT;
 # Ищем кнопку печати квитанции
 foreach(keys %ARGS) {
-    if(m/^print:(\d+)$/) {
-        $id = $1;
+    if(m/^print:(\d+),sum:([\d\,]+)$/) {
+        $cid = $1;
+        $AMOUNT = $2;
         last;
     }
 }
-my $sth = $dbh->prepare("SELECT A.dn,A.debt,B.name FROM b_credit A INNER JOIN b_tariff B ON A.b_tariff_id=B.id WHERE A.id=?");
-$sth->execute($id);
-my ($dn,$AMOUNT,$PAY_NAME) = $sth->fetchrow_array;
+my $sth = $dbh->prepare("SELECT A.dn FROM counters A WHERE A.id=?");
+$sth->execute($cid);
+my ($dn) = $sth->fetchrow_array;
 $sth->finish;
 
 </%init>
