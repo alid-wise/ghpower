@@ -501,7 +501,7 @@ sub get_next_outnum {
   }
 
   # Последний существующий номер
-  my $sth = $self->{dbh}->prepare("SELECT id,auth,modtime,docdate,docto,subj FROM outnum WHERE id LIKE ? ORDER BY id DESC LIMIT 1");
+  my $sth = $self->{dbh}->prepare("SELECT id,auth,modtime,docdate,docto,subj FROM outnum WHERE id LIKE ? ORDER BY modtime DESC LIMIT 1");
   $sth->execute('%/'.$ynum);
   my ($r) = $sth->fetchrow_hashref;
   $sth->finish;
