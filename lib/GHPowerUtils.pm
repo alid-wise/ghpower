@@ -9,6 +9,7 @@ use POSIX;
 use Carp;
 use Time::Local;
 use Exporter;
+use JSON;
 @ISA = ('Exporter');
 @EXPORT = qw(&SendMail &SendMailCharset &Time &UTime &Now);
 
@@ -32,6 +33,15 @@ sub SendMail_ {
         close(XMAIL);
 }
 
+# Сообщение - в очередь
+sub SendMail_queue {
+        my ($dbh, $from, $to, $subj, $body, $opts) = @_;
+        my $opts2 = to_json($opts);
+        my $ins = $dbh->prepare("INSERT INTO feeds_queue (\"from\",\"to\",subj,body,opts) VALUES (?,?,?,?,?)");
+        $ins->execute($from, $to, $subj, $body, $opts2);
+        $dbh->commit  unless($dbh->{AutoCommit});
+}
+
 sub SendMail {
         my ($from, $to, $subj, $body, %opts) = @_;
 
@@ -50,9 +60,6 @@ sub SendMail {
         print XMAIL "MIME-Version: 1.0\nContent-Type: $ctype;charset=\"$charset\"\nSubject: $subj\nFrom: $from\nTo: $to\n$xheaders\n$body";
         close(XMAIL);
 }
-
-
-
 
 sub Time {
         my ($tm) = @_;

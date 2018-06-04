@@ -82,7 +82,8 @@ elsif($ARGS{submit} && (length($ARGS{id_new}) == 32)) {	# Создать нов�
 				# Есть куда слать :)
 				if(@emails) {
 					# вот тут письмо и отправим
-					SendMail("GHPower",join(",",@emails),$ARGS{subject},$ARGS{msg},{charset=>'utf8'});
+					GHPowerUtils::SendMail_queue($dbh,"GHPower",join(",",@emails),$ARGS{subject},$ARGS{msg},{charset=>'utf8'});
+#					SendMail("GHPower",join(",",@emails),$ARGS{subject},$ARGS{msg},{charset=>'utf8'});
 				} else {
 					# Не удалось найти адреса
 					# Сообщение об ошибке - в лог

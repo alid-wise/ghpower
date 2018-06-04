@@ -390,7 +390,17 @@ CREATE TABLE feeds (
 );
 CREATE INDEX feeds_posted_i ON feeds (posted);
 
-
+-- очередь сообщений
+CREATE TABLE feeds_queue (
+	id serial NOT NULL,
+	"from" varchar,
+	"to" varchar,
+	subj varchar,
+	opts varchar,
+	body text,
+	modtime timestamp without time zone DEFAULT now(),
+	primary key (id)
+);
 
 
 ------------------------------------------------

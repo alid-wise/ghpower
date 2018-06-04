@@ -96,7 +96,7 @@ if($trigger) {	# Запуск по триггеру
 	unlink $trigger;
 }
 # 2018-05-16 Возможность задержки отправки очередного сообщения (если есть ограничения у используемого почтового сервера)
-my $delay = $opts{L} || 0;
+#my $delay = $opts{L} || 0;
 
 # Шаблон сообщения
 my $SUBJ = '"Зеленая горка": членские взносы';
@@ -182,8 +182,9 @@ foreach my $street (keys %$List) {
 				print "Body: $body\n";
 				print "In fact a message was not sent (verbose mode).\n";
 			} else {	# вот тут письмо и отправим
-				SendMail("GHPower",join(",",@emails),$subj,$body,{charset=>'utf8'});
-				sleep($delay);
+				GHPowerUtils::SendMail_queue($dbh,"GHPower",join(",",@emails),$subj,$body,{charset=>'utf8'});
+#				SendMail("GHPower",join(",",@emails),$subj,$body,{charset=>'utf8'});
+#				sleep($delay);
 			}
 		} else {
 			# Не удалось найти адреса
