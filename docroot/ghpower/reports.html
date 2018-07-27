@@ -40,9 +40,68 @@ if($id == 1) {
 	
 } # id=1
 
+elsif($id == 2) {
+	$report_name = 'Полный список участков';
+	@fields = ('Проезд','Участок','Площадь','Владелец','E-mail','Телефон','Доверенное лицо','E-mail','Телефон');
 
+	my $ghpower = GHPower->new($dbh);
+	my $List = $ghpower->Domains_Struct;
+	foreach my $street (sort keys %$List) {
+		my $Dom = $List->{$street}->{Dom};
+		foreach my $house (sort {$a <=> $b} keys %{$Dom}) {
+			my $P = $Dom->{$house};
 
+			my @A = ({class=>'text-info',data=>$street},
+				{class=>'text-right',data=>$house},
+				{class=>'text-right',data=>$P->{x121address}[0]},
+			);
+			my (@name,@email,@phone);
+			foreach my $owner (@{$P->{owners}}) {
+				next unless($owner->{cn}[0]);
+				push @name, '<nobr>'.$owner->{cn}[0].'</nobr>';
+				foreach my $email (@{$owner->{mail}}) {
+					push @email, $email;
+				}
+				foreach my $mobile (@{$owner->{mobile}}) {
+					push @phone, $mobile;
+				}
+			}
+			push @A, {(data => join("<BR>", @name))};
+			push @A, {(data => join(",", @email))};
+			push @A, {(data => join(",", @phone))};
+
+			(@name,@email,@phone) = ((),(),());
+
+			foreach my $manager (@{$P->{managers}}) {
+				next unless($manager->{cn}[0]);
+
+				push @name, '<nobr>'.$manager->{cn}[0].'</nobr>';
+				foreach my $email (@{$manager->{mail}}) {
+					push @email, $email;
+				}
+				foreach my $mobile (@{$manager->{mobile}}) {
+					push @phone, $mobile;
+				}
+			}
+#			push @A, {(data => 'SIZE: '.scalar @name)};
+			push @A, {(data => join("-", @name))};
+			push @A, {(data => join(",", @email))};
+			push @A, {(data => join(",", @phone))};
+
+			push @$Data, \@A;
+		}
+	}
+	
+} # id=2
+
+use Data::Dumper;
 </%init>
+%#<pre>
+%#	<% Dumper $Data %>
+%#</pre>pre>
+%#<%doc>
+
+
 <div class="masthead">
 	<ul class="nav nav-pills pull-left">
 		<li class="active"><a href="/">Home</a></li>
@@ -82,7 +141,11 @@ if($id == 1) {
 %} else {
 <div class="row">
 <ul>
+<li><a href="?id=2">Полный список участков</a></li>
 <li><a href="?id=1">Членские взносы</a></li>
 </ul>
 </div>
 %}
+
+
+%#</%doc>
