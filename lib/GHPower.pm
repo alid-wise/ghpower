@@ -72,12 +72,15 @@ sub mExpenses {
       $ret->{$r->{year}}->{$r->{month}} = $r;
     }
   } else {  # Полный список
-    $sth = $self->{dbh}->prepare("select id,cid,year,month,exp1,exp2,modtime FROM mexpenses WHERE year=? AND month=?");
-    my ($year,$mon) = ($ymon =~ m/(\d{4})\-(\d{2})/);
+#    $sth = $self->{dbh}->prepare("select id,cid,year,month,exp1,exp2,modtime FROM mexpenses WHERE year=? AND month=?");
+    $sth = $self->{dbh}->prepare("select A.id,A.cid,year,month,A.exp1,A.exp2,A.modtime,D.se1,D.se2,D.id AS did FROM mexpenses A inner join daily D ON A.cid=D.cid WHERE A.year=? AND A.month=? AND D.date=?");
 
-    $sth->execute($year,$mon);
+    my ($year,$mon) = ($ymon =~ m/(\d{4})\-(\d{2})/);
+    my $edate = sprintf("%4d-%02d-01", $year, $mon);
+
+    $sth->execute($year,$mon,$edate);
     while(my $r = $sth->fetchrow_hashref) {
-      map { $_=sprintf("%0.2f", $_); s/\./,/; } ($r->{exp1}, $r->{exp2});
+      map { $_=sprintf("%0.2f", $_); s/\./,/; } ($r->{exp1}, $r->{exp2}, $r->{se1}, $r->{se2});
       $r->{month} = sprintf("%02d",$r->{month});
       $ret->{$r->{cid}} = $r;
     }

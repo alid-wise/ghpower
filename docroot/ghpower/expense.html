@@ -85,6 +85,8 @@ if($id) {
 <td><% $month %></td>
 <td align="right"><% $MExpenses->{$year}->{$month}->{exp1} %></td>
 <td align="right"><% $MExpenses->{$year}->{$month}->{exp2} %></td>
+<td align="right"><% $MExpenses->{$year}->{$month}->{se1} %></td>
+<td align="right"><% $MExpenses->{$year}->{$month}->{se2} %></td>
 </tr>
 %	}
 %}
@@ -150,7 +152,7 @@ if($id) {
 <input type="submit" name="sel" value="Выбрать">
 </form>
 
-<h4>Расход электроэнергии за месяц</h4>
+<h4>Расход электроэнергии за месяц и показания счетчика на 1-е число месяца</h4>
 <table border="1">
 %foreach my $mgid (sort {$List->{$a}->{rank} <=> $List->{$b}->{rank}} keys %$List) {
 %	next if $filter &&  !($mgid == $filter);
@@ -158,7 +160,7 @@ if($id) {
 <tr>
 <td><input type="checkbox" name="mgid_<%$mgid%>" <% ($ARGS{"mgid_".$mgid} || $List->{mgid}->{active}) ? "checked":""%> disabled></td>
 <td><b><% $List->{$mgid}->{name}%></b></td>
-<td colspan="4"><% $List->{$mgid}->{memo}%></td>
+<td colspan="5"><% $List->{$mgid}->{memo}%></td>
 </tr>
 %	my $i=1; my $total=0; my ($dsum,$nsum) = (0,0);
 %	foreach my $item (sort { $a->{street_name} cmp $b->{street_name} || $a->{domain} <=> $b->{domain} || $a->{name} <=> $b->{name}} @{$List->{$mgid}->{items}}) {
@@ -190,6 +192,8 @@ if($id) {
 <td><% join ",", @owners %></td>
 <td align="right"><%$MExpenses->{$item->{id}}->{exp1}%></td>
 <td align="right"><%$MExpenses->{$item->{id}}->{exp2}%></td>
+<td align="right"><%$MExpenses->{$item->{id}}->{se1}%></td>
+<td align="right"><%$MExpenses->{$item->{id}}->{se2}%></td>
 
 </tr>
 %	$i++;
