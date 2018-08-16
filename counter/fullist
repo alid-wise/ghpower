@@ -1,0 +1,174 @@
+#!/usr/local/bin/perl
+
+#
+#       Copyright (C) 2008-2012 Александр Девяткин, "Зелёная горка"
+#
+#       Разрешается повторное распространение и использование как в виде исходного
+#       кода, так и в двоичной форме, с изменениями или без, при соблюдении следующих
+#       условий:
+#
+#       * При повторном распространении исходного кода должно оставаться указанное
+#         выше уведомление об авторском праве, этот список условий и последующий
+#         отказ от гарантий.
+#       * При повторном распространении двоичного кода должна сохраняться указанная
+#         выше информация об авторском праве, этот список условий и последующий отказ
+#         от гарантий в документации и/или в других материалах, поставляемых при
+#         распространении.
+#       * Ни название "Зелёная горка", ни имена ее сотрудников не могут быть
+#         использованы в качестве поддержки или продвижения продуктов, основанных
+#         на этом ПО без предварительного письменного разрешения.
+#
+#       ЭТА ПРОГРАММА ПРЕДОСТАВЛЕНА ВЛАДЕЛЬЦАМИ АВТОРСКИХ ПРАВ И/ИЛИ ДРУГИМИ СТОРОНАМИ
+#	"КАК ОНА ЕСТЬ" БЕЗ КАКОГО-ЛИБО ВИДА ГАРАНТИЙ, ВЫРАЖЕННЫХ ЯВНО ИЛИ ПОДРАЗУМЕВАЕМЫХ,
+#	ВКЛЮЧАЯ, НО НЕ ОГРАНИЧИВАЯСЬ ИМИ, ПОДРАЗУМЕВАЕМЫЕ ГАРАНТИИ КОММЕРЧЕСКОЙ ЦЕННОСТИ
+#	И ПРИГОДНОСТИ ДЛЯ КОНКРЕТНОЙ ЦЕЛИ. НИ В КОЕМ СЛУЧАЕ, ЕСЛИ НЕ ТРЕБУЕТСЯ
+#	СООТВЕТСТВУЮЩИМ ЗАКОНОМ, ИЛИ НЕ УСТАНОВЛЕНО В УСТНОЙ ФОРМЕ, НИ ОДИН ВЛАДЕЛЕЦ
+#	АВТОРСКИХ ПРАВ И НИ ОДНО ДРУГОЕ ЛИЦО, КОТОРОЕ МОЖЕТ ИЗМЕНЯТЬ И/ИЛИ ПОВТОРНО
+#	РАСПРОСТРАНЯТЬ ПРОГРАММУ, КАК БЫЛО СКАЗАНО ВЫШЕ, НЕ НЕСЁТ ОТВЕТСТВЕННОСТИ,
+#	ВКЛЮЧАЯ ЛЮБЫЕ ОБЩИЕ, СЛУЧАЙНЫЕ, СПЕЦИАЛЬНЫЕ ИЛИ ПОСЛЕДОВАВШИЕ УБЫТКИ,
+#	ВСЛЕДСТВИЕ ИСПОЛЬЗОВАНИЯ ИЛИ НЕВОЗМОЖНОСТИ ИСПОЛЬЗОВАНИЯ ПРОГРАММЫ (ВКЛЮЧАЯ,
+#	НО НЕ ОГРАНИЧИВАЯСЬ ПОТЕРЕЙ ДАННЫХ, ИЛИ ДАННЫМИ, СТАВШИМИ НЕПРАВИЛЬНЫМИ, ИЛИ
+#	ПОТЕРЯМИ ПРИНЕСЕННЫМИ ИЗ-ЗА ВАС ИЛИ ТРЕТЬИХ ЛИЦ, ИЛИ ОТКАЗОМ ПРОГРАММЫ РАБОТАТЬ
+#	СОВМЕСТНО С ДРУГИМИ ПРОГРАММАМИ), ДАЖЕ ЕСЛИ ТАКОЙ ВЛАДЕЛЕЦ ИЛИ ДРУГОЕ ЛИЦО БЫЛИ
+#	ИЗВЕЩЕНЫ О ВОЗМОЖНОСТИ ТАКИХ УБЫТКОВ.
+#
+
+#       Copyright (C) 2008-2012 Aleksandr Deviatkin, "Green Hill"
+#
+#       Redistribution and use in source and binary forms, with or without
+#       modification, are permitted provided that the following conditions are
+#       met:
+#       
+#       * Redistributions of source code must retain the above copyright
+#         notice, this list of conditions and the following disclaimer.
+#       * Redistributions in binary form must reproduce the above
+#         copyright notice, this list of conditions and the following disclaimer
+#         in the documentation and/or other materials provided with the
+#         distribution.
+#       * Neither the name of the Green Hill nor the names of its
+#         contributors may be used to endorse or promote products derived from
+#         this software without specific prior written permission.
+#       
+#       THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+#       "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+#       LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+#       A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+#       OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#       SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+#       LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+#       DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+#       THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#       (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#       OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+
+$|=1;
+use DBI;
+use Time::Local;
+use utf8;
+use open qw(:std :utf8);
+use strict;
+use lib "$ENV{MY}/lib/";
+use GHPower;
+use XML::Simple;
+
+#
+# Полный список участков с владельцами и контактами
+# 2018-07-25 alid
+#
+
+my (@args, %opts);
+foreach(@ARGV){
+	if(/^\-(\S)(\S*)/) { $opts{$1} = $2; } else {  push @args, $_; }
+}
+my $verb = exists $opts{v};
+my $pgport = 5432;
+my $database = $opts{D} || 'ghpower';
+
+my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1, AutoCommit => 1});
+my $ghpower = GHPower->new($dbh);
+my $List = $ghpower->Domains_Struct;
+
+my $Data;
+my $XML = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
+$XML .= "<document>\n";
+$XML .= "<header>Полный список</header>\n";
+$XML .= "<fields>\n";
+$XML .= "<field><name>street</name><order>1</order><label>Проезд</label><style>text-left</style></field>\n";
+$XML .= "<field><name>number</name><order>2</order><label>Участок</label><style>text-center</style></field>\n";
+$XML .= "<field><name>square</name><order>3</order><label>Площадь</label><style>text-right</style></field>\n";
+$XML .= "<field><name>owner</name><order>4</order><label>Владелец</label><style>text-left</style></field>\n";
+$XML .= "<field><name>email</name><order>5</order><label>E-mail</label><style>text-left</style></field>\n";
+$XML .= "<field><name>phone</name><order>6</order><label>Телефон</label><style>text-left</style></field>\n";
+$XML .= "<field><name>manager</name><order>7</order><label>Доверенное лицо</label><style>text-left</style></field>\n";
+$XML .= "<field><name>email</name><order>8</order><label>E-mail</label><style>text-left</style></field>\n";
+$XML .= "<field><name>phone</name><order>9</order><label>Телефон</label><style>text-left</style></field>\n";
+$XML .= "</fields>\n";
+$XML .= "<items>\n";
+foreach my $street (sort keys %$List) {
+	my $Dom = $List->{$street}->{Dom};
+	foreach my $house (sort keys %{$Dom}) {
+		$XML .= "<item>\n";
+		$XML .= "<street>$street</street>\n";
+		$XML .= "<number>$house</number>\n";
+		$XML .= "<address>$street, $house</address>\n";
+#		next unless($Dom->{$house}->{olcaddcontentacl}[0] =~ m/true/i);
+		my $P = $Dom->{$house};
+		$Data->{$street}->{$house}->{address} = "$street, $house";
+		$Data->{$street}->{$house}->{square} = $P->{x121address}[0];
+		$XML .= "<square>".$P->{x121address}[0]."</square>\n";
+		$XML .= "<owners>\n";
+		foreach my $owner (@{$P->{owners}}) {
+			$XML .= "<owner>\n";
+			$XML .= "<name>".$owner->{cn}[0]."</name>\n";
+			my $h;
+			$h->{owner}->{name} = $owner->{cn};
+			my @a;
+			foreach my $email (@{$owner->{mail}}) {
+				push @a, $email;
+				push @{$h->{owner}->{email}}, $email;
+			}
+			$XML .= "<email>".join(",",@a)."</email>\n";
+			@a = ();
+			foreach my $mobile (@{$owner->{mobile}}) {
+				push @a, $mobile;
+				push @{$h->{owner}->{phone}}, $mobile;
+			}
+			$XML .= "<phone>".join(/,/,@a)."</phone>\n";
+			push @{$Data->{$street}->{$house}->{owners}}, $h;
+			$XML .= "</owner>\n";
+		}
+		$XML .= "</owners>\n";
+		$XML .= "<managers>\n";
+		foreach my $manager (@{$P->{managers}}) {
+			$XML .= "<manager>\n";
+			$XML .= "<name>".$manager->{cn}[0]."</name>\n";
+			my $h;
+			$h->{manager}->{name} = $manager->{cn};
+			my @a;
+			foreach my $email (@{$manager->{mail}}) {
+				push @a, $email;
+				push @{$h->{manager}->{email}}, $email;
+			}
+			$XML .= "<email>".join(/,/,@a)."</email>\n";
+			@a = ();
+			foreach my $mobile (@{$manager->{mobile}}) {
+				push @a, $mobile;
+				push @{$h->{manager}->{phone}}, $mobile;
+			}
+			$XML .= "<phone>".join(/,/,@a)."</phone>\n";
+			push @{$Data->{$street}->{$house}->{managers}}, $h;
+			$XML .= "</manager>\n";
+		}
+		$XML .= "</managers>\n";
+		$XML .= "</item>\n";
+	}
+}
+$XML .= "</items>\n";
+$XML .= "</document>\n";
+$dbh->disconnect;
+
+print $XML;
+
+

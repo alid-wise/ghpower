@@ -2,17 +2,27 @@
 	$dbh
 	$auth
 	$id => 0
+	$date => 0
 </%args>
 <%init>
-use Data::Dumper;
+use XML::Simple;
 use POSIX;
+use File::Temp;
 
 if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# admin или manager
 	$r->status_line('');
 	$m->clear_buffer;
 	$m->abort(404);
 }
-my ($Data, $report_name, @fields, $sth);
+
+if($date =~ /(\d{1,2})[\-\.](\d{1,2})[\-\.](\d{4})/) {
+	$date = sprintf("%d-%02d-%02d",$3,$2,$1);
+} else {
+	undef $date 	unless($date =~ m/\d{4}\-\d{2}\-\d{2}/);
+}
+$id =~ s/\D//g;
+
+my ($Data, $report_name, @fields, $sth, $FORM);
 if($id == 1) {
 	$report_name = 'Членские взносы';
 	@fields = ('Взнос','Дата погашения','Начислено','Собрано','Долги');
@@ -93,12 +103,46 @@ elsif($id == 2) {
 	}
 	
 } # id=2
+elsif($id == 3) {	# Можно использовать как шаблон для других отчетов в xml
 
-use Data::Dumper;
+	unless($date) {
+		$report_name = 'Показания счетчиков';
+		$FORM = "<form method=POST>";
+		$FORM .= '<table border=1><tr><td>Дата:</td>';
+		$FORM .= '<td><input type="text" name="date" value="dd.mm.yyyy" onfocus="this.select();_Calendar.lcs(this)" onclick="event.cancelBubble=true;this.select();_Calendar.lcs(this)"  class="form-control"></td>';
+		$FORM .= '<td align="right"><input type="submit" name="submit" value="OK"></td>';
+		$FORM .= '</tr>';
+		$FORM .= '</table></form>';
+	} else {
+
+		my $tmpname = tmpnam();
+		system("export MY=$ENV{MY}; \$MY/counter/fullist_estored $date > $tmpname");
+		my $D = XMLin($tmpname, ForceArray => [ ]);
+		unlink($tmpname);
+
+		$report_name = $D->{header};
+		# Названия полей
+		foreach my $field (sort { $D->{fields}->{field}->{$a}->{order} <=> $D->{fields}->{field}->{$b}->{order} } keys %{$D->{fields}->{field}}) {
+			push @fields, $D->{fields}->{field}->{$field}->{label};
+		}
+		# Строка таблицы по списку полей
+		foreach my $item (sort {$a->{street} cmp $b->{street} || $a->{number} <=> $b->{number} } @{$D->{items}->{item}}) {
+			my @A;
+			foreach my $field (sort { $D->{fields}->{field}->{$a}->{order} <=> $D->{fields}->{field}->{$b}->{order} } keys %{$D->{fields}->{field}}) {
+				my $style = $D->{fields}->{field}->{$field}->{style} || '';
+				push @A, {( class=>$style, data => (ref $item->{$field} eq 'HASH')? '':$item->{$field} )};
+			}
+			push @$Data, \@A;
+		}
+	}
+} # id=3
+
+#use Data::Dumper;
 </%init>
-%#<pre>
-%#	<% Dumper $Data %>
-%#</pre>pre>
+<pre>
+%#	<% $report_name %>
+%#	<% Dumper %ARGS %>
+</pre>
 %#<%doc>
 
 
@@ -112,12 +156,17 @@ use Data::Dumper;
 <h1>&nbsp;</h1>
 %if($id) {
 <h1><% $report_name %></h1>
+%if($FORM) {
+<script src="calendar.js?2" type="text/javascript"></script>
+	<% $FORM %>
+% } else {
+
 <table class="table-condensed">
 <thead>
 <tr>
 <th>N</th>
 %foreach(@fields) {
-<th><%$_%></th>
+<th class="text-center"><%$_%></th>
 %}
 </tr>
 </thead>
@@ -134,15 +183,13 @@ use Data::Dumper;
 </tbody>
 </table>
 
-
-
-
-
+% }
 %} else {
 <div class="row">
 <ul>
 <li><a href="?id=2">Полный список участков</a></li>
 <li><a href="?id=1">Членские взносы</a></li>
+<li><a href="?id=3">Показания счетчиков</a></li>
 </ul>
 </div>
 %}
