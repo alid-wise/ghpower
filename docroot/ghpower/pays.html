@@ -142,7 +142,7 @@ $('#PrintModal').on('show.bs.modal', function (event) {
 %#<td align="right"><% $AVG_AMOUNT ?  $m->comp("lib.msn:pretty", value=>$AVG_AMOUNT) : ""%></td>
 <td align="right" <% $init eq '2' ? "class=\"badinitpay\"":"" %>><%  $m->comp("lib.msn:pretty_date", date=>$p_date)%></td>
 <td align=right>
-%if($BALANCE < 0) {
+%if($BALANCE < 0 && $counters->{$cid} == 1) {
 <input type="button" class="btn btn-primary btn-xs" data-content="print:<%$cid%>,sum:<%abs($m->comp("lib.msn:pretty", value=>$BALANCE))%>" data-backdrop="true" data-toggle="modal" data-target="#PrintModal" value="квит" title="напечатать квитанцию">
 %}
 <input type="checkbox" name="subscr_<%$cid%>" <% $Item->{subscr} ? "checked":""%> disabled>
