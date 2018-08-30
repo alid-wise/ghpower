@@ -93,24 +93,10 @@ my $pgport = 5432;
 my $database = $opts{D} || 'ghpower';
 
 my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1, AutoCommit => 1});
-my $sth = $dbh->prepare("SELECT C.id,C.mgroup,C.sn,C.dn,D.se1,D.se2,D.mode FROM counters C INNER JOIN daily D ON C.id=D.cid WHERE C.active=1 AND D.date=?");
-my $ghpower = GHPower->new($dbh);
-my $List = $ghpower->Domains_Struct;
+my $sth = $dbh->prepare("SELECT C.id,C.mgroup,C.sn,C.dn,substring(C.dn from ',ou=(.+)\$') as street,substring(C.dn from 'ou=(.+),') as house,D.se1,D.se2,D.mode FROM counters C INNER JOIN daily D ON C.id=D.cid WHERE C.dn<>'' AND C.active=1 AND D.date=? order by street,house");
+#my $ghpower = GHPower->new($dbh);
+#my $List = $ghpower->Domains_Struct;
 
-$sth->execute($date);
-while(my $r = $sth->fetchrow_hashref) {
-	my ($d,$s) = ($r->{dn} =~ m/ou=(\w+)\,ou=(\w+)/);
-	next 	unless($s && $d);
-	next	unless(exists $List->{$s} && exists $List->{$s}->{Dom}->{$d});
-	$List->{$s}->{Dom}->{$d}->{cid} = $r->{id};
-	$List->{$s}->{Dom}->{$d}->{sn} = $r->{sn};
-	$List->{$s}->{Dom}->{$d}->{se1} = $r->{se1};
-	$List->{$s}->{Dom}->{$d}->{se2} = $r->{se2};
-	$List->{$s}->{Dom}->{$d}->{mode} = $r->{mode};
-}
-$sth->finish;
-
-my $Data;
 my $XML = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
 $XML .= "<document>\n";
 $XML .= "<header>Показания счетчиков на ".pdate()."</header>\n";
@@ -122,25 +108,26 @@ $XML .= "<field><name>se1</name><order>4</order><label>Т1</label><style>text-ri
 $XML .= "<field><name>se2</name><order>5</order><label>Т1</label><style>text-right</style></field>\n";
 $XML .= "</fields>\n";
 $XML .= "<items>\n";
-foreach my $street (sort keys %$List) {
-	my $Dom = $List->{$street}->{Dom};
-	foreach my $house (sort keys %{$Dom}) {
-		$XML .= "<item>\n";
-		$XML .= "<street>$street</street>\n";
-		$XML .= "<number>$house</number>\n";
-		$XML .= "<serial>".$List->{$street}->{Dom}->{$house}->{sn}."</serial>\n";
-		if($List->{$street}->{Dom}->{$house}->{mode} eq '1') {	# однотарифная схема
-			$XML .= "<se1>".($List->{$street}->{Dom}->{$house}->{se1} + $List->{$street}->{Dom}->{$house}->{se1})."</se1>\n";
-			$XML .= "<se2></se2>\n";
-		} else {
-			$XML .= "<se1>".$List->{$street}->{Dom}->{$house}->{se1}."</se1>\n";
-			$XML .= "<se2>".$List->{$street}->{Dom}->{$house}->{se2}."</se2>\n";
-		}
-		$XML .= "</item>\n";
+
+$sth->execute($date);
+while(my $r = $sth->fetchrow_hashref) {
+	next	if($r->{house} =~ m/^\D/);	# Номер должен ачинаться с цифры
+	$XML .= "<item>\n";
+	$XML .= "<street>$r->{street}</street>\n";
+	$XML .= "<number>$r->{house}</number>\n";
+	$XML .= "<serial>".$r->{sn}."</serial>\n";
+	if($r->{mode} eq '1') {	# однотарифная схема
+		$XML .= "<se1>".($r->{se1} + $r->{se2})."</se1>\n";
+		$XML .= "<se2></se2>\n";
+	} else {
+		$XML .= "<se1>".$r->{se1}."</se1>\n";
+		$XML .= "<se2>".$r->{se2}."</se2>\n";
 	}
+	$XML .= "</item>\n";
 }
 $XML .= "</items>\n";
 $XML .= "</document>\n";
+$sth->finish;
 $dbh->disconnect;
 print $XML;
 
@@ -149,4 +136,5 @@ sub pdate {
 		return sprintf("%02d.%02d.%d",$3,$2,$1);
 	}
 }
+
 
