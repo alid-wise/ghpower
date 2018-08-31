@@ -46,7 +46,7 @@ foreach(@ARGV){
    if(/^\-(\S)(.*)/){	$opts{$1} = $2;	} else {	push @args, $_;	}
 }
 my ($addr, $passwd, $passwd2, $device) = (@args);
-die "Usage: $0 addr password1 password2 serial-dev"	unless(defined $addr && $passwd && $device);
+die "Usage: $0 addr password1 password2 serial-dev"	unless($addr && $passwd && $device);
 my $verb = exists $opts{v};
 my $adj = exists $opts{a};
 my $diff = exists $opts{d};			# Ошибка часов (в сек)
@@ -95,9 +95,13 @@ elsif($diff) {	# Показать ошибку часов
 	my $res = $unit->get_time();
 	print "$res\n"	if $verb;
 	my ($d,$t) = ($res =~ m/(\d{4}\-\d{2}\-\d{2})\s+\d{1,2}\s+(\d{2}\:\d{2}\:\d{2})/);
-	my $stime = UTime("$d $t");
-	my $delta = $stime - time();
-	print "[$addr] $delta\n";
+	if($d && $t) {
+		my $stime = UTime("$d $t");
+		my $delta = $stime - time();
+		print "[$addr] $delta\n";
+	} elsif {
+		print "[$addr] Error reading: $res\n";
+	}
 
 } else {	# Только считать время
 	print $unit->get_time()."\n";
