@@ -24,29 +24,41 @@ $id =~ s/\D//g;
 
 my ($Data, $report_name, @fields, $sth, $FORM);
 if($id == 1) {
+
 	$report_name = 'Членские взносы';
-	@fields = ('Взнос','Дата погашения','Начислено','Собрано','Долги');
-	$sth = $dbh->prepare("select T.name,T.edate,sum(A.amount),sum(A.amount-A.debt),sum(A.debt) from b_credit A inner join b_tariff T on A.b_tariff_id=T.id group by T.name,T.edate order by T.edate DESC");
-	$sth->execute();
-	my ($total_amount,$total_debt,$total_credit) = (0,0,0);
-	while(my $r = $sth->fetchrow_arrayref) {
-		my @a = ({class=>'text-info',data=>$r->[0]},
-		{class=>'text-right',data=>$m->comp("lib.msn:pretty_date", date=>$r->[1])},
-		{class=>'text-right',data=>$m->comp("lib.msn:pretty", value=>$r->[2])},
-		{class=>'text-right',data=>$m->comp("lib.msn:pretty", value=>$r->[3])},
-		{class=>'text-right',data=>$m->comp("lib.msn:pretty", value=>$r->[4])});
-		$total_credit += $r->[2];
-		$total_amount += $r->[3];
-		$total_debt += $r->[4];
+	unless($date) {
+		$FORM = "<form method=POST>";
+		$FORM .= '<table border=1><tr><td>Дата:</td>';
+		$FORM .= '<td><input type="text" name="date" value="dd.mm.yyyy" onfocus="this.select();_Calendar.lcs(this)" onclick="event.cancelBubble=true;this.select();_Calendar.lcs(this)"  class="form-control"></td>';
+		$FORM .= '<td align="right"><input type="submit" name="submit" value="OK"></td>';
+		$FORM .= '</tr>';
+		$FORM .= '</table></form>';
+	} else {
+
+		$report_name .= " (по состоянию на ".$m->comp("lib.msn:pretty_date", date=>$date).")";
+		@fields = ('Взнос','Дата погашения','Начислено','Собрано','Долги');
+		$sth = $dbh->prepare("select T.name,T.edate,sum(A.amount),sum(A.amount-A.debt),sum(A.debt) from b_credit A inner join b_tariff T on A.b_tariff_id=T.id where A.status=0 and A.modtime < ? group by T.name,T.edate order by T.edate DESC");
+		$sth->execute($date);
+		my ($total_amount,$total_debt,$total_credit) = (0,0,0);
+		while(my $r = $sth->fetchrow_arrayref) {
+			my @a = ({class=>'text-info',data=>$r->[0]},
+			{class=>'text-right',data=>$m->comp("lib.msn:pretty_date", date=>$r->[1])},
+			{class=>'text-right',data=>$m->comp("lib.msn:pretty", value=>$r->[2])},
+			{class=>'text-right',data=>$m->comp("lib.msn:pretty", value=>$r->[3])},
+			{class=>'text-right',data=>$m->comp("lib.msn:pretty", value=>$r->[4])});
+			$total_credit += $r->[2];
+			$total_amount += $r->[3];
+			$total_debt += $r->[4];
+			push @$Data, \@a;
+		}
+		$sth->finish;
+		my @a = ({data=>''},
+			{class=>'bold',data=>'Всего:'},
+			{class=>'bold',data=>$m->comp("lib.msn:pretty", value=>$total_credit)},
+			{class=>'bold',data=>$m->comp("lib.msn:pretty", value=>$total_amount)},
+			{class=>'bold',data=>$m->comp("lib.msn:pretty", value=>$total_debt)});
 		push @$Data, \@a;
 	}
-	$sth->finish;
-	my @a = ({data=>''},
-		{class=>'bold',data=>'Всего:'},
-		{class=>'bold',data=>$m->comp("lib.msn:pretty", value=>$total_credit)},
-		{class=>'bold',data=>$m->comp("lib.msn:pretty", value=>$total_amount)},
-		{class=>'bold',data=>$m->comp("lib.msn:pretty", value=>$total_debt)});
-	push @$Data, \@a;
 	
 } # id=1
 
