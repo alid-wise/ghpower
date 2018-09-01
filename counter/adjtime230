@@ -99,7 +99,7 @@ elsif($diff) {	# Показать ошибку часов
 		my $stime = UTime("$d $t");
 		my $delta = $stime - time();
 		print "[$addr] $delta\n";
-	} elsif {
+	} else {
 		print "[$addr] Error reading: $res\n";
 	}
 
