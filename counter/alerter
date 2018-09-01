@@ -89,7 +89,7 @@ my $Alerts;
 my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1, AutoCommit => 0});
 my $sth = $dbh->prepare("select id,cid,state,pstate,se1,se2,modtime from status where state<>pstate");
 my $alt = $dbh->prepare("insert into alerts (cid,state,pstate,se1,se2,atime) values (?,?,?,?,?,?)");
-my $inf = $dbh->prepare("select E.name as model,A.addr as addr,A.sn as sn,C.name as street,A.house as house,B.name as mgroup,D.name as tower from counters A inner join mgroup B on B.id=A.mgroup inner join street C on C.id=A.street inner join towers D on D.id=A.tower_id inner join counter_type E on E.id=a.model where A.id=?");
+my $inf = $dbh->prepare("select E.name as model,A.addr as addr,A.sn as sn,B.name as mgroup,D.name as tower from counters A inner join mgroup B on B.id=A.mgroup left outer join towers D on D.id=A.tower_id inner join counter_type E on E.id=a.model where A.id=?");
 
 
 $sth->execute;
@@ -114,7 +114,7 @@ if($Alerts) {
 sub alert {
 	my ($cid,$state,$pstate,$se1,$se2,$modtime) = @_;
 	$inf->execute($cid);
-	my ($model,$addr,$sn,$street,$house,$mgroup,$tower) = $inf->fetchrow_array;
+	my ($model,$addr,$sn,$mgroup,$tower) = $inf->fetchrow_array;
 	$inf->finish;
 
 	my $event;
@@ -125,9 +125,9 @@ sub alert {
 		$event = "CLEAR";
 
 	}
-	print   "$event [$modtime]: $model,$addr,$sn,$street,$house,$mgroup,$tower\n"   if($verb);
+	print   "$event [$modtime]: $model,$addr,$sn,$mgroup,$tower\n"   if($verb);
 	my $body = "$event: Unavailable device\n";
-	$body .= "Model: $model\nSerial: $sn\nAddress: $addr\nGroup: $mgroup\nTower: $tower\n$street, $house\n\n";
+	$body .= "Model: $model\nSerial: $sn\nAddress: $addr\nGroup: $mgroup\nTower: $tower\n\n";
 	$Alerts .= $body;
 }
 
