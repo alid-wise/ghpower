@@ -37,18 +37,21 @@ if($id == 1) {
 
 		$report_name .= " (по состоянию на ".$m->comp("lib.msn:pretty_date", date=>$date).")";
 		@fields = ('Взнос','Дата погашения','Начислено','Собрано','Долги');
-		$sth = $dbh->prepare("select T.name,T.edate,sum(A.amount),sum(A.amount-A.debt),sum(A.debt) from b_credit A inner join b_tariff T on A.b_tariff_id=T.id where A.status=0 and A.modtime < ? group by T.name,T.edate order by T.edate DESC");
-		$sth->execute($date);
+		$sth = $dbh->prepare("select T.id,T.name,T.sdate,sum(A.amount),(select sum(P.amount) from b_pays P inner join b_credit C on P.b_credit_id=C.id where P.pdate<=? and C.b_tariff_id=T.id) from b_credit A inner join b_tariff T on A.b_tariff_id=T.id where A.status=0 and T.sdate<=? group by T.id,T.name,T.sdate,T.edate order by T.edate DESC");
+		$sth->execute($date,$date);
+		#select T.id,T.name,T.sdate,sum(A.amount) from b_credit A inner join b_tariff T on A.b_tariff_id=T.id where A.status=0 and T.sdate<=? group by T.id,T.name,T.sdate,T.edate order by T.edate DESC
+		#select C.b_tariff_id,sum(P.amount) from b_pays P inner join b_credit C on P.b_credit_id=C.id where P.pdate<=? group by C.b_tariff_id;
+
 		my ($total_amount,$total_debt,$total_credit) = (0,0,0);
 		while(my $r = $sth->fetchrow_arrayref) {
-			my @a = ({class=>'text-info',data=>$r->[0]},
-			{class=>'text-right',data=>$m->comp("lib.msn:pretty_date", date=>$r->[1])},
-			{class=>'text-right',data=>$m->comp("lib.msn:pretty", value=>$r->[2])},
+			my @a = ({class=>'text-info',data=>$r->[1]},
+			{class=>'text-right',data=>$m->comp("lib.msn:pretty_date", date=>$r->[2])},
 			{class=>'text-right',data=>$m->comp("lib.msn:pretty", value=>$r->[3])},
-			{class=>'text-right',data=>$m->comp("lib.msn:pretty", value=>$r->[4])});
-			$total_credit += $r->[2];
-			$total_amount += $r->[3];
-			$total_debt += $r->[4];
+			{class=>'text-right',data=>$m->comp("lib.msn:pretty", value=>$r->[4])},
+			{class=>'text-right',data=>$m->comp("lib.msn:pretty", value=>($r->[3] - $r->[4]))});
+			$total_credit += $r->[3];
+			$total_amount += $r->[4];
+			$total_debt += ($r->[3] - $r->[4]);
 			push @$Data, \@a;
 		}
 		$sth->finish;
