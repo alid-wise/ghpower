@@ -197,12 +197,6 @@ if($ARGS{submit}) {
 </%init>
 <script src="calendar.js" type="text/javascript"></script>
 
-<pre>
-%#<%Dumper $Usr%>
-%#<%Dumper %ARGS%>
-%#<%Dumper $List %>
-</pre>
-
 <form method=POST>
 <table border="1">
 <tr><td colspan="4" align="right" <% $t_mode eq '1' ? "class=\"onemode\"":"" %>><input class="close" type="submit" name="cancel" value="X"></td></tr>

@@ -266,18 +266,20 @@ $(document).ready(function() {
 </script>
 %}
 
-<div class="masthead">
-	<ul class="nav nav-pills pull-left">
-		<li class="active"><a href="/">Home</a></li>
-		<li><a href="expense.html">Расходы</a></li>
-%if($auth->{gid} < 3) {
-		<li><a href="pays.html">Платежи</a></li>
-%}
-	</ul>
-</div>
-<hr>
+<ul class="breadcrumb">
+	<li><a href="/">Home</a> <span class="divider">/</span></li>
+	<li class="active">Список счетчиков<span class="divider">/</span></li>
+	<li><a href="expense.html">Расходы</a>
 
-<p><br></p>
+%if($auth->{gid} < 3) {
+	<span class="divider">/</span></li>
+	<li><a href="pays.html">Платежи</a><span class="divider">/</span></li>
+	<li><a href="tarifs.html">Тарифы</a></li>
+%} else {
+	</li>	
+%}
+</ul>
+
 <form name="filter" method="POST">
 <select name="filter">
 <option value="0">-- все группы --</option>

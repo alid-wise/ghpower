@@ -48,7 +48,7 @@ if($ARGS{export}) {
 		{
 		width: 100%;
 		position: fixed;
-		top: 0;
+		top: 35;
 		height: 100%;
 		left: 50%;
 		//position: absolute;
@@ -88,18 +88,15 @@ $('#PrintModal').on('show.bs.modal', function (event) {
 });
 </script>
 
-<div class="masthead">
-	<ul class="nav nav-pills pull-left">
-		<li class="active"><a href="/">Home</a></li>
-		<li><a href="tarifs.html" target="pform">Тарифы</a></li>
-%#		<li><a href="?export=1">Экспорт</a></li>
-	</ul>
-%#	<h3 class="muted">GHPower</h3>
-</div>
-<hr>
-<p><br></p>
-
+<ul class="breadcrumb">
+	<li><a href="/">Home</a> <span class="divider">/</span></li>
+	<li><a href="index.html">Список счетчиков</a><span class="divider">/</span></li>
+	<li><a href="expense.html">Расходы</a><span class="divider">/</span></li>
+	<li class="active">Платежи<span class="divider">/</span></li>
+	<li><a href="tarifs.html" target="pform">Тарифы</a></li>
+</ul>
 <h2>Платежи</h2>
+
 <table border="1" class="table-condensed">
 %my $total2;
 

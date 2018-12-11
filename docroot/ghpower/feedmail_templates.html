@@ -1,0 +1,137 @@
+<%args>
+	$dbh
+	$auth
+	$id => undef
+</%args>
+<%init>
+use POSIX;
+
+if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# admin или manager
+	$r->status_line('');
+	$m->clear_buffer;
+	$m->abort(404);
+}
+my $self = 'feedmail_templates.html';
+
+if($ARGS{cancel}) {
+	if($id || $ARGS{add_new}) {
+		$r->status_line('');
+		$m->clear_buffer;
+		$m->redirect($self);
+	} else {
+		$r->status_line('');
+		$m->clear_buffer;
+		$m->abort(200);
+	}
+}
+
+map { $_ =~ s/\D//g; } ( $id );
+
+my %Err;
+
+if($ARGS{submit}) {
+
+#	my ($tname,$subj,$body,$memo);
+
+	unless($ARGS{tname}) {
+		$Err{tname}++;
+	}
+#	map { $_ =~ s/\s//g; } ( $ARGS{t0}, $ARGS{t1}, $ARGS{t2}, $ARGS{k} );
+#
+
+	if($id) { 	# Редактируем запись
+
+		if($ARGS{drop}) { # Удаляем запись
+			my $del = $dbh->prepare("UPDATE feeds_template SET active=0 WHERE id=?");
+			$del->execute($id);
+#			undef $id;
+			$r->status_line('');
+			$m->clear_buffer;
+			$m->redirect($self);
+		} else {
+			my $upd = $dbh->prepare("UPDATE feeds_template SET auth=$auth->{id},modtime=now(),name=?,subj=?,body=?,memo=? WHERE id=?");
+			unless(%Err) {
+				$upd->execute($ARGS{tname},$ARGS{subj},$ARGS{body},$ARGS{memo},$id);
+#				undef $id;
+				$r->status_line('');
+				$m->clear_buffer;
+				$m->redirect($self);
+			}
+		}
+	} else { # Новая запись
+		my $ins = $dbh->prepare("INSERT INTO feeds_template (active,auth,name,subj,body,memo) values (1,$auth->{id},?,?,?,?)");
+		unless(%Err) {
+			$ins->execute($ARGS{tname},$ARGS{subj},$ARGS{body},$ARGS{memo});
+#			undef $ARGS{add_new};
+			$r->status_line('');
+			$m->clear_buffer;
+			$m->redirect($self);
+		}
+	}
+} else {
+}
+
+# Шаблоны в базе
+my $T;
+my $sth = $dbh->prepare("SELECT id,auth,name,subj,body,memo,modtime FROM feeds_template WHERE active=1");
+$sth->execute();
+while(my $r = $sth->fetchrow_hashref) {
+	$T->{$r->{id}} = $r;
+}
+$sth->finish;
+</%init>
+
+<ul class="breadcrumb">
+	<li><a href="/">Home</a> <span class="divider">/</span></li>
+	<li><a href="/ghpower/feedmail.html">Рассылка</a> <span class="divider">/</span></li>
+    <li class="active">Шаблоны</li>
+</ul>
+
+%if($id || $ARGS{add_new}) {
+<form method=POST>
+<table border="1">
+<tr><td colspan="5" align="right"><nobr>
+<input type="submit" name="cancel" value="X" title="отменить"></nobr></td></tr>
+<tr><td><div style=color:<% $Err{tname} ? "red":"black"%>>Имя шаблона:</div></td><td colspan="3"><input type="text" name="tname" value="<% $ARGS{tname} || $T->{$id}->{name} || ""%>"</td></tr>
+<tr><td>Тема (subj):</td><td colspan="3"><input type="text" name="subj" value="<% $ARGS{subj} || $T->{$id}->{subj} || ""%>"></td></tr>
+<tr><td valign="top">Содержимое (body):</div></td><td colspan="3"><textarea id="body" name="body" cols="60" rows="20"><% $ARGS{body} || $T->{$id}->{body} || ""%></textarea></td></tr>
+<tr><td valign="top">Описание:</td><td colspan="3"><textarea id="memo" name="memo" cols="60" rows="5"><% $ARGS{memo} || $T->{$id}->{memo} || ""%></textarea></td></tr>
+
+%	if($ARGS{add_new}) {
+<tr><td></td><td colspan="3"><input type="submit" name="submit" value="Сохранить"></td></tr>
+<input type="hidden" name="add_new" value="1">
+%	} else {
+<tr><td colspan="4" align="center"><input type="checkbox" name="drop"><i>удалить</i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="submit" name="submit" value="OK"></td></tr>
+%	}
+</table>
+</form>
+%}
+
+
+%if(!$ARGS{add_new} && !$id) {
+<form method="POST">
+<p><input class="btn" type="submit" name="add_new" value="Новый шаблон">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+</form>
+%}
+<table border="1">
+<tr><th></th><th>Имя</th><th>Дата</th><th>Описание</th></tr>
+% my $n=1;
+%foreach my $tid (sort { $T->{$b}->{modtime} cmp $T->{$a}->{modtime}} keys %{$T}) {
+%	next unless($tid);
+<tr>
+<td align="center"><% $n %></td>
+<td><a href="?id=<% $T->{$tid}->{id}%>"><% $T->{$tid}->{name} %></a></div></td>
+<td><% $m->comp("lib.msn:pretty_date",date=>$T->{$tid}->{modtime}) %></td>
+<td><% $T->{$tid}->{memo} %></td>
+</tr>
+% $n++;
+%}
+</table>
+
+
+%#<pre>
+%#<%Dumper $id%>
+%#<%Dumper %ARGS%>
+%#<%Dumper $T %>
+%#</pre>
+

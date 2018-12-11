@@ -379,6 +379,7 @@ CREATE INDEX feed_log_comp_i ON feed_log (comp);
 CREATE TABLE feeds (
 	id character(32) NOT NULL,
 	auth integer,
+	template_id integer,
 	name varchar,
 	outnum varchar, -- исходящий номер
 	posted timestamp without time zone,
@@ -402,6 +403,18 @@ CREATE TABLE feeds_queue (
 	primary key (id)
 );
 
+-- Шаблоны для рассылки
+CREATE TABLE feeds_template (
+	id serial NOT NULL,
+	auth integer,
+	active integer DEFAULT 1,
+	name varchar,
+	subj varchar,
+	body text,
+	memo varchar,
+	modtime timestamp without time zone DEFAULT now(),
+	primary key (id)
+);
 
 ------------------------------------------------
 -- Членские взносы и другие платежи

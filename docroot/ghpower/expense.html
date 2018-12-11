@@ -85,8 +85,8 @@ if($id) {
 <td><% $month %></td>
 <td align="right"><% $MExpenses->{$year}->{$month}->{exp1} %></td>
 <td align="right"><% $MExpenses->{$year}->{$month}->{exp2} %></td>
-<td align="right"><% $MExpenses->{$year}->{$month}->{se1} %></td>
-<td align="right"><% $MExpenses->{$year}->{$month}->{se2} %></td>
+%#<td align="right"><% $MExpenses->{$year}->{$month}->{se1} %></td>
+%#<td align="right"><% $MExpenses->{$year}->{$month}->{se2} %></td>
 </tr>
 %	}
 %}
@@ -96,18 +96,19 @@ if($id) {
 %} else {	# полный список
 %	my ($sec,$min,$hour,$mday,$mon,$year) = (localtime)[0,1,2,3,4,5];
 
-<div class="masthead">
-	<ul class="nav nav-pills pull-left">
-		<li class="active"><a href="/">Home</a></li>
-		<li><a href="index.html">Список счетчиков</a></li>
+<ul class="breadcrumb">
+	<li><a href="/">Home</a> <span class="divider">/</span></li>
+	<li><a href="index.html">Список счетчиков</a><span class="divider">/</span></li>
+	<li class="active">Расходы
 %if($auth->{gid} < 3) {
-		<li><a href="pays.html">Платежи</a></li>
+	<span class="divider">/</span></li>
+	<li><a href="pays.html">Платежи</a></li>
+%} else {
+	</li>	
 %}
-	</ul>
-</div>
-<hr>
-<p><br></p>
+</ul>
 
+<h2>Расход электроэнергии за месяц и показания счетчика на 1-е число месяца</h2>
 
 <form name="filter" method="POST">
 <select name="filter">
@@ -152,7 +153,6 @@ if($id) {
 <input type="submit" name="sel" value="Выбрать">
 </form>
 
-<h4>Расход электроэнергии за месяц и показания счетчика на 1-е число месяца</h4>
 <table border="1">
 %foreach my $mgid (sort {$List->{$a}->{rank} <=> $List->{$b}->{rank}} keys %$List) {
 %	next if $filter &&  !($mgid == $filter);
@@ -212,15 +212,4 @@ if($id) {
 </table>
 
 %}
-
-
-
-
-<pre>
-%#<% Dumper $Usr %>
-%#<% Dumper %ARGS %>
-%#<% Dumper $MExpenses %>
-%#<% Dumper $Owners %>
-</pre>
-
 

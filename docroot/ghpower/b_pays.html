@@ -335,17 +335,15 @@ SSStype="submit" name="add_fee" value="+" title="добавить индивид
 
 %	}
 %} else {	# Полный список
-<div class="masthead">
-	<ul class="nav nav-pills pull-left">
-		<li class="active"><a href="/">Home</a></li>
-		<li><a href="b_tariff.html">Тарифы</a></li>
-%#		<li><a href="?export=1">Экспорт</a></li>
-	</ul>
-</div>
-%#<hr>
-<p>&nbsp;<br>&nbsp;</p>
+
+<ul class="breadcrumb">
+	<li><a href="/">Home</a> <span class="divider">/</span></li>
+	<li class="active">Членские взносы<span class="divider">/</span></li>
+	<li><a href="b_tariff.html">Тарифы</a></li>
+</ul>
 
 <h2>Членские и другие взносы</h2>
+
 <table border="1" class="table-condensed" id="fullist">
 %my $total2;
 

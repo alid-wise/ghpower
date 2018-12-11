@@ -67,7 +67,7 @@ if($id == 1) {
 
 elsif($id == 2) {
 	$report_name = 'Полный список участков';
-	@fields = ('Проезд','Участок','Площадь','Владелец','E-mail','Телефон','Доверенное лицо','E-mail','Телефон');
+	@fields = ('Проезд','Участок','Площадь','Владелец','E-mail владельца','Телефон владельца','Доверенное лицо','E-mail доверенного','Телефон доверенного');
 
 	my $ghpower = GHPower->new($dbh);
 	my $List = $ghpower->Domains_Struct;
@@ -154,23 +154,23 @@ elsif($id == 3) {	# Можно использовать как шаблон дл
 
 #use Data::Dumper;
 </%init>
-<pre>
+%#<pre>
 %#	<% $report_name %>
 %#	<% Dumper %ARGS %>
-</pre>
+%#</pre>
 %#<%doc>
 
-
-<div class="masthead">
-	<ul class="nav nav-pills pull-left">
-		<li class="active"><a href="/">Home</a></li>
-		<li><a href="reports.html?id=0">Отчеты</a></li>
-	</ul>
-</div>
-<hr>
-<h1>&nbsp;</h1>
+<ul class="breadcrumb">
+	<li><a href="/">Home</a> <span class="divider">/</span></li>
 %if($id) {
-<h1><% $report_name %></h1>
+    <li><a href="reports.html">Отчеты</a></li>
+%} else {
+    <li class="active">Отчеты</li>
+%}
+</ul>
+
+%if($id) {
+<h2><% $report_name %></h2>
 %if($FORM) {
 <script src="calendar.js?2" type="text/javascript"></script>
 	<% $FORM %>

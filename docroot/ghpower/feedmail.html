@@ -108,17 +108,24 @@ while(my $r = $sth->fetchrow_hashref) {
 	push @{$List}, $r;
 }
 $sth->finish;
-
-
+# Список шаблонов
+my %T;
+if($feed_new) {
+	$sth = $dbh->prepare("SELECT id,name FROM feeds_template WHERE active=1");
+	$sth->execute();
+	while(my $r = $sth->fetchrow_hashref) {
+		$T{$r->{id}} = $r->{name};
+	}
+	$sth->finish;
+}
 
 </%init>
-<div class="masthead">
-	<ul class="nav nav-pills pull-left">
-		<li class="active"><a href="/">Home</a></li>
-	</ul>
-</div>
-<hr>
-<h1>&nbsp;</h1>
+<ul class="breadcrumb">
+	<li><a href="/">Home</a> <span class="divider">/</span></li>
+	<li class="active">Рассылка<span class="divider">/</span></li>
+	<li><a href="/ghpower/feedmail_templates.html">Шаблоны</a></li>
+</ul>
+
 %if($feed_new || $id) {	# Новая рассылка или посмотреть старую
 <form method="POST">
 %unless ($id) {
@@ -141,6 +148,16 @@ $sth->finish;
 <tr>
 <td>Название:</td>
 <td><input type="text" name="feed_name" value="<% $ARGS{feed_name} || $Usr->{name} %>" <%($id) ? "disabled":"" %>></td>
+</tr>
+
+<tr>
+<td>Шаблон:</td>
+<td><select name="template">
+<option></option>
+%	foreach my $tid (sort { $T{$a} cmp $T{$b} } keys %T) {
+<option value="<%$tid%>" <% ((!$ARGS{submit} ? $Usr->{template} : $ARGS{template}) eq $tid)? "selected":"" %>><%$T{$tid}%></option>
+%	}
+</select></td>
 </tr>
 
 <tr>
@@ -192,14 +209,14 @@ $sth->finish;
 	}
 </script>
 %	}
-%}
+%} else {
 %	# Список старых рассылок
 
 <form method="POST">
 <p><input class="btn" type="submit" name="feed_new" value="Новая рассылка">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
 </form>
+%}
 
-<h1><%  %></h1>
 <table class="table-condensed">
 <thead>
 <tr>
