@@ -354,8 +354,9 @@ CREATE TABLE tariff (
 );
 
 -- лог рассылки
+CREATE SEQUENCE feed_log_id_seq;
 CREATE TABLE feed_log (
-	id serial NOT NULL,
+	id INTEGER NOT NULL DEFAULT nextval('feed_log_id_seq'::regclass),
 	auth integer,
 	comp varchar,
 	cid integer NOT NULL,

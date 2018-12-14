@@ -83,7 +83,8 @@ foreach(@ARGV){
 	if(/^\-(\S)(\S*)/) { $opts{$1} = $2; } else {  push @args, $_; }
 }
 my $verb = exists $opts{v};
-my $sms = exists $opts{s};
+my $template_id = $opts{T};	# Шаблон из базы
+#my $sms = exists $opts{s};
 my $pgport = 5432;
 my $database = $opts{D} || 'ghpower';
 my $trigger = $opts{t};		# проверять триггер
@@ -98,7 +99,7 @@ if($trigger) {	# Запуск по триггеру
 # 2018-05-16 Возможность задержки отправки очередного сообщения (если есть ограничения у используемого почтового сервера)
 #my $delay = $opts{L} || 0;
 
-# Шаблон сообщения
+# Шаблон сообщения (если не используется шабон из базы)
 my $SUBJ = '"Зеленая горка": членские взносы';
 my $BODY = <<ATEXT;
 Участок: {ADDR}
@@ -117,14 +118,22 @@ my $BODY = <<ATEXT;
 Сообщение сформировано автоматически, отвечать на него не нужно.
 ATEXT
 
-
-
 my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1, AutoCommit => 1});
+# 2018-12-14 Шаблон сообщения из базы
+if($template_id) {
+	my $sth = $dbh->prepare("SELECT subj,body FROM feeds_template WHERE id=?");
+	$sth->execute($template_id);
+	my ($subj, $body) = $sth->fetchrow_array;
+	$sth->finish;
+	die "Bad template: $template_id"	unless(defined $subj && defined $body);
+	($SUBJ, $BODY) = ($subj, $body);
+}
 my $ghpower = GHPower->new($dbh);
 my $List = $ghpower->Domains_Struct;
 my $sth = $dbh->prepare("SELECT A.id,A.b_tariff_id,B.edate,A.amount AS p_amount,A.status,A.debt,A.memo,A.modtime, B.name,B.amount,B.type,case when A.debt>0 AND now()>B.edate then 1 else 0 end AS flag FROM b_credit A INNER JOIN b_tariff B ON A.b_tariff_id=B.id WHERE A.dn=? ORDER BY B.edate DESC,A.modtime DESC");
 my $sth2 = $dbh->prepare("select max(pdate) from b_pays where dn=?");
 my $log = $dbh->prepare("INSERT INTO feed_log (auth,cid,dn,target,msg,status,err,posted,parts,cost) VALUES (?,?,?,?,?,?,?,now(),?,?)");
+my $seq = $dbh->prepare("SELECT nextval('feed_log_id_seq'::regclass)");
 
 foreach my $street (keys %$List) {
 	my $Dom = $List->{$street}->{Dom};
@@ -138,6 +147,7 @@ foreach my $street (keys %$List) {
 		my @emails = $ghpower->get_Domain_subscr_emails($P->{dn});
 
 		# Есть куда слать :)
+		my $outnum = '';
 		if(@emails) {
 			$subj = $SUBJ;
 			$body = $BODY;
@@ -174,7 +184,13 @@ foreach my $street (keys %$List) {
 			}
 
 			$body =~ s/{TABLE}/$table/;
-
+			# 2018-12-14 Уникальный номер сообщения
+			$seq->execute();
+			($outnum) = $seq->fetchrow_array;
+			$seq->finish;
+			$body =~ s/\{OUTNUM\}/$outnum/;
+			#
+			$body =~ s/{.*}//g;	# Удалить все неиспользованные поля шаблона
 
 			if($verb) {
 				print join(",",@emails)."\n";
@@ -195,7 +211,7 @@ foreach my $street (keys %$List) {
 			print STDERR "Unable to find any e-mail addresses: $addr\n";
 			$status = 2;
 		}
-		$log->execute(0,0,$P->{dn},join(",",@emails),"$subj\n$body",$status,$err,1,0)	unless($verb);
+		$log->execute($outnum,0,0,$P->{dn},join(",",@emails),"$subj\n$body",$status,$err,1,0)	unless($verb);
 	}
 }
 $dbh->disconnect;

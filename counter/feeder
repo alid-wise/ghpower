@@ -88,7 +88,8 @@ $BALANCE_ALERT ||= 100;
 
 #die "Usage: $0 database [-sms]"		unless($database);
 my $verb = exists $opts{v};
-my $sms = exists $opts{s};
+my $template_id = $opts{T};	# Шаблон из базы
+#my $sms = exists $opts{s};
 my $pgport = 5432;
 my $database = $opts{D} || 'ghpower';
 my $cid = $opts{c} || 0;	# только для этого счетчика
@@ -104,7 +105,7 @@ if($trigger) {	# Запуск по триггеру
 # 2018-05-16 Возможность задержки отправки очередного сообщения (если есть ограничения у используемого почтового сервера)
 #my $delay = $opts{L} || 0;
 
-# Шаблон сообщения
+# Шаблон сообщения (если не используется шабон из базы)
 my $SUBJ = '"Зеленая горка": показания счетчика';
 my $BODY = <<ATEXT;
 Участок: {ADDR}\r
@@ -133,8 +134,19 @@ AWARN
 my $ALERT = 'У вас большой долг за электричество.';
 
 my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1, AutoCommit => 1});
+# 2018-12-14 Шаблон сообщения из базы
+if($template_id) {
+	my $sth = $dbh->prepare("SELECT subj,body FROM feeds_template WHERE id=?");
+	$sth->execute($template_id);
+	my ($subj, $body) = $sth->fetchrow_array;
+	$sth->finish;
+	die "Bad template: $template_id"	unless(defined $subj && defined $body);
+	($SUBJ, $BODY) = ($subj, $body);
+}
+
 my $sth = $dbh->prepare("select A.id,A.sn,A.ktrans,A.dn,C.modtime as tm,C.se1 as t1,C.se2 as t2 from counters A inner join status C on A.id=C.cid where A.active=1 and A.subscr=1".($cid ? " AND A.id=$cid":""));
-my $log = $dbh->prepare("INSERT INTO feed_log (auth,cid,dn,target,msg,status,err,posted,parts,cost) VALUES (?,?,?,?,?,?,?,now(),?,?)");
+my $log = $dbh->prepare("INSERT INTO feed_log (id,auth,cid,dn,target,msg,status,err,posted,parts,cost) VALUES (?,?,?,?,?,?,?,?,now(),?,?)");
+my $seq = $dbh->prepare("SELECT nextval('feed_log_id_seq'::regclass)");
 
 $sth->execute();
 my $ghldap = new GHPowerLDAP;
@@ -149,7 +161,7 @@ while(my $r = $sth->fetchrow_hashref) {
 		$street_name = $2;
 	}
 	my $Dom = $ghldap->get_Domain($r->{dn});
-	my $subj = $SUBJ;
+	my $subj = $SUBJ; $subj =~ s/{.*}//g;
 	my $body = $BODY;
 	my $addr = "$street_name, $domain";
 	my $date = Now(UTime($r->{tm}));
@@ -179,6 +191,13 @@ while(my $r = $sth->fetchrow_hashref) {
 		$tartext = "\nT1 - ".$T->{C}->{t1}." руб.\/кВт*час\nT2 - ".$T->{C}->{t2}." руб.\/кВт*час";
 	}
 	$body =~ s/\{TARIFF\}/$tartext/;
+	# 2018-12-14 Уникальный номер сообщения
+	$seq->execute();
+	my ($outnum) = $seq->fetchrow_array;
+	$seq->finish;
+	$body =~ s/\{OUTNUM\}/$outnum/;
+	#	
+	$body =~ s/{.*}//g;	# Удалить все неиспользованные поля шаблона
 	# Куда слать
 	my @emails = $ghpower->get_Domain_subscr_emails($r->{dn});
 
@@ -207,7 +226,7 @@ while(my $r = $sth->fetchrow_hashref) {
 		print STDERR "Unable to find any e-mail addresses: $addr\n";
 		$status = 2;
 	}
-	$log->execute(0,$r->{id},$r->{dn},join(",",@emails),"$subj\n$body",$status,$err,1,0)	unless($verb);
+	$log->execute($outnum,0,$r->{id},$r->{dn},join(",",@emails),"$subj\n$body",$status,$err,1,0)	unless($verb);
 }
 $sth->finish;
 $dbh->disconnect;
