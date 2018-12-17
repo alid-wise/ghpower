@@ -132,7 +132,7 @@ my $ghpower = GHPower->new($dbh);
 my $List = $ghpower->Domains_Struct;
 my $sth = $dbh->prepare("SELECT A.id,A.b_tariff_id,B.edate,A.amount AS p_amount,A.status,A.debt,A.memo,A.modtime, B.name,B.amount,B.type,case when A.debt>0 AND now()>B.edate then 1 else 0 end AS flag FROM b_credit A INNER JOIN b_tariff B ON A.b_tariff_id=B.id WHERE A.dn=? ORDER BY B.edate DESC,A.modtime DESC");
 my $sth2 = $dbh->prepare("select max(pdate) from b_pays where dn=?");
-my $log = $dbh->prepare("INSERT INTO feed_log (auth,cid,dn,target,msg,status,err,posted,parts,cost) VALUES (?,?,?,?,?,?,?,now(),?,?)");
+my $log = $dbh->prepare("INSERT INTO feed_log (id,auth,cid,dn,target,msg,status,err,posted,parts,cost) VALUES (?,?,?,?,?,?,?,?,now(),?,?)");
 my $seq = $dbh->prepare("SELECT nextval('feed_log_id_seq'::regclass)");
 
 foreach my $street (keys %$List) {
