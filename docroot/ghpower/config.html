@@ -1,0 +1,358 @@
+<%args>
+	$dbh
+	$auth
+	$id => 0
+	$type => 0
+</%args>
+<%init>
+use Data::Dumper;
+use POSIX;
+use Digest::MD5 qw(md5_hex);
+
+
+if($auth->{gid} ne '1') {	# admin only
+	$r->status_line('');
+	$m->clear_buffer;
+	$m->abort(404);
+}
+
+if($ARGS{cancel}) {
+	if($id || $ARGS{add_new}) {
+		undef $id;
+		undef $ARGS{add_new};
+		$r->status_line('');
+		$m->clear_buffer;
+		$m->redirect("?type=$type");
+	} else {
+		$r->status_line('');
+		$m->clear_buffer;
+		$m->abort(200);
+	}
+}
+
+$id =~ s/\D//g;
+
+#$m->out("<pre>".(Dumper %ARGS)."</pre>");
+#$m->out("<p>".$feed_new."</p>");
+#$m->out("<p>type:".(ref $type eq 'ARRAY')."</p>");
+
+my ($Usr, $List, @Fields);
+my %Err;
+my $sth;
+my ($OK, $FORM_NEW, $FORM_EDIT, $Title);
+
+if($type == 1) {	# Доступ
+
+}
+elsif($type == 2) {	# Типы счетчиков
+	@Fields = ('Название', 'Тип');
+	$Title = 'Типы счетчиков';
+	my @Types = ('M230','M203');
+	if($ARGS{submit}) {
+		if($ARGS{drop}) {
+			$sth = $dbh->prepare("DELETE FROM counter_type WHERE id=?");
+			$sth->execute($id);
+			undef $ARGS{drop};
+			undef $id;
+		} else {
+			my $cname = substr($ARGS{cname},0,80);
+			my $ctype;
+			foreach(@Types) { $ctype = $_	if($_ eq $ARGS{ctype}); }
+			$Err{cname}++	unless($cname);
+			$Err{ctype}++	unless($ctype);
+			unless(%Err) {
+				if($id) {
+					$sth = $dbh->prepare("UPDATE counter_type SET name=?, type=?, auth=?, modtime=now() WHERE id=?");
+					$sth->execute($cname, $ctype, $auth->{id}, $id);
+					undef $id;
+					$OK++;
+				} else {
+					$sth = $dbh->prepare("INSERT INTO counter_type (name,type,auth) VALUES (?,?,?)");
+					$sth->execute($cname, $ctype, $auth->{id});
+					undef $ARGS{add_new};
+				}
+			}
+		}
+	} else {
+		if($id) {	# Редактирование записи
+			$sth = $dbh->prepare("SELECT name, type FROM counter_type WHERE id=? LIMIT 1");
+			$sth->execute($id);
+			($Usr->{cname}, $Usr->{ctype}) = $sth->fetchrow_array;
+			$sth->finish;
+		}
+	}
+	$FORM_NEW = '<tr>
+		<td><div style=color:'.($Err{cname} ? "red":"black").'>Название:</div></td>
+		<td><input type="text" name="cname" value="'.($ARGS{cname} || $Usr->{cname} || '').'" class="input-xlarge"></td>
+	</tr>
+	<tr>
+		<td><div style=color:'.($Err{ctype} ? "red":"black").'>Тип:</div></td>
+		<td><select id="ctype" name="ctype">
+			<option></option>';
+			foreach(@Types) {
+				$FORM_NEW .= '<option'.(($_ eq $ARGS{ctype} || $_ eq $Usr->{ctype})? " selected":"").'>'.$_.'</option>';
+			}
+			$FORM_NEW .= '</select>
+		</td>
+	</tr>';
+	$FORM_EDIT = $FORM_NEW;
+
+	$sth = $dbh->prepare("SELECT id,name,type FROM counter_type ORDER BY name");
+	$sth->execute();
+	while(my $r = $sth->fetchrow_hashref) {
+		my @a = ('<a href="?type='.$type.'&id='.$r->{id}.'">'.$r->{name}.'</a>', $r->{type});
+		push @$List, \@a;
+	}
+}
+elsif($type == 3) {	# Столбы
+
+	@Fields = ('Название', 'Тип', 'Дата установки', 'Описание');
+	$Title = 'Столбы';
+	my @Types = ('Дер.','Ж/б','Мет.');
+	if($ARGS{submit}) {
+		if($ARGS{drop}) {
+			$sth = $dbh->prepare("DELETE FROM towers WHERE id=?");
+			$sth->execute($id);
+			undef $ARGS{drop};
+			undef $id;
+		} else {
+			my $cname = substr($ARGS{cname},0,80);
+			my $ctype;
+			foreach(@Types) { $ctype = $_	if($_ eq $ARGS{ctype}); }
+			$Err{cname}++	unless($cname);
+			$Err{ctype}++	unless($ctype);
+			my $setdate = '';
+			if($ARGS{setdate} =~ /(\d{1,2})[\-\.](\d{1,2})[\-\.](\d{4})/) {
+				$setdate = sprintf("%d-%02d-%02d",$3,$2,$1);
+			} else {
+				$Err{setdate}++	if($ARGS{setdate});
+			}
+			unless(%Err) {
+				if($id) {
+					$sth = $dbh->prepare("UPDATE towers SET name=?, type=?, setdate=".($setdate ? "?":"null").", memo=?, auth=?, modtime=now() WHERE id=?");
+					if($setdate) {
+						$sth->execute($cname, $ctype, $setdate, $ARGS{memo}, $auth->{id}, $id);
+					} else {
+						$sth->execute($cname, $ctype, $ARGS{memo}, $auth->{id}, $id);
+					}
+					undef $id;
+					$OK++;
+				} else {
+					$sth = $dbh->prepare("SELECT id FROM towers WHERE name=? AND type=? ".($setdate ? "AND setdate=?":"" )." AND memo=?");
+					if($setdate) {
+						$sth->execute($cname, $ctype, $setdate, $ARGS{memo});
+					} else {
+						$sth->execute($cname, $ctype, $ARGS{memo});
+					}
+					my ($oid) = $sth->fetchrow_array;
+					$sth->finish;
+					unless($oid) {
+						$sth = $dbh->prepare("INSERT INTO towers (name,type,".($setdate ? "setdate,":"")."memo,auth) VALUES (?,?,".($setdate ? "?,":"")."?,?)");
+						if($setdate) {
+							$sth->execute($cname, $ctype, $setdate, $ARGS{memo}, $auth->{id});
+						} else {
+							$sth->execute($cname, $ctype, $ARGS{memo}, $auth->{id});
+						}
+					}
+					undef $ARGS{add_new};
+				}
+			}
+		}
+	} else {
+		if($id) {	# Редактирование записи
+			$sth = $dbh->prepare("SELECT name, type, memo, setdate FROM towers WHERE id=? LIMIT 1");
+			$sth->execute($id);
+			($Usr->{cname}, $Usr->{ctype}, $Usr->{memo}, $Usr->{setdate}) = $sth->fetchrow_array;
+			$sth->finish;
+		}
+	}
+	$FORM_NEW = '<tr>
+		<td><div style=color:'.($Err{cname} ? "red":"black").'>Название:</div></td>
+		<td><input type="text" name="cname" value="'.($ARGS{cname} || $Usr->{cname} || '').'" class="input-xlarge"></td>
+	</tr>
+	<tr>
+		<td><div style=color:'.($Err{ctype} ? "red":"black").'>Тип:</div></td>
+		<td><select id="ctype" name="ctype">
+			<option></option>';
+			foreach(@Types) {
+				$FORM_NEW .= '<option'.(($_ eq $ARGS{ctype} || $_ eq $Usr->{ctype})? " selected":"").'>'.$_.'</option>';
+			}
+			$FORM_NEW .= '</select>
+		</td>
+	</tr>
+	<tr>
+		<td><div style=color:'.($Err{setdate} ? "red":"black").'>Дата установки:</div></td>
+		<td><input type="text" name="setdate" value="'.($ARGS{setdate} || $m->comp("lib.msn:pretty_date",date=>$Usr->{setdate}) || '').'" class="input-xlarge" onfocus="this.select();_Calendar.lcs(this)" onclick="event.cancelBubble=true;this.select();_Calendar.lcs(this)" placeholder="dd.mm.yyyy"></td>
+		</td>
+	</tr>
+	<tr>
+		<td>Описание:</td>
+		<td><textarea name="memo" cols="30" rows="2">'.($ARGS{memo} || $Usr->{memo} || '').'</textarea></td>
+		</td>
+	</tr>';
+	$FORM_EDIT = $FORM_NEW;
+
+	$sth = $dbh->prepare("SELECT id,name,memo,setdate,type FROM towers ORDER BY name");
+	$sth->execute();
+	while(my $r = $sth->fetchrow_hashref) {
+		my @a = ('<a href="?type='.$type.'&id='.$r->{id}.'">'.$r->{name}.'</a>', $r->{type}, '<div align="right">'.$m->comp("lib.msn:pretty_date", date=>$r->{setdate}).'</div>', $r->{memo});
+		push @$List, \@a;
+	}
+}
+elsif($type == 4) {	# Проезды (улицы)
+	@Fields = ('Название','Обозначение','Порядок');
+
+	$Title = 'Проезды';
+	if($ARGS{submit}) {
+		if($ARGS{drop}) {
+			$sth = $dbh->prepare("DELETE FROM street WHERE id=?");
+			$sth->execute($id);
+			undef $ARGS{drop};
+			undef $id;
+		} else {
+			my $cname = substr($ARGS{cname},0,100);
+			my $sname = substr($ARGS{sname},0,100);
+			my $ord = $ARGS{ord}; $ord =~ s/\D//g; $ord = substr($ord,0,9); $ord ||= 0;
+			$Err{cname}++	unless($cname);
+			unless(%Err) {
+				if($id) {
+					$sth = $dbh->prepare("UPDATE street SET name=?, sname=?, ord=?, auth=?, modtime=now() WHERE id=?");
+					$sth->execute($cname, $sname, $ord, $auth->{id}, $id);
+					undef $id;
+					$OK++;
+				} else {
+					$sth = $dbh->prepare("SELECT id FROM street WHERE name=? AND sname=? AND ord=? AND auth=?");
+					$sth->execute($cname, $sname, $ord, $auth->{id});
+					my ($oid) = $sth->fetchrow_array;
+					$sth->finish;
+					unless($oid) {
+						$sth = $dbh->prepare("INSERT INTO street (name,sname,ord,auth) VALUES (?,?,?,?)");
+						$sth->execute($cname, $sname, $ord, $auth->{id});
+					}
+					undef $ARGS{add_new};
+				}
+			}
+		}
+	} else {
+		if($id) {	# Редактирование записи
+			$sth = $dbh->prepare("SELECT name, sname, ord FROM street WHERE id=? LIMIT 1");
+			$sth->execute($id);
+			($Usr->{cname}, $Usr->{sname},$Usr->{ord}) = $sth->fetchrow_array;
+			$sth->finish;
+		}
+	}
+	$FORM_NEW = '<tr>
+		<td><div style=color:'.($Err{cname} ? "red":"black").'>Название:</div></td>
+		<td><input type="text" name="cname" value="'.($ARGS{cname} || $Usr->{cname} || '').'" class="input-xlarge"></td>
+	</tr>
+	<tr>
+		<td><div style=color:'.($Err{ctype} ? "red":"black").'>Обозначение:</div></td>
+		<td><input type="text" name="sname" value="'.($ARGS{sname} || $Usr->{sname} || '').'" class="input-xlarge"></td>
+	</tr>
+	<tr>
+		<td><div style=color:'.($Err{ctype} ? "red":"black").'>Порядок сортировки:</div></td>
+		<td><input type="text" name="ord" value="'.($ARGS{ord} || $Usr->{ord} || '').'" class="input-xlarge"></td>
+	</tr>';
+	$FORM_EDIT = $FORM_NEW;
+
+	$sth = $dbh->prepare("SELECT id,name,sname,ord FROM street ORDER BY name, ord");
+	$sth->execute();
+	while(my $r = $sth->fetchrow_hashref) {
+		my @a = ('<a href="?type='.$type.'&id='.$r->{id}.'">'.$r->{name}.'</a>', $r->{sname}, '<div align="right">'.$r->{ord}.'</div>');
+		push @$List, \@a;
+	}
+}
+else {
+	
+}
+
+
+
+</%init>
+<script src="calendar.js" type="text/javascript"></script>
+<ul class="breadcrumb">
+	<li><a href="/">Home</a> <span class="divider">/</span></li>
+%	if($type) {
+	<li><a href="config.html">Конфигурация</a> <span class="divider">/</span></li>
+%	} else {
+	<li class="active">Конфигурация<span class="divider">/</span></li>
+%	}
+</ul>
+%if($OK) {
+<h3 id="resok">Запись сохранена</h3>
+<p><a href="?type=$type">back</a></p>
+<script type=text/javascript>
+$(document).ready(function() {
+	$("#resok").fadeOut(1200, function() {document.location = "?type=<%$type%>"; });
+});
+</script>
+%}
+<h4><% $Title %></h4>
+
+%if($id || $ARGS{add_new}) {
+<form method="POST">
+<table border="1">
+<tr><td colspan="2" align="right"><input type="submit" name="cancel" value="X" title="отменить"></td></tr>
+%if($ARGS{add_new}) {
+<%$FORM_NEW%>
+<input type="hidden" name="add_new" value="1">
+%} else {
+<%$FORM_EDIT%>
+<tr><td colspan="2" align="center"><input type="checkbox" name="drop"><i>удалить</i></td></tr>
+%}
+
+<tr><td></td><td><input type="submit" name="submit" value="Сохранить" style="display: true;"></td></tr>
+%#	<input type="hidden" name="type" value="<% $type %>">
+</table>
+</form>
+%} elsif(@Fields && $List) {
+<form method="POST">
+<p><input class="btn" type="submit" name="add_new" value="Добавить">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+%#<input type="hidden" name="type" value="<%$type%>">
+</form>
+%} else {
+<h1>Управление конфигурацией</h1>
+
+<div class="row">
+<ul>
+<li><a href="?type=1">Доступ</a></li>
+<li><a href="?type=2">Типы счетчиков</a></li>
+<li><a href="?type=3">Столбы</a></li>
+<li><a href="?type=4">Проезды</a></li>
+</ul>
+</div>
+
+
+%}
+
+%if(@Fields && $List) {
+<table border="1">
+<tr>
+	<th>N</th>
+%	foreach(@Fields) {
+		<th><div align="center"><% $_ %></div></th>
+%	}
+</tr>
+%	my $n = 1;
+%	foreach my $row (@{$List}) {
+		<tr>
+			<td align="center"><% $n %></td>
+%			foreach(@{$row}) {
+				<td><% $_ %></td>
+%			}
+		</tr>
+%		$n++;
+%	}
+</table>
+%}
+
+
+
+
+%#<pre>
+%#<% Dumper %ARGS %>
+%#<% $FORM_NEW %>
+%#<% Dumper $Usr %>
+%#</pre>
+
+

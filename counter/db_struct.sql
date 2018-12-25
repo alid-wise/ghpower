@@ -99,11 +99,16 @@ create table counters (
 );
 
 -- модели счетчиков
+create sequence counter_type_seq;
 create table counter_type (
-	id integer not null,
+	id integer not null default nextval('counter_type_seq'::regclass),
+	auth integer not null default 0,
 	name varchar,
-	type varchar
+	type varchar,
+	modtime timestamp without time zone DEFAULT now()
 );
+INSERT INTO counter_type (name,type) VALUES ('Меркурий 230 ART-01 PQRSIN','M230');
+INSERT INTO counter_type (name,type) VALUES ('Меркурий-203.2T RBO','M203');
 
 -- интерфейсы
 create table iface (
@@ -275,8 +280,11 @@ CREATE INDEX mexpenses_counter_i ON mexpenses (cid);
 --
 CREATE TABLE towers (
     id serial NOT NULL,
+    auth integer default 0,
     name character varying,
     memo character varying,
+    setdate date,
+    type character varying,
     modtime timestamp without time zone DEFAULT now() NOT NULL,
     primary key (id)
 );
@@ -475,5 +483,35 @@ CREATE TABLE outnum (
 	docdate date,		-- дата документа
 	docto varchar,
 	subj varchar,
+	primary key (id)
+);
+
+-- Auth
+CREATE TABLE auth_grp (
+	id INTEGER NOT NULL,
+	name VARCHAR,
+	primary key (id)
+);
+
+CREATE TABLE auth (
+	id INTEGER NOT NULL,
+	name VARCHAR,
+	password character varying,
+	email character varying,
+	active integer default 0,
+	gid integer default 0,
+	memo character varying,
+	modtime timestamp without time zone default now(),
+	primary key (id)
+);
+
+-- Infrastructure
+CREATE TABLE street (
+	id serial NOT NULL,
+	name character varying,
+	sname character varying,
+	ord integer default 0,
+	auth integer default 0,
+	modtime timestamp without time zone default now(),
 	primary key (id)
 );

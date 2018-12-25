@@ -101,7 +101,7 @@ sub new {
 	$self->{retries} = $retries || 1;
 	bless $self,$class;
 	$self->init();
-	die "Cant connect: $device"	unless($self->{port});
+	die "Cant connect: $addr $device"	unless($self->{port});
 	return $self;
 }
 
