@@ -5,7 +5,6 @@
 	$type => 0
 </%args>
 <%init>
-use Data::Dumper;
 use POSIX;
 use Digest::MD5 qw(md5_hex);
 
@@ -32,9 +31,8 @@ if($ARGS{cancel}) {
 
 $id =~ s/\D//g;
 
+#use Data::Dumper;
 #$m->out("<pre>".(Dumper %ARGS)."</pre>");
-#$m->out("<p>".$feed_new."</p>");
-#$m->out("<p>type:".(ref $type eq 'ARRAY')."</p>");
 
 my ($Usr, $List, @Fields);
 my %Err;
@@ -42,7 +40,115 @@ my $sth;
 my ($OK, $FORM_NEW, $FORM_EDIT, $Title);
 
 if($type == 1) {	# Доступ
+	@Fields = ('Имя','Email','Логин','Группа');
+	$Title = 'Доступ в систему';
+	my $Grp = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'auth_grp');
+	if($ARGS{submit}) {
+		if($ARGS{drop}) {
+			$sth = $dbh->prepare("UPDATE auth SET active=0 WHERE id=?");
+			$sth->execute($id);
+			undef $ARGS{drop};
+			undef $id;
+		} else {
+			my $cname = substr($ARGS{cname},0,80);
+			$Err{cname}++	unless($cname);
+			my $gid;
+			foreach(keys %{$Grp}) { $gid = $_	if($_ eq $ARGS{gid}); }
+			$Err{gid}++	unless($gid);
+			my $login = substr($ARGS{login},0,80);
+			$Err{login}++	unless($login);
+			my $email = substr($ARGS{email},0,80);
+			my $cpass;
+			if($ARGS{add_new} || $ARGS{password}) {
+				if($ARGS{password}) {
+					# Генерация хеша пароля
+					my @saltair = ('A'..'Z', 'a'..'z', '0'..'9');
+					my $salt = join("", @saltair[map{rand @saltair} (1..8)]);
+					$cpass = crypt($ARGS{password},"\$1\$$salt\$");
+				} else {
+					$Err{password}++	if($ARGS{add_new});
+				}
+			}
+			unless(%Err) {
+				if($id) {
+					if($cpass) {
+						$sth = $dbh->prepare("UPDATE auth SET name=?, login=?, password=?, email=?, gid=?, memo=?, auth=?, modtime=now() WHERE id=?");
+						$sth->execute($cname,$login,$cpass,$email,$gid,$ARGS{memo},$auth->{id},$id);
+					} else {
+						$sth = $dbh->prepare("UPDATE auth SET name=?, login=?, email=?, gid=?, memo=?, auth=?, modtime=now() WHERE id=?");
+						$sth->execute($cname,$login,$email,$gid,$ARGS{memo},$auth->{id},$id);
+					}
+					undef $id;
+					$OK++;
+				} else {	# Новая запись
+					$sth = $dbh->prepare("SELECT id FROM auth WHERE name=? AND login=? AND email=? AND gid=?");
+					$sth->execute($cname,$login,$email,$gid);
+					my ($oid) = $sth->fetchrow_array;
+					$sth->finish;
+					unless($oid) {
+						$sth = $dbh->prepare("SELECT id FROM auth WHERE login=? AND active=1 LIMIT 1");
+						$sth->execute($login);
+						my ($xoid) = $sth->fetchrow_array;
+						$sth->finish;
+						if($xoid) {	# Неуникальный логин
+							$Err{login}++;
+						} else {
+							$sth = $dbh->prepare("INSERT INTO auth (name,login,password,email,gid,memo,auth,active) VALUES (?,?,?,?,?,?,?,1)");
+							$sth->execute($cname,$login,$cpass,$email,$gid,$ARGS{memo},$auth->{id});
+							undef $ARGS{add_new};
+							$OK++;
+						}
+					}
+				}
+			}
+		}
+	} else {
+		if($id) {	# Редактирование записи
+			$sth = $dbh->prepare("SELECT name,login,email,gid,memo FROM auth WHERE id=? LIMIT 1");
+			$sth->execute($id);
+			($Usr->{cname}, $Usr->{login}, $Usr->{email}, $Usr->{gid}, $Usr->{memo}) = $sth->fetchrow_array;
+			$sth->finish;
+		}
+	}
+	$FORM_NEW = '<tr>
+		<td><div style=color:'.($Err{cname} ? "red":"black").'>Имя:</div></td>
+		<td><input type="text" name="cname" value="'.($ARGS{cname} || $Usr->{cname} || '').'" class="input-xlarge"></td>
+	</tr>
+	<tr>
+		<td><div style=color:'.($Err{email} ? "red":"black").'>Email:</div></td>
+		<td><input type="text" name="email" value="'.($ARGS{email} || $Usr->{email} || '').'" class="input-xlarge"></td>
+	</tr>
+	<tr>
+		<td><div style=color:'.($Err{gid} ? "red":"black").'>Группа:</div></td>
+		<td><select id="gid" name="gid">
+			<option></option>';
+			foreach(sort keys %{$Grp}) {
+				$FORM_NEW .= '<option'.(($_ eq $ARGS{gid} || $_ eq $Usr->{gid})? " selected":"").'  value="'.$_.'">'.$Grp->{$_}->{name}.'</option>';
+			}
+			$FORM_NEW .= '</select>
+		</td>
+	</tr>
+	<tr>
+		<td><div style=color:'.($Err{login} ? "red":"black").'>Логин:</div></td>
+		<td><input type="text" name="login" value="'.($ARGS{login} || $Usr->{login} || '').'" class="input-xlarge"></td>
+	</tr>
+	<tr>
+		<td><div style=color:'.($Err{password} ? "red":"black").'>Пароль:</div></td>
+		<td><input type="password" name="password" value="'.($ARGS{password} || $Usr->{password} || '').'" class="input-xlarge"></td>
+	</tr>
+	<tr>
+		<td>Комментарий:</td>
+		<td><textarea name="memo" cols="30" rows="2">'.($ARGS{memo} || $Usr->{memo} || '').'</textarea></td>
+		</td>
+	</tr>';
+	$FORM_EDIT = $FORM_NEW;
 
+	$sth = $dbh->prepare("SELECT A.id,A.name,A.login,A.email,B.name AS gname FROM auth A INNER JOIN auth_grp B ON A.gid=B.id WHERE A.active=1 ORDER BY A.name");
+	$sth->execute();
+	while(my $r = $sth->fetchrow_hashref) {
+		my @a = ('<a href="?type='.$type.'&id='.$r->{id}.'">'.$r->{name}.'</a>', $r->{email}, $r->{login}, $r->{gname});
+		push @$List, \@a;
+	}
 }
 elsif($type == 2) {	# Типы счетчиков
 	@Fields = ('Название', 'Тип');
@@ -70,6 +176,7 @@ elsif($type == 2) {	# Типы счетчиков
 					$sth = $dbh->prepare("INSERT INTO counter_type (name,type,auth) VALUES (?,?,?)");
 					$sth->execute($cname, $ctype, $auth->{id});
 					undef $ARGS{add_new};
+					$OK++;
 				}
 			}
 		}
@@ -106,7 +213,7 @@ elsif($type == 2) {	# Типы счетчиков
 }
 elsif($type == 3) {	# Столбы
 
-	@Fields = ('Название', 'Тип', 'Дата установки', 'Описание');
+	@Fields = ('Название', 'Тип', 'Фонарь', 'Дата установки', 'Описание');
 	$Title = 'Столбы';
 	my @Types = ('Дер.','Ж/б','Мет.');
 	if($ARGS{submit}) {
@@ -127,13 +234,14 @@ elsif($type == 3) {	# Столбы
 			} else {
 				$Err{setdate}++	if($ARGS{setdate});
 			}
+			my $lamp = $ARGS{lamp} eq 'on' ? 1:0;
 			unless(%Err) {
 				if($id) {
-					$sth = $dbh->prepare("UPDATE towers SET name=?, type=?, setdate=".($setdate ? "?":"null").", memo=?, auth=?, modtime=now() WHERE id=?");
+					$sth = $dbh->prepare("UPDATE towers SET name=?, type=?, setdate=".($setdate ? "?":"null").", memo=?, lamp=?, auth=?, modtime=now() WHERE id=?");
 					if($setdate) {
-						$sth->execute($cname, $ctype, $setdate, $ARGS{memo}, $auth->{id}, $id);
+						$sth->execute($cname, $ctype, $setdate, $ARGS{memo}, $lamp, $auth->{id}, $id);
 					} else {
-						$sth->execute($cname, $ctype, $ARGS{memo}, $auth->{id}, $id);
+						$sth->execute($cname, $ctype, $ARGS{memo}, $lamp, $auth->{id}, $id);
 					}
 					undef $id;
 					$OK++;
@@ -147,22 +255,23 @@ elsif($type == 3) {	# Столбы
 					my ($oid) = $sth->fetchrow_array;
 					$sth->finish;
 					unless($oid) {
-						$sth = $dbh->prepare("INSERT INTO towers (name,type,".($setdate ? "setdate,":"")."memo,auth) VALUES (?,?,".($setdate ? "?,":"")."?,?)");
+						$sth = $dbh->prepare("INSERT INTO towers (name,type,".($setdate ? "setdate,":"")."memo,lamp,auth) VALUES (?,?,".($setdate ? "?,":"")."?,?,?)");
 						if($setdate) {
-							$sth->execute($cname, $ctype, $setdate, $ARGS{memo}, $auth->{id});
+							$sth->execute($cname, $ctype, $setdate, $ARGS{memo}, $lamp, $auth->{id});
 						} else {
-							$sth->execute($cname, $ctype, $ARGS{memo}, $auth->{id});
+							$sth->execute($cname, $ctype, $ARGS{memo}, $lamp, $auth->{id});
 						}
 					}
 					undef $ARGS{add_new};
+					$OK++;
 				}
 			}
 		}
 	} else {
 		if($id) {	# Редактирование записи
-			$sth = $dbh->prepare("SELECT name, type, memo, setdate FROM towers WHERE id=? LIMIT 1");
+			$sth = $dbh->prepare("SELECT name, type, memo, setdate, lamp FROM towers WHERE id=? LIMIT 1");
 			$sth->execute($id);
-			($Usr->{cname}, $Usr->{ctype}, $Usr->{memo}, $Usr->{setdate}) = $sth->fetchrow_array;
+			($Usr->{cname}, $Usr->{ctype}, $Usr->{memo}, $Usr->{setdate}, $Usr->{lamp}) = $sth->fetchrow_array;
 			$sth->finish;
 		}
 	}
@@ -181,6 +290,10 @@ elsif($type == 3) {	# Столбы
 		</td>
 	</tr>
 	<tr>
+		<td><div style=color:'.($Err{lamp} ? "red":"black").'> Фонарь:</div></td>
+		<td><input type="checkbox" name="lamp" '.($ARGS{submit} ? ($ARGS{lamp} eq 'on' ? 'checked':'') : $Usr->{lamp} ? 'checked' : '').'></td>
+	</tr>
+	<tr>
 		<td><div style=color:'.($Err{setdate} ? "red":"black").'>Дата установки:</div></td>
 		<td><input type="text" name="setdate" value="'.($ARGS{setdate} || $m->comp("lib.msn:pretty_date",date=>$Usr->{setdate}) || '').'" class="input-xlarge" onfocus="this.select();_Calendar.lcs(this)" onclick="event.cancelBubble=true;this.select();_Calendar.lcs(this)" placeholder="dd.mm.yyyy"></td>
 		</td>
@@ -192,10 +305,10 @@ elsif($type == 3) {	# Столбы
 	</tr>';
 	$FORM_EDIT = $FORM_NEW;
 
-	$sth = $dbh->prepare("SELECT id,name,memo,setdate,type FROM towers ORDER BY name");
+	$sth = $dbh->prepare("SELECT id,name,memo,setdate,type,lamp FROM towers ORDER BY name");
 	$sth->execute();
 	while(my $r = $sth->fetchrow_hashref) {
-		my @a = ('<a href="?type='.$type.'&id='.$r->{id}.'">'.$r->{name}.'</a>', $r->{type}, '<div align="right">'.$m->comp("lib.msn:pretty_date", date=>$r->{setdate}).'</div>', $r->{memo});
+		my @a = ('<a href="?type='.$type.'&id='.$r->{id}.'">'.$r->{name}.'</a>', $r->{type}, '<div align="center">'.($r->{lamp} ? '+':'-').'</div>', '<div align="right">'.$m->comp("lib.msn:pretty_date", date=>$r->{setdate}).'</div>', $r->{memo});
 		push @$List, \@a;
 	}
 }
@@ -230,6 +343,7 @@ elsif($type == 4) {	# Проезды (улицы)
 						$sth->execute($cname, $sname, $ord, $auth->{id});
 					}
 					undef $ARGS{add_new};
+					$OK++;
 				}
 			}
 		}
@@ -255,10 +369,145 @@ elsif($type == 4) {	# Проезды (улицы)
 	</tr>';
 	$FORM_EDIT = $FORM_NEW;
 
-	$sth = $dbh->prepare("SELECT id,name,sname,ord FROM street ORDER BY name, ord");
+	$sth = $dbh->prepare("SELECT id,name,sname,ord FROM street ORDER BY ord, name");
 	$sth->execute();
 	while(my $r = $sth->fetchrow_hashref) {
 		my @a = ('<a href="?type='.$type.'&id='.$r->{id}.'">'.$r->{name}.'</a>', $r->{sname}, '<div align="right">'.$r->{ord}.'</div>');
+		push @$List, \@a;
+	}
+}
+
+
+
+elsif($type == 6) {	# Персоны
+	@Fields = ('Фамилия','Имя','Отчество');
+	$Title = 'Персоны';
+	my (@phone, @email);
+	if($ARGS{submit}) {
+		if($ARGS{drop}) {
+			$sth = $dbh->prepare("UPDATE persons SET active=0 WHERE id=?");
+			$sth->execute($id);
+			undef $ARGS{drop};
+			undef $id;
+		} else {
+			my $fname = substr($ARGS{fname},0,100);
+			my $mname = substr($ARGS{mname},0,100);
+			my $lname = substr($ARGS{lname},0,100);
+			my $nicname = substr($ARGS{nicname},0,100);
+			my $birthdate = '';
+			if($ARGS{birthdate} =~ /(\d{1,2})[\-\.](\d{1,2})[\-\.](\d{4})/) {
+				$birthdate = sprintf("%d-%02d-%02d",$3,$2,$1);
+			} else {
+				$Err{birthdate}++	if($ARGS{birthdate});
+			}
+			(@phone) = $m->{cgi_object}->param('phone');
+			map { $_ =~ s/[^\d\(\)\-\+]//g; } @phone;
+			(@email) = $m->{cgi_object}->param('email');
+			map { $_ =~ s/[^a-zA-Z\d\_\@\.\-]//g; } @email;
+
+			$Err{lname}++	unless($lname);
+			unless(%Err) {
+				my @em_ph; map { push @em_ph,'?'; } @email;
+				my @ph_ph; map { push @ph_ph,'?'; } @phone;
+				if($id) {
+					$sth = $dbh->prepare("UPDATE persons SET fname=?,mname=?,lname=?,nicname=?,".($birthdate ? "birthdate=?,":"")."email=ARRAY[".join(",",@em_ph)."],phone=ARRAY[".join(",",@ph_ph)."],memo=?,active=1, auth=?, modtime=now() WHERE id=?");
+					if($birthdate) {
+						$sth->execute($fname,$mname,$lname,$nicname,$birthdate,@email,@phone,$ARGS{memo}, $auth->{id}, $id);
+					} else {
+						$sth->execute($fname,$mname,$lname,$nicname,@email,@phone,$ARGS{memo}, $auth->{id}, $id);
+					}
+					undef $id;
+					$OK++;
+				} else {
+					$sth = $dbh->prepare("SELECT id FROM persons WHERE fname=? AND mname=? AND lname=? AND auth=?");
+					$sth->execute($fname, $mname, $lname, $auth->{id});
+					my ($oid) = $sth->fetchrow_array;
+					$sth->finish;
+					unless($oid) {
+						$sth = $dbh->prepare("INSERT INTO persons (fname,mname,lname,nicname,".($birthdate ? "birthdate,":"")."email,phone,memo,active,auth) VALUES (?,?,?,?,".($birthdate ? "?,":"")."ARRAY[".join(",",@em_ph)."],ARRAY[".join(",",@ph_ph)."],?,1,?)");
+						if($birthdate) {
+							$sth->execute($fname,$mname,$lname,$nicname,$birthdate,@email,@phone,$ARGS{memo},$auth->{id});
+						} else {
+							$sth->execute($fname,$mname,$lname,$nicname,@email,@phone,$ARGS{memo},$auth->{id});
+						}
+					}
+					undef $ARGS{add_new};
+					$OK++;
+				}
+			}
+		}
+	} else {
+		if($id) {	# Редактирование записи
+			$sth = $dbh->prepare("SELECT id,fname,mname,lname,nicname,birthdate,email,phone,memo,modtime FROM persons WHERE id=? LIMIT 1");
+			$sth->execute($id);
+			$Usr = $sth->fetchrow_hashref;
+			$sth->finish;
+		}
+	}
+	$FORM_NEW = '<tr>
+		<td><div style=color:'.($Err{fname} ? "red":"black").'>Имя:</div></td>
+		<td><input type="text" name="fname" value="'.($ARGS{fname} || $Usr->{fname} || '').'" class="input-xlarge"></td>
+	</tr>
+	<tr>
+		<td><div style=color:'.($Err{mname} ? "red":"black").'>Отчество:</div></td>
+		<td><input type="text" name="mname" value="'.($ARGS{mname} || $Usr->{mname} || '').'" class="input-xlarge"></td>
+	</tr>
+	<tr>
+		<td><div style=color:'.($Err{lname} ? "red":"black").'>Фамилия:</div></td>
+		<td><input type="text" name="lname" value="'.($ARGS{lname} || $Usr->{lname} || '').'" class="input-xlarge"></td>
+	</tr>
+	<tr>
+		<td><div style=color:'.($Err{nicname} ? "red":"black").'>Ник:</div></td>
+		<td><input type="text" name="nicname" value="'.($ARGS{nicname} || $Usr->{nicname} || '').'" class="input-xlarge"></td>
+	</tr>
+	<tr>
+		<td><div style=color:'.($Err{birthdate} ? "red":"black").'>Дата рождения:</div></td>
+		<td><input type="text" name="birthdate" value="'.($ARGS{birthdate} || $m->comp("lib.msn:pretty_date",date=>$Usr->{birthdate}) || '').'" class="input-xlarge" onfocus="this.select();_Calendar.lcs(this)" onclick="event.cancelBubble=true;this.select();_Calendar.lcs(this)" placeholder="dd.mm.yyyy"></td>
+		</td>
+	</tr>
+	<tr>
+		<td><div style=color:'.($Err{phone} ? "red":"black").'>Телефон:</div></td>
+		<td><div id="ph">';
+	my $i = 0;
+	foreach(@phone ? @phone : (ref $Usr->{phone} eq 'ARRAY' ? @{$Usr->{phone}} : $Usr->{phone})) {
+		$FORM_NEW .= '<br>'	if($i);
+		$i++;
+		$FORM_NEW .= '<input multiple="yes" type="text" name="phone" value="'.$_.'" class="input-xlarge">';
+	}
+	$FORM_NEW .= '<input type=button value="+" title="Добавить поле" onclick=add_phone()>';
+	$FORM_NEW .= '</div></td>
+	<tr>
+		<td><div style=color:'.($Err{email} ? "red":"black").'>Email:</div></td>
+		<td><div id="em">';
+	$i = 0;
+	foreach(@email ? @email : (ref $Usr->{email} eq 'ARRAY' ? @{$Usr->{email}} : $Usr->{email})) {
+		$FORM_NEW .= '<br>'	if($i);
+		$i++;
+		$FORM_NEW .= '<input multiple="yes" type="text" name="email" value="'.$_.'" class="input-xlarge">';
+	}
+	$FORM_NEW .= '<input type=button value="+" title="Добавить поле" onclick=add_email()>';
+	$FORM_NEW .= '</div></td>
+	</tr>
+	<tr>
+		<td>Примечания:</td>
+		<td><textarea name="memo" cols="30" rows="2">'.($ARGS{memo} || $Usr->{memo} || '').'</textarea></td>
+		</td>
+	</tr>';
+	$FORM_EDIT = $FORM_NEW;
+
+	$m->out('<script type=text/javascript>
+	function add_phone() {
+	 document.getElementById("ph").innerHTML+="<br><input type=text id=\"phone\" name=\"phone\">";
+	}
+	function add_email() {
+	 document.getElementById("em").innerHTML+="<br><input type=text id=\"email\" name=\"email\">";
+	}
+	</script>');
+
+	$sth = $dbh->prepare("SELECT id,fname,mname,lname FROM persons WHERE active=1 ORDER BY lname, fname");
+	$sth->execute();
+	while(my $r = $sth->fetchrow_hashref) {
+		my @a = ('<a href="?type='.$type.'&id='.$r->{id}.'">'.($r->{lname} || '-').'</a>', $r->{fname}, $r->{mname});
 		push @$List, \@a;
 	}
 }
@@ -274,6 +523,7 @@ else {
 	<li><a href="/">Home</a> <span class="divider">/</span></li>
 %	if($type) {
 	<li><a href="config.html">Конфигурация</a> <span class="divider">/</span></li>
+	<li class="active"><% $Title %><span class="divider">/</span></li>
 %	} else {
 	<li class="active">Конфигурация<span class="divider">/</span></li>
 %	}
@@ -322,6 +572,11 @@ $(document).ready(function() {
 </ul>
 </div>
 
+<div class="row">
+<ul>
+<li><a href="/phpldapadmin/index.php" target=_blank>Конфигурация (LDAP)</a></li>
+</ul>
+</div>
 
 %}
 

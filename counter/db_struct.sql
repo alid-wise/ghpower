@@ -285,6 +285,7 @@ CREATE TABLE towers (
     memo character varying,
     setdate date,
     type character varying,
+    lamp boolean default false,
     modtime timestamp without time zone DEFAULT now() NOT NULL,
     primary key (id)
 );
@@ -486,6 +487,8 @@ CREATE TABLE outnum (
 	primary key (id)
 );
 
+----------------------------------------------------------------------------------
+-- Управление доступом
 -- Auth
 CREATE TABLE auth_grp (
 	id INTEGER NOT NULL,
@@ -501,10 +504,14 @@ CREATE TABLE auth (
 	active integer default 0,
 	gid integer default 0,
 	memo character varying,
+	auth integer default 0,
 	modtime timestamp without time zone default now(),
 	primary key (id)
 );
 
+-----------------------------------------------------------------------------------
+-- DRAFT ONLY!!!
+-- 2018-12-28
 -- Infrastructure
 CREATE TABLE street (
 	id serial NOT NULL,
@@ -515,3 +522,38 @@ CREATE TABLE street (
 	modtime timestamp without time zone default now(),
 	primary key (id)
 );
+
+-- Участки
+CREATE TABLE parcels (
+	id serial NOT NULL,
+	active integer default 0,
+	street_id integer,
+	number character varying,
+	square numeric,
+	owner integer[],	-- persons_id
+	manager integer[],	-- persons_id
+	maillist_common boolean default FALSE,
+	maillist_pays boolean default FALSE,
+	memo varchar,
+	auth integer default 0,
+	modtime timestamp without time zone default now(),
+	primary key (id)
+);
+
+-- Персоны
+CREATE TABLE persons (
+	id serial NOT NULL,
+	active integer default 0,
+	fname varchar,
+	mname varchar,
+	lname varchar,
+	nicname varchar,
+	birthdate date,
+	email varchar[],
+	phone varchar[],
+	memo varchar,
+	auth integer default 0,
+	modtime timestamp without time zone default now(),
+	primary key (id)
+);
+
