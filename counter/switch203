@@ -78,6 +78,5 @@ if(defined $command) {	# Задана команда
 }
 # Читаем текущее состояние
 print $unit->get_switch()."\n";
-
 $unit->quit();
 
