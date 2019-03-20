@@ -125,11 +125,10 @@ unless($cid) {
 	my $bal = `$balcmd $database $cid $mgid`;
 	my ($tm,$val,undef) = split(/\s/,$bal);
 	if($tm && defined $val) {
-		my $tmlast;
-		eval{$tmlast = system("rrdtool","last","$dpath/$mgid/balance.rrd"); };
+		my $tmlast = `rrdtool last $dpath/$mgid/balance.rrd`;
 		chomp $tmlast; $tmlast ||= 0;
-		if($tm > $tmlast) {
-		eval{my $res = system("rrdtool","update","$dpath/$mgid/balance.rrd","$tm:$val"); };
+		if($tm > $tmlast+1) {
+			my $res = system("rrdtool","update","$dpath/$mgid/balance.rrd","$tm:$val");
 	#	warn "Can't update balance database: $!"	if $res;
 		}
 	}
@@ -186,11 +185,10 @@ foreach my $id (@Glist) {
 	$sth->finish;
 	if($tm && defined $val) {
 		$val *= 1000;	# Ватты
-		my $tmlast;
-		eval{ $tmlast = system("rrdtool","last","$dpath/$mgid/$id.rrd"); };
+		my $tmlast = `rrdtool last $dpath/$mgid/$id.rrd`;
 		chomp $tmlast; $tmlast ||= 0;
 		if($tm > $tmlast) {
-		eval{ my $res = system("rrdtool update $dpath/$mgid/$id.rrd $tm:$val >/dev/null 2>\&1"); };
+			my $res = system("rrdtool update $dpath/$mgid/$id.rrd $tm:$val >/dev/null 2>\&1");
 #		eval{ my $res = system("rrdtool","update","$dpath/$mgid/$id.rrd","$tm:$val"); };
 #		warn "Can't update counter database: $!"	if $res;
 		}
@@ -248,12 +246,11 @@ foreach my $id (@Glist) {
 
 		if($tm) {
 			map { $_ ||= 0; } ($mp1,$mp2,$mp3);
-			my $tmlast;
-			eval{ $tmlast = system("rrdtool","last","$dpath/$mgid/$id.3f.rrd"); };
+			my $tmlast = `rrdtool last $dpath/$mgid/$id.3f.rrd`;
 			chomp $tmlast; $tmlast ||= 0;
 
 			if($tm > $tmlast) {
-				eval{ my $res = system("rrdtool update $dpath/$mgid/$id.3f.rrd $tm:$mp1:$mp2:$mp3 >/dev/null 2>\&1"); };
+				my $res = system("rrdtool update $dpath/$mgid/$id.3f.rrd $tm:$mp1:$mp2:$mp3");
 #				eval{ my $res = system("rrdtool","update","$dpath/$mgid/$id.3f.rrd","$tm:$mp1:$mp2:$mp3"); };
 #				warn "Can't update counter database: $!"	if $res;
 			}

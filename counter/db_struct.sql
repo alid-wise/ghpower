@@ -532,6 +532,7 @@ CREATE TABLE parcels (
 	square numeric,
 	owner integer[],	-- persons_id
 	manager integer[],	-- persons_id
+	maillist_el boolean default FALSE,
 	maillist_common boolean default FALSE,
 	maillist_pays boolean default FALSE,
 	memo varchar,

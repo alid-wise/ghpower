@@ -37,7 +37,7 @@ $id =~ s/\D//g;
 my ($Usr, $List, @Fields);
 my %Err;
 my $sth;
-my ($OK, $FORM_NEW, $FORM_EDIT, $Title);
+my ($OK, $FORM_NEW, $FORM_EDIT, $Title, $MODAL, $SCRIPT);
 
 if($type == 1) {	# Доступ
 	@Fields = ('Имя','Email','Логин','Группа');
@@ -377,7 +377,216 @@ elsif($type == 4) {	# Проезды (улицы)
 	}
 }
 
+elsif($type == 5) {	# Участки
+	@Fields = ('Проезд','Участок','Площадь');
+	$Title = 'Участки';
 
+my (@phone, @email);
+
+
+	my (@owner, @manager);
+	my $Streets = $m->comp("lib.msn:Street_list", dbh=>$dbh);
+	my $Person = $m->comp("lib.msn:Person_list", dbh=>$dbh);
+
+	if($ARGS{submit}) {
+		if($ARGS{drop}) {
+			$sth = $dbh->prepare("UPDATE parcels SET active=0 WHERE id=?");
+			$sth->execute($id);
+			undef $ARGS{drop};
+			undef $id;
+			$OK++;
+		} else {
+			my $number = substr($ARGS{number},0,100);
+			$Err{number}++	unless($number);
+			my $street_id = $ARGS{street_id};
+			$street_id =~ s/\D//g;
+			$street_id ||= 0;
+			my $square = $ARGS{square};
+			$square =~ s/[^\d\.\,]//g;
+			$square =~ s/\,/\./;
+			$square = sprintf("%.2f", $square);
+
+#			my $mname = substr($ARGS{mname},0,100);
+#			my $lname = substr($ARGS{lname},0,100);
+#			my $nicname = substr($ARGS{nicname},0,100);
+#			my $birthdate = '';
+#			if($ARGS{birthdate} =~ /(\d{1,2})[\-\.](\d{1,2})[\-\.](\d{4})/) {
+#				$birthdate = sprintf("%d-%02d-%02d",$3,$2,$1);
+#			} else {
+#				$Err{birthdate}++	if($ARGS{birthdate});
+#			}
+			(@owner) = $m->{cgi_object}->param('owner');
+			map { $_ =~ s/\D//g; } @owner;
+			map { $_ =~ int($_); } @owner;
+			(@manager) = $m->{cgi_object}->param('manager');
+			map { $_ =~ s/\D//g; } @manager;
+
+			unless(%Err) {
+				my @ow_ph; map { push @ow_ph,'?::integer'; } @owner;
+				my @mg_ph; map { push @mg_ph,'?::integer'; } @manager;
+				if($id) {
+					$sth = $dbh->prepare("UPDATE parcels SET street_id=?,number=?,square=?,owner=ARRAY[".join(",",@ow_ph)."],manager=ARRAY[".join(",",@mg_ph)."],maillist_el=?,maillist_common=?,maillist_pays=?,memo=?,active=1, auth=?, modtime=now() WHERE id=?");
+					$sth->execute($street_id,$number,$square,@owner,@manager,$ARGS{maillist_el}?'true':'false',$ARGS{maillist_common}?'true':'false',$ARGS{maillist_pays}?'true':'false',$ARGS{memo}, $auth->{id}, $id);
+#					undef $id;
+#					$OK++;
+				} else {
+#					$sth = $dbh->prepare("SELECT id FROM persons WHERE fname=? AND mname=? AND lname=? AND auth=?");
+#					$sth->execute($fname, $mname, $lname, $auth->{id});
+#					my ($oid) = $sth->fetchrow_array;
+#					$sth->finish;
+#					unless($oid) {
+#						$sth = $dbh->prepare("INSERT INTO persons (fname,mname,lname,nicname,".($birthdate ? "birthdate,":"")."email,phone,memo,active,auth) VALUES (?,?,?,?,".($birthdate ? "?,":"")."ARRAY[".join(",",@em_ph)."],ARRAY[".join(",",@ph_ph)."],?,1,?)");
+#						if($birthdate) {
+#							$sth->execute($fname,$mname,$lname,$nicname,$birthdate,@email,@phone,$ARGS{memo},$auth->{id});
+#						} else {
+#							$sth->execute($fname,$mname,$lname,$nicname,@email,@phone,$ARGS{memo},$auth->{id});
+#						}
+#					}
+#					undef $ARGS{add_new};
+#					$OK++;
+				}
+			}
+		}
+	} else {
+		if($id) {	# Редактирование записи
+			$sth = $dbh->prepare("SELECT id,street_id,number,square,owner,manager,maillist_el,maillist_common,maillist_pays,memo,auth,modtime FROM parcels WHERE id=? LIMIT 1");
+			$sth->execute($id);
+			$Usr = $sth->fetchrow_hashref;
+			$sth->finish;
+		}
+	}
+	$FORM_NEW = '<tr>
+		<td><div style=color:'.($Err{street_id} ? "red":"black").'>Проезд:</div></td>
+		<td><select id="street_id" name="street_id">
+			<option></option>';
+			foreach(sort {$Streets->{$a}->{ord} <=> $Streets->{$b}->{ord}} keys %{$Streets}) {
+				$FORM_NEW .= '<option'.(($_ eq $ARGS{street_id} || $_ eq $Usr->{street_id})? " selected":"").' value="'.$_.'">'.$Streets->{$_}->{name}.'</option>';
+			}
+			$FORM_NEW .= '</select>
+		</td>
+	</tr>
+	<tr>
+		<td><div style=color:'.($Err{number} ? "red":"black").'>Номер участка:</div></td>
+		<td><input type="text" name="number" value="'.($ARGS{number} || $Usr->{number} || '').'" class="input-xlarge"></td>
+	</tr>
+	<tr>
+		<td><div style=color:'.($Err{square} ? "red":"black").'>Площадь:</div></td>
+		<td><input type="text" name="square" value="'.($ARGS{square} || $Usr->{square} || '').'" class="input-xlarge"></td>
+	</tr>
+	<tr>
+		<td><div style=color:'.($Err{owner} ? "red":"black").'><input type="button" class="btn btn-primary btn-xs" data-content="padd_$cred->{id}" data-backdrop="true" data-toggle="modal" data-target="#OptModal" value="+" title="добавить владельца">&nbsp;&nbsp;Владелец:</div></td>
+		<td><div id="ow">';
+#	my $i = 0;
+	$FORM_NEW .= '<select multiple="yes" size="'.(@owner ? (scalar @owner) : (ref $Usr->{owner} eq 'ARRAY' ? scalar @{$Usr->{owner}} : 1)).'" id="owner" name="owner">';
+	foreach(@owner ? @owner : (ref $Usr->{owner} eq 'ARRAY' ? @{$Usr->{owner}} : $Usr->{owner})) {
+#		$FORM_NEW .= '<br>'	if($i);
+#		$i++;
+#		$FORM_NEW .= '<input disabled multiple="yes" type="text" name="owner" value="'.$Person->{$_}->{lname}.' '.$Person->{$_}->{fname}.' '.$Person->{$_}->{mname}.'" class="input-xlarge"><input type="button" value="E">';
+		$FORM_NEW .= '<option selected value="'.$_.'">'.$Person->{$_}->{lname}.' '.$Person->{$_}->{fname}.' '.$Person->{$_}->{mname}.'</option>';
+	}
+	$FORM_NEW .= '</select>';
+#	$FORM_NEW .= '<input type=button value="+" title="Добавить поле" onclick=add_owner()>';
+	$FORM_NEW .= '</div></td>
+	<tr>
+		<td><div style=color:'.($Err{manager} ? "red":"black").'><input type="button" class="btn btn-primary btn-xs" id="XXXXXXX" data-content="'.$Usr->{manager}.'" data-backdrop="true" data-toggle="modal" data-target="#OptModal" value="+" title="добавить представителя">&nbsp;&nbsp;Представитель:</div></td>
+		<td><div id="mg">';
+#	$i = 0;
+#	$FORM_NEW .= '<select multiple="yes" size="'.(@manager ? (scalar @manager) : ( ref $Usr->{manager} eq 'ARRAY' ? scalar @{$Usr->{manager}}:1)).'" id="manager" name="manager">';
+	my $c_mg = '<select multiple="yes" hidden id="manager" name="manager">';
+	foreach(@manager ? @manager : (ref $Usr->{manager} eq 'ARRAY' ? @{$Usr->{manager}} : $Usr->{manager})) {
+		$FORM_NEW .= ''.$Person->{$_}->{lname}.' '.$Person->{$_}->{fname}.' '.$Person->{$_}->{mname}.'<br>';
+		$c_mg .= '<option selected value="'.$_.'">'.$Person->{$_}->{lname}.' '.$Person->{$_}->{fname}.' '.$Person->{$_}->{mname}.'</option>';
+	}
+	$c_mg .= '</select>';
+	$FORM_NEW .= $c_mg;
+
+#	$FORM_NEW .= '<input type=button value="+" title="Добавить поле" onclick=add_manager()>';
+#	$FORM_NEW .= '&nbsp;&nbsp;<input type="button" class="btn btn-primary btn-xs" data-content="padd_$cred->{id}" data-backdrop="true" data-toggle="modal" data-target="#OptModal" value="+" title="добавить представителя" onclick="showmodal()">';
+
+
+	$FORM_NEW .= '</div></td>
+	</tr>
+
+	<tr>
+		<td>Общая рассылка:</td>
+		<td><input type="checkbox" name="maillist_common" '.(($ARGS{maillist_common} || $Usr->{maillist_common})? 'checked':'').' ></td>
+	</tr>
+	<tr>
+		<td>Рассылка (счетчик):</td>
+		<td><input type="checkbox" name="maillist_el" '.(($ARGS{maillist_el} || $Usr->{maillist_el})? 'checked':'').' ></td>
+	</tr>
+	<tr>
+		<td>Рассылка (взносы):</td>
+		<td><input type="checkbox" name="maillist_pays" '.(($ARGS{maillist_pays} || $Usr->{maillist_pays})? 'checked':'').' ></td>
+	</tr>
+	<tr>
+		<td>Примечания:</td>
+		<td><textarea name="memo" cols="30" rows="2">'.($ARGS{memo} || $Usr->{memo} || '').'</textarea></td>
+		</td>
+	</tr>';
+	$FORM_EDIT = $FORM_NEW;
+
+
+#	function showmodal() {
+#		var modalWin = document.getElementById(\'popupWin\');
+#		modalWin.style.display = \'block\';
+#	}
+
+$SCRIPT = '
+$(\'#OptModal\').on(\'show.bs.modal\', function(e) {
+	var content = e.relatedTarget.dataset.content;
+	var $modal = $(this),
+	esseyId = e.relatedTarget.id;
+	alert(content);
+	$modal.find(\'.edit-content\').html(esseyId);
+});
+';
+
+#	function sendform() {
+#		alert(\'3\');
+#	}
+
+#	$m->out('<script type=text/javascript>'.$script.'</script>');
+
+
+	# Диалоговое окно поиска по списку персон
+	$MODAL .= '<select multiple="yes" size="20" id="manager" name="manager">';
+	foreach my $mid (sort {$Person->{$a}->{lname} cmp $Person->{$b}->{lname}} keys %{$Person}) {
+		$MODAL .= '<option value="'.$mid.'"';
+#		foreach(@manager ? @manager : (ref $Usr->{manager} eq 'ARRAY' ? @{$Usr->{manager}} : $Usr->{manager})) {
+#			$MODAL .= ' selected ' 	if($_ == $mid);
+#		}
+		$MODAL .= '>'.$Person->{$mid}->{lname}.' '.$Person->{$mid}->{fname}.' '.$Person->{$mid}->{mname}.'</option>';
+	}
+	$MODAL .= '</select>';
+
+
+#	foreach(@manager ? @manager : (ref $Usr->{manager} eq 'ARRAY' ? @{$Usr->{manager}} : $Usr->{manager})) {
+#		$FORM_NEW .= '<input multiple="yes" type="text" name="manager" value="'.$Person->{$_}->{lname}.' '.$Person->{$_}->{fname}.' '.$Person->{$_}->{mname}.'" class="input-xlarge">';
+#		$FORM_NEW .= '<option selected value="'.$_.'">'.$Person->{$_}->{lname}.' '.$Person->{$_}->{fname}.' '.$Person->{$_}->{mname}.'</option>';
+#	}
+
+
+
+
+
+
+
+#	function add_owner() {
+#	 document.getElementById("ow").innerHTML+="<br><input type=text id=\"owner\" name=\"owner\">";
+#	}
+#	function add_manager() {
+#	 document.getElementById("mg").innerHTML+="<br><input type=text id=\"manager\" name=\"manager\">";
+#	}
+#	</script>');
+
+	$sth = $dbh->prepare("SELECT A.id AS id,B.name AS street,A.number AS number,A.square AS square FROM parcels A INNER JOIN street B ON A.street_id=B.id WHERE A.active=1 ORDER BY B.ord");
+	$sth->execute();
+	while(my $r = $sth->fetchrow_hashref) {
+		my @a = ($r->{street},'<a href="?type='.$type.'&id='.$r->{id}.'"><div class="pull-right">'.($r->{number} || '-').'</div></a>', '<div class="pull-right">'.$r->{square}.'</div>');
+		push @$List, \@a;
+	}
+}
 
 elsif($type == 6) {	# Персоны
 	@Fields = ('Фамилия','Имя','Отчество');
@@ -389,6 +598,7 @@ elsif($type == 6) {	# Персоны
 			$sth->execute($id);
 			undef $ARGS{drop};
 			undef $id;
+			$OK++;
 		} else {
 			my $fname = substr($ARGS{fname},0,100);
 			my $mname = substr($ARGS{mname},0,100);
@@ -540,6 +750,29 @@ $(document).ready(function() {
 <h4><% $Title %></h4>
 
 %if($id || $ARGS{add_new}) {
+%# Модальное окно
+<div id="OptModal" class="modal fade" tabindex="-1">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header"><button id="mclose" class="close" type="button" data-dismiss="modal">×</button>
+				<h4 class="modal-title">&nbsp;</h4>
+			</div>
+			<div class="modal-body">
+				<div class="embed-responsive embed-responsive-16by9">
+%#					<iframe><%$MODAL%>TEST</iframe>
+%#					<div class="modal-body edit-content"></div>
+					<div><%$MODAL%></div>
+				</div>
+			</div>
+			<div class="modal-footer">
+			<button class="btn btn-default" type="button" data-dismiss="modal">закрыть</button>
+%#			<button class="btn btn-primary" type="submit" onclick="window.frames[0].sendform();">Сохранить</button>
+			<button class="btn btn-primary" type="submit" onclick="window.sendform();">Ok</button>
+			</div>
+		</div>
+	</div>
+</div>
+
 <form method="POST">
 <table border="1">
 <tr><td colspan="2" align="right"><input type="submit" name="cancel" value="X" title="отменить"></td></tr>
@@ -602,12 +835,16 @@ $(document).ready(function() {
 %}
 
 
+<script>
+<% $SCRIPT %>
+</script>
 
-
-%#<pre>
-%#<% Dumper %ARGS %>
+<pre>
+%use Data::Dumper;
+<% Dumper %ARGS %>
 %#<% $FORM_NEW %>
 %#<% Dumper $Usr %>
-%#</pre>
+<% $ARGS{street_id} %>
+</pre>
 
 

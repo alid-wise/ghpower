@@ -364,6 +364,71 @@ unless($nocache) {
 </%method>
 
 
+<%method Street_list>
+<%doc>
+	Список проездов
+</%doc>
+<%args>
+	$dbh
+	$nocache => 1
+</%args>
+<%init>
+	unless($nocache) {
+		my ($rv, $cached) = $m->cache_self(
+			expire_in => '1 hour',
+			busy_lock => '5sec',
+			ttl => '5minutes',
+			key => "Streets_list",
+			expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
+		);
+		return $rv	if($cached);
+	}
+	my $ret = undef;
+	my $sth = $dbh->prepare("SELECT id,name,sname,ord FROM street");
+	$sth->execute();
+	while(my $r = $sth->fetchrow_hashref) {
+		$ret->{$r->{id}} = $r;
+	}
+	$sth->finish;
+	$ret = {}	unless $ret;
+	return $ret;
+</%init>
+</%method>
+
+
+<%method Person_list>
+<%doc>
+	Список людей
+</%doc>
+<%args>
+	$dbh
+	$nocache => 1
+</%args>
+<%init>
+	unless($nocache) {
+		my ($rv, $cached) = $m->cache_self(
+			expire_in => '1 hour',
+			busy_lock => '5sec',
+			ttl => '5minutes',
+			key => "Person_list",
+			expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
+		);
+		return $rv	if($cached);
+	}
+	my $ret = undef;
+	my $sth = $dbh->prepare("SELECT id,fname,mname,lname FROM persons WHERE active=1");
+	$sth->execute();
+	while(my $r = $sth->fetchrow_hashref) {
+		$ret->{$r->{id}} = $r;
+	}
+	$sth->finish;
+	$ret = {}	unless $ret;
+	return $ret;
+</%init>
+</%method>
+
+
+
 
 
 
