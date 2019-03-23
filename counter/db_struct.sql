@@ -307,7 +307,7 @@ CREATE TABLE daily (
 	PRIMARY KEY (id)
 );
 create INDEX daily_cid_i ON daily (cid);
-create INDEX daily_date_i ON daily (ASC date);
+create INDEX daily_date_i ON daily (date ASC);
 
 --
 -- Платежи
