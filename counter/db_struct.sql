@@ -495,10 +495,14 @@ CREATE TABLE auth_grp (
 	name VARCHAR,
 	primary key (id)
 );
+insert into auth_grp (id,name) values (1,'admin');
+
+create extension pgcrypto;
 
 CREATE TABLE auth (
 	id INTEGER NOT NULL,
-	name VARCHAR,
+	name character varying,
+	login character varying,
 	password character varying,
 	email character varying,
 	active integer default 0,
@@ -508,6 +512,7 @@ CREATE TABLE auth (
 	modtime timestamp without time zone default now(),
 	primary key (id)
 );
+insert into auth (id,name,login,password,active,gid) values ( 1,'[Embedded Admin]','admin',crypt('ghpower',gen_salt('bf')),1,1);
 
 -----------------------------------------------------------------------------------
 -- DRAFT ONLY!!!
@@ -557,4 +562,13 @@ CREATE TABLE persons (
 	modtime timestamp without time zone default now(),
 	primary key (id)
 );
+
+
+create role www;
+alter role www login;
+grant CONNECT ON DATABASE ghpower TO www;
+grant SELECT ON ALL tables in schema public TO www;
+grant INSERT ON ALL tables in schema public TO www;
+grant DELETE ON ALL tables in schema public TO www;
+grant UPDATE ON ALL tables in schema public TO www;
 
