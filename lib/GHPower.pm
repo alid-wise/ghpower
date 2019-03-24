@@ -118,7 +118,7 @@ sub Counters_list {
   my $showdel = shift;
 
   my $ret = undef;
-  my $sth = $self->{dbh}->prepare("select A.id,A.name,A.addr,A.mgroup,A.passwd,A.sn,A.model,A.setdate,A.memo,A.active,A.modtime,A.passwd2,A.ktrans,A.tower_id,A.year,A.street,A.house,A.owner,A.plimit,A.subscr,B.id as status_id,B.state,B.pstate,B.se1,B.se2,B.modtime as status_modtime,A.dn from counters A left outer join status B on B.cid=A.id".((!$showdel) ? " where not (A.active < 0)":""));
+  my $sth = $self->{dbh}->prepare("select A.id,A.name,A.addr,A.mgroup,A.passwd,A.sn,A.model,A.setdate,A.memo,A.active,A.modtime,A.passwd2,A.ktrans,A.tower_id,A.year,A.plimit,A.subscr,B.id as status_id,B.state,B.pstate,B.se1,B.se2,B.modtime as status_modtime,A.dn from counters A left outer join status B on B.cid=A.id".((!$showdel) ? " where not (A.active < 0)":""));
   $sth->execute();
   while(my $r = $sth->fetchrow_hashref) {
     if($r->{dn} &&  ($r->{dn} =~ m/ou=([^,]+),\s*ou=([^,]+)/)) {  # Можно получить дополнительную информацию в LDAP

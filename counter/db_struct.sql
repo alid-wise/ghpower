@@ -89,10 +89,10 @@ create table counters (
 	modtime timestamp default now(),
 	tower_id integer,
 	year integer,
---	street integer,
---	house varchar,
+---	street integer,
+---	house varchar,
 	dn varchar,	-- участок ou=3,ou=Восточный
---	owner varchar,	-- users.id
+---	owner varchar,	-- users.id
 	plimit decimal DEFAULT 3.6,	-- допустимая потребляемая мощность
 	subscr integer default 0,	-- подписка владельца на алерты
 	primary key (id)
