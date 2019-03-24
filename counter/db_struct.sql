@@ -92,6 +92,7 @@ create table counters (
 ---	street integer,
 ---	house varchar,
 	dn varchar,	-- участок ou=3,ou=Восточный
+	parcel_id integer,
 ---	owner varchar,	-- users.id
 	plimit decimal DEFAULT 3.6,	-- допустимая потребляемая мощность
 	subscr integer default 0,	-- подписка владельца на алерты
@@ -539,9 +540,7 @@ CREATE TABLE parcels (
 	square numeric,
 	owner integer[],	-- persons_id
 	manager integer[],	-- persons_id
-	maillist_el boolean default FALSE,
-	maillist_common boolean default FALSE,
-	maillist_pays boolean default FALSE,
+	maillist boolean default FALSE,
 	memo varchar,
 	auth integer default 0,
 	modtime timestamp without time zone default now(),
