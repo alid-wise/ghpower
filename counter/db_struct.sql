@@ -571,4 +571,5 @@ grant SELECT ON ALL tables in schema public TO www;
 grant INSERT ON ALL tables in schema public TO www;
 grant DELETE ON ALL tables in schema public TO www;
 grant UPDATE ON ALL tables in schema public TO www;
-
+grant UPDATE ON ALL sequences in schema public TO www;
+	

@@ -7,7 +7,7 @@
 <%init>
 use XML::Simple;
 use POSIX;
-use File::Temp;
+use File::Temp qw/ tempfile tempdir /;
 
 if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# admin или manager
 	$r->status_line('');
@@ -130,7 +130,7 @@ elsif($id == 3) {	# Можно использовать как шаблон дл
 		$FORM .= '</table></form>';
 	} else {
 
-		my $tmpname = tmpnam();
+		my (undef,$tmpname) = tempfile();
 		system("export MY=$ENV{MY}; \$MY/counter/fullist_estored $date > $tmpname");
 		my $D = XMLin($tmpname, ForceArray => [ ]);
 		unlink($tmpname);
