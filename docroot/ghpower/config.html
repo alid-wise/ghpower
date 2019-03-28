@@ -425,8 +425,8 @@ my (@phone, @email);
 				my @ow_ph; map { push @ow_ph,'?::integer'; } @owner;
 				my @mg_ph; map { push @mg_ph,'?::integer'; } @manager;
 				if($id) {
-					$sth = $dbh->prepare("UPDATE parcels SET street_id=?,number=?,square=?,owner=ARRAY[".join(",",@ow_ph)."],manager=ARRAY[".join(",",@mg_ph)."],maillist_el=?,maillist_common=?,maillist_pays=?,memo=?,active=1, auth=?, modtime=now() WHERE id=?");
-					$sth->execute($street_id,$number,$square,@owner,@manager,$ARGS{maillist_el}?'true':'false',$ARGS{maillist_common}?'true':'false',$ARGS{maillist_pays}?'true':'false',$ARGS{memo}, $auth->{id}, $id);
+					$sth = $dbh->prepare("UPDATE parcels SET street_id=?,number=?,square=?,owner=ARRAY[".join(",",@ow_ph)."],manager=ARRAY[".join(",",@mg_ph)."],maillist=?,memo=?,active=1, auth=?, modtime=now() WHERE id=?");
+					$sth->execute($street_id,$number,$square,@owner,@manager,$ARGS{maillist}?'true':'false',$ARGS{memo}, $auth->{id}, $id);
 #					undef $id;
 #					$OK++;
 				} else {
@@ -449,7 +449,7 @@ my (@phone, @email);
 		}
 	} else {
 		if($id) {	# Редактирование записи
-			$sth = $dbh->prepare("SELECT id,street_id,number,square,owner,manager,maillist_el,maillist_common,maillist_pays,memo,auth,modtime FROM parcels WHERE id=? LIMIT 1");
+			$sth = $dbh->prepare("SELECT id,street_id,number,square,owner,manager,maillist,memo,auth,modtime FROM parcels WHERE id=? LIMIT 1");
 			$sth->execute($id);
 			$Usr = $sth->fetchrow_hashref;
 			$sth->finish;
@@ -508,16 +508,8 @@ my (@phone, @email);
 	</tr>
 
 	<tr>
-		<td>Общая рассылка:</td>
-		<td><input type="checkbox" name="maillist_common" '.(($ARGS{maillist_common} || $Usr->{maillist_common})? 'checked':'').' ></td>
-	</tr>
-	<tr>
-		<td>Рассылка (счетчик):</td>
-		<td><input type="checkbox" name="maillist_el" '.(($ARGS{maillist_el} || $Usr->{maillist_el})? 'checked':'').' ></td>
-	</tr>
-	<tr>
-		<td>Рассылка (взносы):</td>
-		<td><input type="checkbox" name="maillist_pays" '.(($ARGS{maillist_pays} || $Usr->{maillist_pays})? 'checked':'').' ></td>
+		<td>Рассылка:</td>
+		<td><input type="checkbox" name="maillist" '.(($ARGS{maillist} || $Usr->{maillist})? 'checked':'').' ></td>
 	</tr>
 	<tr>
 		<td>Примечания:</td>
