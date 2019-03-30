@@ -79,8 +79,8 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 				$chg++	if($subscr ne $Usr->{subscr})? 1:0;
 				map {$chg++ if($ARGS{$_} ne $Usr->{$_})} ('name','addr','mgroup','sn','model','setdate','memo','tower_id','year','street','house','owner','plimit','dn','ktrans');
 				if($chg) {	# есть изменения
-					my $upd = $dbh->prepare("update counters set name=?,addr=?,mgroup=?,sn=?,model=?,setdate=?,memo=?,active=?,tower_id=?,year=?,street=?,house=?,owner=?,modtime=now(),plimit=?,subscr=?,dn=?,ktrans=? where id=?");
-					$upd->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{street},$ARGS{house},$ARGS{owner},$ARGS{plimit},$subscr,$ARGS{dn},$ARGS{ktrans},$id);
+					my $upd = $dbh->prepare("update counters set name=?,addr=?,mgroup=?,sn=?,model=?,setdate=?,memo=?,active=?,tower_id=?,year=?,modtime=now(),plimit=?,subscr=?,dn=?,ktrans=? where id=?");
+					$upd->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{plimit},$subscr,$ARGS{dn},$ARGS{ktrans},$id);
 				}
 				if($ARGS{balance_mgroup} && $Usr->{balance_mgroup} && ($ARGS{balance_mgroup} != $Usr->{balance_mgroup})) {
 					$dbh->do("UPDATE mgroup SET bid=null WHERE bid=$id");
@@ -96,8 +96,8 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 			} else {	# Новая запись
 				my ($passwd1,$passwd2) = ('','');
 				if($Ctypes->{$ARGS{model}}->{type} eq 'M230') { ($passwd1,$passwd2) = ('111111','222222'); }
-				my $ins = $dbh->prepare("insert into counters (name,addr,mgroup,sn,model,setdate,memo,active,tower_id,year,street,house,owner,passwd,passwd2,modtime,plimit,subscr,dn,ktrans) values (?,?,?,?,?,?,?,?,?,?,?,?,?,\'$passwd1\',\'$passwd2\',now(),?,?,?,?) RETURNING id");
-				$ins->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{street},$ARGS{house},$ARGS{owner},$ARGS{plimit},$subscr,$ARGS{dn},$ARGS{ktrans});
+				my $ins = $dbh->prepare("insert into counters (name,addr,mgroup,sn,model,setdate,memo,active,tower_id,year,passwd,passwd2,modtime,plimit,subscr,dn,ktrans) values (?,?,?,?,?,?,?,?,?,?,?,?,?,\'$passwd1\',\'$passwd2\',now(),?,?,?,?) RETURNING id");
+				$ins->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{plimit},$subscr,$ARGS{dn},$ARGS{ktrans});
 				my ($cid) = $ins->fetchrow_array;
 				# Начальные показания счетчика (на момент установки)
 				map { $_ =~ s/\,/\./; $_ =~ s/[^\d\.]//g; } ($ARGS{t1i}, $ARGS{t2i});
