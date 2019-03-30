@@ -532,7 +532,30 @@ sub get_last_outnum {
   return undef;
 }
 
+########################################################################################################################################
+sub Street_List {
+  my $self = shift;
+  # Список улиц
+  my $sth = $self->{dbh}->prepare("SELECT name,sname FROM street");
+  $sth->execute();
+  my $ret;
+  while (my $r = $sth->fetchrow_hashref) {
+    my %h; $h{$r->{name}} = $r->{sname};
+    push @{$ret}, \%h;
+  }
+  $sth->finish;
+  return $ret;
+}
 
+
+
+
+
+# LDAP
+sub get_Domain {}
+sub Domains_Struct {}
+#
+sub Domains_List {}
 
 
 1;
