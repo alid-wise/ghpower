@@ -105,8 +105,8 @@ sub Counter_info {
   if($ret->{dn} &&  ($ret->{dn} =~ m/ou=([^,]+),\s*ou=([^,]+)/)) {  # Можно получить дополнительную информацию в LDAP
     $ret->{domain} = $1;
     $ret->{street_name} = $2;
-    my $ghldap = new GHPowerLDAP;
-    $ret->{Dom} = $ghldap->get_Domain($ret->{dn});
+#    my $ghldap = new GHPowerLDAP;
+#    $ret->{Dom} = $ghldap->get_Domain($ret->{dn});
   }
   $ret = {} unless $ret;
   return $ret;
@@ -118,15 +118,27 @@ sub Counters_list {
   my $showdel = shift;
 
   my $ret = undef;
-  my $sth = $self->{dbh}->prepare("select A.id,A.name,A.addr,A.mgroup,A.passwd,A.sn,A.model,A.setdate,A.memo,A.active,A.modtime,A.passwd2,A.ktrans,A.tower_id,A.year,A.plimit,A.subscr,B.id as status_id,B.state,B.pstate,B.se1,B.se2,B.modtime as status_modtime,A.dn from counters A left outer join status B on B.cid=A.id".((!$showdel) ? " where not (A.active < 0)":""));
+  my $usr = $self->{dbh}->prepare("select lname,fname,mname from persons where id=?");
+  my $sth = $self->{dbh}->prepare("select A.id,A.name,A.addr,A.mgroup,A.passwd,A.sn,A.model,A.setdate,A.memo,A.active,A.modtime,A.passwd2,A.ktrans,A.tower_id,A.year,A.plimit,A.subscr,B.id as status_id,B.state,B.pstate,B.se1,B.se2,B.modtime as status_modtime,A.parcel_id,P.number as domain,S.name as street_name,S.sname as street_sname,P.owner from counters A left outer join status B on B.cid=A.id left outer join parcels P on A.parcel_id=P.id left outer join street S on P.street_id=S.id".((!$showdel) ? " where not (A.active < 0)":""));
   $sth->execute();
   while(my $r = $sth->fetchrow_hashref) {
-    if($r->{dn} &&  ($r->{dn} =~ m/ou=([^,]+),\s*ou=([^,]+)/)) {  # Можно получить дополнительную информацию в LDAP
-      $r->{domain} = $1;
-      $r->{street_name} = $2;
-      my $ghldap = new GHPowerLDAP;
-      $r->{Dom} = $ghldap->get_Domain($r->{dn});
+#    if($r->{dn} &&  ($r->{dn} =~ m/ou=([^,]+),\s*ou=([^,]+)/)) {  # Можно получить дополнительную информацию в LDAP
+#      $r->{domain} = $1;
+#      $r->{street_name} = $2;
+#      my $ghldap = new GHPowerLDAP;
+#      $r->{Dom} = $ghldap->get_Domain($r->{dn});
+#    }
+    foreach my $uid (@{$r->{owner}}) {
+      $usr->execute($uid);
+      my ($lname,$fname,$mname) = $usr->fetchrow_array;
+      $usr->finish;
+      my $h;
+      push @{$h->{cn}}, "$lname $fname $mname";
+      push @{$r->{Dom}->{owners}}, $h;
     }
+
+
+
     push @{$ret->{$r->{mgroup}}->{items}}, $r;
   }
   $sth->finish;
@@ -533,9 +545,9 @@ sub get_last_outnum {
 }
 
 ########################################################################################################################################
+# Список улиц
 sub Street_List {
   my $self = shift;
-  # Список улиц
   my $sth = $self->{dbh}->prepare("SELECT name,sname FROM street");
   $sth->execute();
   my $ret;
@@ -547,6 +559,20 @@ sub Street_List {
   return $ret;
 }
 
+# Список участков
+sub Domains_List {
+  my $self = shift;
+  my %opts = shift;
+  my $active = exists $opts{active};
+  my $sth = $self->{dbh}->prepare("SELECT A.id,A.active,A.street_id,S.name as street_name,S.sname as street_sname,A.number,A.square,A.owner,A.manager,A.maillist,A.memo FROM parcels A inner join street S on A.street_id=S.id ".($active ? "where A.active=1":"")." order by S.name,A.number");
+  $sth->execute();
+  my $ret;
+  while (my $r = $sth->fetchrow_hashref) {
+    push @{$ret}, $r;
+  }
+  $sth->finish;
+  return $ret;
+}
 
 
 
@@ -555,7 +581,6 @@ sub Street_List {
 sub get_Domain {}
 sub Domains_Struct {}
 #
-sub Domains_List {}
 
 
 1;

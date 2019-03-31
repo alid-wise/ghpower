@@ -70,11 +70,13 @@ create table mgroup (
 	memo varchar,
 	rank integer,
 	bid integer,
-	modtime timestamp without time zone DEFAULT now()
+	modtime timestamp without time zone DEFAULT now(),
+	primary key (id)
 );
 -- счетчики
+create sequence counters_id_seq;
 create table counters (
-	id integer not null,
+	id integer not null default nextval('counters_id_seq'::regclass),
 	name varchar,
 	addr integer,
 	mgroup integer,
@@ -106,7 +108,8 @@ create table counter_type (
 	auth integer not null default 0,
 	name varchar,
 	type varchar,
-	modtime timestamp without time zone DEFAULT now()
+	modtime timestamp without time zone DEFAULT now(),
+	primary key (id)
 );
 INSERT INTO counter_type (name,type) VALUES ('Меркурий 230 ART-01 PQRSIN','M230');
 INSERT INTO counter_type (name,type) VALUES ('Меркурий-203.2T RBO','M203');
@@ -115,7 +118,8 @@ INSERT INTO counter_type (name,type) VALUES ('Меркурий-203.2T RBO','M203
 create table iface (
 	id integer not null,
 --	name varchar,
-	dev varchar
+	dev varchar,
+	primary key (id)
 );
 
 -- текущее состояние
