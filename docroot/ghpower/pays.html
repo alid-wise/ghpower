@@ -15,6 +15,7 @@ if($auth->{gid} ne '1' && $auth->{gid} ne '2') {	# admin или manager
 
 my $gp = $dbh->prepare("SELECT id,date,prev1,prev2,current1,current2,amount,balance,mode,init FROM payments WHERE cid=? ORDER BY modtime DESC LIMIT 1");
 my $List2 = $m->comp("lib.msn:Domains_Struct", dbh=>$dbh, nocache=>0);
+my $Streets = $m->comp("lib.msn:Street_list", dbh=>$dbh, nocache=>0);
 my $ghpower = GHPower->new($dbh);
 
 # Экспорт csv
@@ -101,17 +102,19 @@ $('#PrintModal').on('show.bs.modal', function (event) {
 %my $total2;
 
 
-%foreach my $street (sort {$List2->{$a}->{ord} <=> $List2->{$b}->{ord}} keys %{$List2}) {
-
+%#%foreach my $street (sort {$List2->{$a}->{s_ord} <=> $List2->{$b}->{s_ord}} keys %{$List2}) {
+%foreach my $street_id (sort {$Streets->{$a}->{ord} <=> $Streets->{$b}->{ord}} keys %{$Streets}) {
+%	my $street = $Streets->{$street_id}->{name};
+%	next	unless($List2->{$street});
 <tr><td colspan="5"><b><br><%$street%></b></td></tr>
 %#<tr><th><i>Участок</i></th><th><i>Владелец</i></th><th><i>Остаток</i></th><th><i>Средн.расход</i></th><th><i>Посл.оплата</i></th><th><i>Рассылка</i></th></tr>
 <tr><th><i>Участок</i></th><th><i>Владелец</i></th><th><i>Остаток</i></th><th><i>Посл.оплата</i></th><th><i>Рассылка</i></th></tr>
 %	my $localsum;
-%	my $Dom = $List2->{$street}->{Dom};
+%	my $Dom = $List2->{$street};
 %	foreach my $house (sort {$a <=> $b || $a cmp $b} keys %{$Dom}) {
 %		my @owners;
 %		foreach(@{$Dom->{$house}->{owners}}) {
-%			push @owners, $_->{sn}[0];
+%			push @owners, $_->{cn};
 %		}
 %		my $counters = $ghpower->getcounters_dn("ou=$house,ou=$street");
 %		foreach my $cid (keys %{$counters}) {

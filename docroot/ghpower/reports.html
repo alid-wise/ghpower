@@ -72,23 +72,21 @@ elsif($id == 2) {
 	my $ghpower = GHPower->new($dbh);
 	my $List = $ghpower->Domains_Struct;
 	foreach my $street (sort keys %$List) {
-		my $Dom = $List->{$street}->{Dom};
+		my $Dom = $List->{$street};
 		foreach my $house (sort {$a <=> $b} keys %{$Dom}) {
 			my $P = $Dom->{$house};
-
 			my @A = ({class=>'text-info',data=>$street},
 				{class=>'text-right',data=>$house},
-				{class=>'text-right',data=>$P->{x121address}[0]},
+				{class=>'text-right',data=>$P->{square}},
 			);
 			my (@name,@email,@phone);
 			foreach my $owner (@{$P->{owners}}) {
-				next unless($owner->{cn}[0]);
-				push @name, '<nobr>'.$owner->{cn}[0].'</nobr>';
-				foreach my $email (@{$owner->{mail}}) {
-					push @email, $email;
+				push @name, '<nobr>'.$owner->{cn}.'</nobr>';
+				foreach my $email (@{$owner->{email}}) {
+					push @email, "<nobr>$email</nobr>" 	if($email);
 				}
-				foreach my $mobile (@{$owner->{mobile}}) {
-					push @phone, $mobile;
+				foreach my $mobile (@{$owner->{phone}}) {
+					push @phone, "<nobr>$mobile</nobr>"	if($mobile);
 				}
 			}
 			push @A, {(data => join("<BR>", @name))};
@@ -98,17 +96,14 @@ elsif($id == 2) {
 			(@name,@email,@phone) = ((),(),());
 
 			foreach my $manager (@{$P->{managers}}) {
-				next unless($manager->{cn}[0]);
-
-				push @name, '<nobr>'.$manager->{cn}[0].'</nobr>';
-				foreach my $email (@{$manager->{mail}}) {
-					push @email, $email;
+				push @name, '<nobr>'.$manager->{cn}.'</nobr>';
+				foreach my $email (@{$manager->{email}}) {
+					push @email, "<nobr>$email</nobr>" 	if($email);
 				}
-				foreach my $mobile (@{$manager->{mobile}}) {
-					push @phone, $mobile;
+				foreach my $mobile (@{$manager->{phone}}) {
+					push @phone, "<nobr>$mobile</nobr>" 	if($mobile);
 				}
 			}
-#			push @A, {(data => 'SIZE: '.scalar @name)};
 			push @A, {(data => join("-", @name))};
 			push @A, {(data => join(",", @email))};
 			push @A, {(data => join(",", @phone))};

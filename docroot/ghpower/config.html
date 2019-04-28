@@ -794,14 +794,16 @@ $(document).ready(function() {
 <li><a href="?type=2">Типы счетчиков</a></li>
 <li><a href="?type=3">Столбы</a></li>
 <li><a href="?type=4">Проезды</a></li>
+%#<li><a href="?type=5">Участки</a></li>
+<li><a href="?type=6">Персоны</a></li>
 </ul>
 </div>
 
-<div class="row">
-<ul>
-<li><a href="/phpldapadmin/index.php" target=_blank>Конфигурация (LDAP)</a></li>
-</ul>
-</div>
+%#<div class="row">
+%#<ul>
+%#<li><a href="/phpldapadmin/index.php" target=_blank>Конфигурация (LDAP)</a></li>
+%#</ul>
+%#</div>
 
 %}
 
@@ -833,10 +835,10 @@ $(document).ready(function() {
 
 <pre>
 %use Data::Dumper;
-<% Dumper %ARGS %>
+%#<% Dumper %ARGS %>
 %#<% $FORM_NEW %>
 %#<% Dumper $Usr %>
-<% $ARGS{street_id} %>
+%#<% $ARGS{street_id} %>
 </pre>
 
 

@@ -452,7 +452,8 @@ CREATE TABLE b_tariff (
 CREATE TABLE b_credit (
 	id serial NOT NULL,
 	auth integer,
-	dn varchar NOT NULL,
+	dn varchar, -- deprecated
+	parcel_id integer,
 	b_tariff_id integer not null,	-- начисление
     date date,		-- дата начисления
     status integer default 0,		-- 1-погашен, 2-отменен
@@ -469,7 +470,8 @@ CREATE INDEX b_credit_tariff_id_i ON b_credit (b_tariff_id);
 CREATE TABLE b_pays (
 	id serial NOT NULL,
 	auth integer,
-	dn varchar NOT NULL,
+	dn varchar, -- deprecated
+	parcel_id integer,
 	b_credit_id integer not null,	-- начисление
     pdate date,		-- дата платежа
     amount decimal,
@@ -520,6 +522,26 @@ CREATE TABLE auth (
 	primary key (id)
 );
 insert into auth (name,login,password,active,gid) values ( '[Embedded Admin]','admin',crypt('ghpower',gen_salt('bf')),1,1);
+
+
+-- Реквизиты организации
+CREATE TABLE details (
+	id integer NOT NULL,
+	name character varying,
+	address character varying,
+	email character varying,
+	phone character varying,
+	inn character varying,
+	bank_name character varying,
+	naccount character varying,
+	bik character varying,
+	corr character varying,
+	kpp character varying,
+	active integer default 0,
+	auth integer default 0,
+	modtime timestamp without time zone default now(),
+	primary key (id)
+);
 
 -----------------------------------------------------------------------------------
 -- DRAFT ONLY!!!
@@ -577,4 +599,16 @@ grant INSERT ON ALL tables in schema public TO www;
 grant DELETE ON ALL tables in schema public TO www;
 grant UPDATE ON ALL tables in schema public TO www;
 grant UPDATE ON ALL sequences in schema public TO www;
+create role "www-data" with login;
+grant SELECT ON ALL tables in schema public TO "www-data";
 
+create role ghpower with login;
+grant CONNECT ON DATABASE ghpower TO ghpower;
+grant SELECT ON ALL tables in schema public TO ghpower;
+grant INSERT ON ALL tables in schema public TO ghpower;
+grant DELETE ON ALL tables in schema public TO ghpower;
+grant UPDATE ON ALL tables in schema public TO ghpower;
+grant UPDATE ON ALL sequences in schema public TO ghpower;
+
+create role remstats with login;
+grant SELECT ON ALL tables in schema public TO remstats;

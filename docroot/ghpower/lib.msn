@@ -333,7 +333,8 @@ unless($nocache) {
 	$dn
 </%args>
 <%init>
-	my $ghpower = GHPowerLDAP->new($dbh);
+#	my $ghpower = GHPowerLDAP->new($dbh);
+	my $ghpower = GHPower->new($dbh);
 	return $ghpower->get_Domain($dn);
 </%init>
 </%method>
@@ -653,6 +654,30 @@ return $value;
 </%init>
 </%method>
 
+<%method getorg>
+<%doc>
+	Собственные Реквизиты
+</%doc>
+<%args>
+	$dbh
+	$nocache => 1
+</%args>
+<%init>
+	unless($nocache) {
+		my ($rv, $cached) = $m->cache_self(
+			expire_in => '1 hour',
+			busy_lock => '5sec',
+			ttl => '5minutes',
+			key => "getorg",
+			expire_if => sub {$r && $r->headers_in->{'Pragma'} =~ /no-cache/},
+		);
+		return $rv	if($cached);
+	}
+	my $ghpower = GHPower->new($dbh);
+	return $ghpower->getorg();
+</%init>
+</%method>
+
 
 <%method pay_form_print>
 <%doc>
@@ -668,19 +693,22 @@ return $value;
 	use Imager::QRCode qw(plot_qrcode);
 	use MIME::Base64;
 
-	my $ORGANIZATION = 'СНТ "Зеленая Горка"';
-	my $ACCOUNT_NO = '40703810338070100190';
-	my $INN = '5003005126';
-	my $BANK_NAME = 'ПАО "Сбербанк России" г.Москва';
-	my $BIK = '044525225';
-	my $CORR = '30101810400000000225';
-	my $KPP= '775101001';
 
-	my ($house,$street) = ($dn =~ m/ou=(\w*),ou=(\w*)$/);
-	my $PAYER_ADDR = "$street, $house";
+	my $Org = $m->comp("lib.msn:getorg", dbh=>$dbh);
+
+	my $ORGANIZATION = $Org->{name};
+	my $ACCOUNT_NO = $Org->{naccount};
+	my $INN = $Org->{inn};
+	my $BANK_NAME = $Org->{bank_name};
+	my $BIK = $Org->{bik};
+	my $CORR = $Org->{corr};
+	my $KPP= $Org->{kpp};
+
 	# Данные участка
 	my $Usr = $m->comp("lib.msn:get_Domain", dbh=>$dbh, dn=>$dn)   if($dn);
-	my $PAYER_NAME = $Usr->{owners}->[0]->{cn}->[0];
+	my ($house,$street) = ($Usr->{number},$Usr->{street_name});
+	my $PAYER_ADDR = "$street, $house";
+	my $PAYER_NAME = $Usr->{owners}->[0]->{cn};
 	my ($plname,$pfname,$pmname) = split(/\s/,$PAYER_NAME);
 
 	#Строка данных в QR-код:

@@ -6,7 +6,7 @@ use utf8;
 use open qw(:std :utf8);
 use DBI;
 use Date::Manip;
-use GHPowerLDAP;
+#use GHPowerLDAP;
 
 sub new {
   my $class = shift;
@@ -136,9 +136,6 @@ sub Counters_list {
       push @{$h->{cn}}, "$lname $fname $mname";
       push @{$r->{Dom}->{owners}}, $h;
     }
-
-
-
     push @{$ret->{$r->{mgroup}}->{items}}, $r;
   }
   $sth->finish;
@@ -310,6 +307,8 @@ sub getcounter_date {
   return $ret;
 }
 
+
+############################### LDAP
 # Счетчики, привязанные к заданному участку
 sub getcounters_dn {
   my $self = shift;
@@ -328,46 +327,6 @@ sub getcounters_dn {
   return $ret;
 }
 
-# Вся структура ou=domains с владельцами и пр.
-sub Domains_Struct {
-  my $self = shift;
-  my $ghldap = new GHPowerLDAP;
-  return $ghldap->Domains_Struct();
-}
-
-# Информация из LDAP о заданном участке
-sub get_Domain {
-  my $self = shift;
-  my $dn = shift;
-  return undef  unless $dn;
-  my $ghldap = new GHPowerLDAP;
-  return $ghldap->get_Domain($dn);
-}
-
-# Информация из LDAP - адреса для рассылки
-sub get_Domain_subscr_emails {
-  my $self = shift;
-  my $dn = shift;
-  return undef  unless $dn;
-  my $ghldap = new GHPowerLDAP;
-  my $P = $ghldap->get_Domain($dn);
-  my @emails;
-  # Сначала ищем среди управляющих
-  foreach my $manager (sort { $a->{cn} cmp $b->{cn} } @{$P->{managers}}) {
-    foreach(sort { $a cmp $b } ref $manager->{mail} eq 'ARRAY' ? @{$manager->{mail}} : ($manager->{mail} || ())) {
-      push @emails, $_;
-    }
-  }
-  # Если нет адресов, то смотрим владельцев
-  unless(@emails) {
-    foreach my $owner (sort { $a->{cn} cmp $b->{cn} } @{$P->{owners}}) {
-      foreach(sort { $a cmp $b } ref $owner->{mail} eq 'ARRAY' ? @{$owner->{mail}} : ($owner->{mail} || ())) {
-        push @emails, $_;
-      }
-    }
-  }
-  return @emails;
-}
 
 # Текущий баланс по счетчику
 # !!! Добавить учет ktrans !!!
@@ -415,8 +374,8 @@ sub set_fee {
     return $Err;
   }
   $self->{dbh}->begin_work;
-  my $ins = $self->{dbh}->prepare("INSERT INTO b_credit (auth,date,dn,b_tariff_id,amount,debt) VALUES ($auth,now(),?,?,?,?)");
-  my $chk = $self->{dbh}->prepare("SELECT b_tariff_id FROM b_credit WHERE dn=? AND b_tariff_id=? AND status<>2");
+  my $ins = $self->{dbh}->prepare("INSERT INTO b_credit (auth,date,parcel_id,b_tariff_id,amount,debt) VALUES ($auth,now(),?,?,?,?)");
+  my $chk = $self->{dbh}->prepare("SELECT b_tariff_id FROM b_credit WHERE parcel_id=? AND b_tariff_id=? AND status<>2");
   my $sth = $self->{dbh}->prepare("SELECT type,amount FROM b_tariff WHERE id=? AND sdate IS NULL LIMIT 1");
   my $upd = $self->{dbh}->prepare("UPDATE b_tariff SET sdate=now() WHERE id=?");
 
@@ -431,18 +390,16 @@ sub set_fee {
 
   # Список участков
   my $List2 = $self->Domains_Struct;
-  foreach my $street (sort {$List2->{$a}->{ord} <=> $List2->{$b}->{ord}} keys %{$List2}) {
-    my $Dom = $List2->{$street}->{Dom};
+  foreach my $street (keys %{$List2}) {
+    my $Dom = $List2->{$street};
     foreach my $house (sort {$a <=> $b || $a cmp $b} keys %{$Dom}) {
-      my $dn = $Dom->{$house}->{dn};
+      my $dn = $Dom->{$house}->{id};
       next  unless($dn);
-#use Data::Dumper;
-#print STDERR Dumper $Dom->{$house};
-  	  next	unless($Dom->{$house}->{owners}[0]);  # Пропускать, если нет владельца
+  	  next	unless($Dom->{$house}->{owners});  # Пропускать, если нет владельца
 
       my ($S,$amount);
       if($b_type == 1)  { # начисление с площади
-        $S = $Dom->{$house}->{x121address}[0];  # Площадь участка из справочника
+        $S = $Dom->{$house}->{square};  # Площадь участка из справочника
         unless(defined $S) {
           push @{$Err->{nos}}, $dn;
           next;
@@ -548,7 +505,7 @@ sub get_last_outnum {
 # Список улиц
 sub Street_List {
   my $self = shift;
-  my $sth = $self->{dbh}->prepare("SELECT name,sname FROM street");
+  my $sth = $self->{dbh}->prepare("SELECT id as s_id,name,sname,ord as s_ord FROM street");
   $sth->execute();
   my $ret;
   while (my $r = $sth->fetchrow_hashref) {
@@ -564,7 +521,7 @@ sub Domains_List {
   my $self = shift;
   my %opts = shift;
   my $active = exists $opts{active};
-  my $sth = $self->{dbh}->prepare("SELECT A.id,A.active,A.street_id,S.name as street_name,S.sname as street_sname,A.number,A.square,A.owner,A.manager,A.maillist,A.memo FROM parcels A inner join street S on A.street_id=S.id ".($active ? "where A.active=1":"")." order by S.name,A.number");
+  my $sth = $self->{dbh}->prepare("SELECT A.id,A.active,A.street_id,S.name as street_name,S.sname as street_sname,S.ord AS s_ord,A.number,A.square,A.owner,A.manager,A.maillist,A.memo FROM parcels A inner join street S on A.street_id=S.id ".($active ? "where A.active=1":"")." order by S.ord,A.number");
   $sth->execute();
   my $ret;
   while (my $r = $sth->fetchrow_hashref) {
@@ -574,13 +531,90 @@ sub Domains_List {
   return $ret;
 }
 
+# Вся структура ou=domains с владельцами и пр.
+sub Domains_Struct {
+  my $self = shift;
+  my %opts = shift;
+  my $active = exists $opts{active};
+  my $data = $self->Domains_List({active=>1});
+  my $Data;
+  foreach my $r (@$data) {
+    $Data->{$r->{street_name}}->{$r->{number}} = $self->get_Domain($r->{id});
+  }
+  return $Data;
+}
 
+# Информация о заданном участке
+sub get_Domain {
+  my $self = shift;
+  my $id = shift;
+  return undef  unless $id;
+  my $sth = $self->{dbh}->prepare("SELECT A.id,A.active,A.street_id,S.name as street_name,S.sname as street_sname,S.ord AS s_ord,A.number,A.square,A.owner,A.manager,A.maillist,A.memo FROM parcels A inner join street S on A.street_id=S.id where A.id=?");
+  $sth->execute($id);
+  my $Data = $sth->fetchrow_hashref;
+  $sth->finish;
+  foreach(@{$Data->{owner}}) {
+    push @{$Data->{owners}}, $self->get_Person($_);
+  }
+  foreach(@{$Data->{manager}}) {
+    push @{$Data->{managers}}, $self->get_Person($_);
+  }
+  return $Data;
+}
 
+# Информация о персоне
+sub get_Person {
+  my $self = shift;
+  my $id = shift;
+  return undef unless ($id);
+  my $sth = $self->{dbh}->prepare("SELECT active,fname,mname,lname,nicname,birthdate,email,phone,memo,auth,modtime FROM persons WHERE id=?");
+  my $Data;
+  $sth->execute($id);
+  while(my $r = $sth->fetchrow_hashref) {
+    $r->{cn} = $r->{lname}.' '.$r->{fname}.' '.$r->{mname};
+    $Data = $r;
+  }
+  $sth->finish;
+  return $Data;
+}
 
-# LDAP
-sub get_Domain {}
-sub Domains_Struct {}
-#
+# Реквизиты организации
+sub getorg {
+  my $self = shift;
+  my $sth = $self->{dbh}->prepare("SELECT * FROM details WHERE active=1");
+  $sth->execute();
+  my $Data = $sth->fetchrow_hashref;
+  $sth->finish;
+  return $Data;
+}
+
+# Информация из LDAP - адреса для рассылки
+sub get_Domain_subscr_emails {
+  my $self = shift;
+  my $dn = shift;
+  return undef  unless $dn;
+
+  my $P = $self->get_Domain($dn);
+  my @emails;
+  # Сначала ищем среди управляющих
+  foreach my $manager (sort { $a->{cn} cmp $b->{cn} } @{$P->{managers}}) {
+    next  unless($manager->{active});
+    foreach(sort { $a cmp $b } ref $manager->{email} eq 'ARRAY' ? @{$manager->{email}} : ($manager->{email} || ())) {
+      push @emails, $_;
+    }
+  }
+  # Если нет адресов, то смотрим владельцев
+  unless(@emails) {
+    foreach my $owner (sort { $a->{cn} cmp $b->{cn} } @{$P->{owners}}) {
+      next  unless($owner->{active});
+      foreach(sort { $a cmp $b } ref $owner->{email} eq 'ARRAY' ? @{$owner->{email}} : ($owner->{email} || ())) {
+        push @emails, $_;
+      }
+    }
+  }
+  return @emails;
+}
+
 
 
 1;

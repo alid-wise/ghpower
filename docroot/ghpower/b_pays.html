@@ -8,7 +8,7 @@
 use Data::Dumper;
 use POSIX;
 
-my ($List2,$sth,$Data,$PData,$Pay,%Err,$OK,$Usr);
+my ($List2,$sth,$Data,$PData,$Pay,%Err,$OK,$Usr,$Streets);
 my ($House,$Street);
 #my $ghpower = GHPower->new($dbh);
 
@@ -42,7 +42,7 @@ if($ARGS{add_fee} && $dn && $ARGS{submit}) {	# Индивидуальное на
 		if($b_id) {	# Есть такой тариф
 			my ($S,$amount);
 			if($b_type == 1)  { # начисление с площади
-				$S = $Usr->{x121address}[0];  # Площадь участка из справочника
+				$S = $Usr->{square};  # Площадь участка из справочника
 				if(defined $S) {
 					$amount = $b_amount * $S;
 				}
@@ -52,7 +52,7 @@ if($ARGS{add_fee} && $dn && $ARGS{submit}) {	# Индивидуальное на
 			if($amount) {
 				# 2016-07-30 Татьяна: Округление до целого
 				$amount = sprintf("%0.f",$amount);
-				my $ins = $dbh->prepare("INSERT INTO b_credit (auth,date,dn,b_tariff_id,amount,debt,memo) VALUES ($auth->{id},now(),?,?,?,?,?)");
+				my $ins = $dbh->prepare("INSERT INTO b_credit (auth,date,parcel_id,b_tariff_id,amount,debt,memo) VALUES ($auth->{id},now(),?,?,?,?,?)");
 				$ins->execute($dn,$bid,$amount,$amount,$ARGS{memo});
 #				# Флаг тарифу, если еще не поставлен
 #				unless($b_sdate) {
@@ -71,9 +71,10 @@ if($ARGS{add_fee} && $dn && $ARGS{submit}) {	# Индивидуальное на
 }
 
 if($dn) {	# Имеем дело с одним конкретным юзером
-	($House,$Street) = ($dn =~ m/ou\=(\w+)\,ou\=(\w+)/);
+	($Street,$House) = ($Usr->{street_name}, $Usr->{number});
+
 	# Начисления
-	$sth = $dbh->prepare("SELECT A.id,A.b_tariff_id,B.edate,A.amount AS p_amount,A.status,A.debt,A.memo,A.modtime, B.name,B.amount,B.type,case when A.debt>0 AND now()>B.edate then 1 else 0 end AS flag FROM b_credit A INNER JOIN b_tariff B ON A.b_tariff_id=B.id WHERE A.dn=? ORDER BY B.edate DESC,A.modtime DESC");
+	$sth = $dbh->prepare("SELECT A.id,A.b_tariff_id,B.edate,A.amount AS p_amount,A.status,A.debt,A.memo,A.modtime, B.name,B.amount,B.type,case when A.debt>0 AND now()>B.edate then 1 else 0 end AS flag FROM b_credit A INNER JOIN b_tariff B ON A.b_tariff_id=B.id WHERE A.parcel_id=? ORDER BY B.edate DESC,A.modtime DESC");
 	$sth->execute($dn);
 	while(my $r = $sth->fetchrow_hashref) {
 		push @$Data, $r;
@@ -82,7 +83,7 @@ if($dn) {	# Имеем дело с одним конкретным юзером
 	}
 	$sth->finish;
 	# Платежи
-	$sth = $dbh->prepare("SELECT A.id,A.b_credit_id,A.pdate,A.amount AS p_amount,A.memo,A.modtime,B.name,B.amount,B.type FROM b_pays A INNER JOIN b_credit C ON A.b_credit_id=C.id INNER JOIN b_tariff B ON C.b_tariff_id=B.id WHERE A.dn=? ORDER BY A.modtime DESC");
+	$sth = $dbh->prepare("SELECT A.id,A.b_credit_id,A.pdate,A.amount AS p_amount,A.memo,A.modtime,B.name,B.amount,B.type FROM b_pays A INNER JOIN b_credit C ON A.b_credit_id=C.id INNER JOIN b_tariff B ON C.b_tariff_id=B.id WHERE A.parcel_id=? ORDER BY A.modtime DESC");
 	$sth->execute($dn);
 	while(my $r = $sth->fetchrow_hashref) { push @$PData, $r; }
 	$sth->finish;
@@ -107,7 +108,7 @@ if($dn) {	# Имеем дело с одним конкретным юзером
 			$Err{pdate}++	unless($pdate);
 
 			unless(%Err) {
-				my $ins = $dbh->prepare("INSERT INTO b_pays (auth,pdate,dn,b_credit_id,amount,memo) VALUES ($auth->{id},?,?,?,?,?)");
+				my $ins = $dbh->prepare("INSERT INTO b_pays (auth,pdate,parcel_id,b_credit_id,amount,memo) VALUES ($auth->{id},?,?,?,?,?)");
 				my $upd = $dbh->prepare("UPDATE b_credit SET debt=?,modtime=now() WHERE id=?");
 
 				$dbh->begin_work;
@@ -128,8 +129,10 @@ if($dn) {	# Имеем дело с одним конкретным юзером
 
 
 } else {	# Полный список
+	$Streets = $m->comp("lib.msn:Street_list", dbh=>$dbh, nocache=>0);
+
 	$List2 = $m->comp("lib.msn:Domains_Struct", dbh=>$dbh, nocache=>0);
-	$sth = $dbh->prepare("select (select sum(A.debt) from b_credit A inner join b_tariff B on A.b_tariff_id=B.id where dn=? and B.edate<now() and A.debt>0) as debt, (select max(pdate) from b_pays where dn=?) as pdate");
+	$sth = $dbh->prepare("select (select sum(A.debt) from b_credit A inner join b_tariff B on A.b_tariff_id=B.id where parcel_id=? and B.edate<now() and A.debt>0) as debt, (select max(pdate) from b_pays where parcel_id=?) as pdate");
 }
 </%init>
 %if($OK) {
@@ -268,16 +271,16 @@ $('#PrintModal').on('show.bs.modal', function (event) {
 });
 </script>
 
-
 <div class="masthead">
 	<ul class="nav nav-pills pull-left">
 		<li class="active"><a href="b_pays.html">Назад в список платежей</a></li>
 	</ul>
 </div>
+
 <p>&nbsp;<br>&nbsp;</p>
 <h3><%$Street%>, <%$House%></h3>
-Площадь: <% $Usr->{x121address}[0] %><br>
-% my @a; map { push @a, $_->{cn}[0]; } @{$Usr->{owners}};
+Площадь: <% $Usr->{square} %><br>
+% my @a; map { push @a, $_->{cn}; } @{$Usr->{owners}};
 Владелец: <% join ",", @a %><br>
 <nobr>Сумма долга: <% $m->comp("lib.msn:pretty", value=>$Usr->{debt}) %> (просроченный: <% $m->comp("lib.msn:pretty", value=>$Usr->{debtb}) %>)</nobr>
 </p>
@@ -348,20 +351,22 @@ SSStype="submit" name="add_fee" value="+" title="добавить индивид
 %my $total2;
 
 
-%foreach my $street (sort {$List2->{$a}->{ord} <=> $List2->{$b}->{ord}} keys %{$List2}) {
+%foreach my $street_id (sort {$Streets->{$a}->{ord} <=> $Streets->{$b}->{ord}} keys %{$Streets}) {
+%	my $street = $Streets->{$street_id}->{name};
+%	next	unless($List2->{$street});
 
 <tr><td colspan="5"><b><br><%$street%></b></td></tr>
 <tr><th><i>Участок</i></th><th><i>Владелец</i></th><th><i>Долг</i></th><th><i>Посл.оплата</i></th><th><i>Рассылка</i></th></tr>
 <%perl>
 	my $localsum = 0;
-	my $Dom = $List2->{$street}->{Dom};
+	my $Dom = $List2->{$street};
 	foreach my $house (sort {$a <=> $b || $a cmp $b} keys %{$Dom}) {
 		my @owners;
 		foreach(@{$Dom->{$house}->{owners}}) {
-			push @owners, $_->{sn}[0];
+			push @owners, $_->{cn};
 		}
 		next	unless(@owners);	# Не показывать, если нет владельца
-		my $dn = $Dom->{$house}->{dn};
+		my $dn = $Dom->{$house}->{id};
 		# последний платеж
 		$sth->execute($dn,$dn);
 		my ($p_balance,$p_date) = ($sth->fetchrow_array);
@@ -373,7 +378,7 @@ SSStype="submit" name="add_fee" value="+" title="добавить индивид
 <td><a href="?dn=<% $dn |u %>"><%join("<br>", @owners) || "-" %></a></td>
 <td align="right"><div style=color:<%$p_balance >0 ? "red":"green"%>><% $p_balance ?  $m->comp("lib.msn:pretty", value=>$p_balance) : "0"%></div></td>
 <td align="right"><%  $m->comp("lib.msn:pretty_date", date=>$p_date)%></td>
-<td align="right"><input type="checkbox" name="<%$dn%>" <% ($Dom->{$house}->{olcaddcontentacl}[0] =~ m/true/i) ? "checked":""%> id="subscr_<% $Dom->{$house}->{uid}[0] %>" disabled></td>
+<td align="right"><input type="checkbox" name="<%$dn%>" <% $Dom->{$house}->{maillist} ? "checked":""%> id="subscr_<% $Dom->{$house}->{uid}[0] %>" disabled></td>
 </tr>
 %	}
 <tr>

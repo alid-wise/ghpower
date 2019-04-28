@@ -16,7 +16,7 @@ foreach(keys %ARGS) {
         last;
     }
 }
-my $sth = $dbh->prepare("SELECT A.dn,A.debt,B.name FROM b_credit A INNER JOIN b_tariff B ON A.b_tariff_id=B.id WHERE A.id=?");
+my $sth = $dbh->prepare("SELECT A.parcel_id,A.debt,B.name FROM b_credit A INNER JOIN b_tariff B ON A.b_tariff_id=B.id WHERE A.id=?");
 $sth->execute($id);
 my ($dn,$AMOUNT,$PAY_NAME) = $sth->fetchrow_array;
 $sth->finish;

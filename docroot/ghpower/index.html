@@ -31,7 +31,7 @@ my $Ctypes = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'counter_type', nocac
 # Текущие показания счетчиков
 my $LastCounter = $m->comp("lib.msn:lastcounter", dbh=>$dbh, id=>0, nocache=>1);
 
-my ($List, $Usr);
+my ($List, $Usr, $Parcels);
 # Группы
 $sth = $dbh->prepare("select * from mgroup");
 $sth->execute();
@@ -49,6 +49,11 @@ if($id) {
 	$sth->finish;
 }
 
+# Список участков
+if($id || $ARGS{add_new}) {
+	$Parcels = $m->comp("lib.msn:Parcels_list", dbh=>$dbh);
+}
+
 if($ARGS{submit} && $auth->{gid} eq 1) {
 	if($ARGS{delete} && $id) {	# удаление записи
 		$dbh->do("UPDATE counters SET active=-1 WHERE id=$id");
@@ -60,8 +65,8 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 	} else {
 		my $active = $ARGS{active}? 1:0;
 		my $subscr = $ARGS{subscr}? 1:0;
-		map { $ARGS{$_} =~ s/\D//g; $ARGS{$_} ||= 0 } ('addr','mgroup','sn','model','tower_id','year','ktrans','balance_mgroup');
-		map { $ARGS{$_} = 0 if($ARGS{$_} > 2000000000) } ('addr','mgroup','sn','model','tower_id','year','ktrans','balance_mgroup');
+		map { $ARGS{$_} =~ s/\D//g; $ARGS{$_} ||= 0 } ('addr','mgroup','sn','model','tower_id','year','ktrans','balance_mgroup','parcel_id');
+		map { $ARGS{$_} = 0 if($ARGS{$_} > 2000000000) } ('addr','mgroup','sn','model','tower_id','year','ktrans','balance_mgroup','parcel_id');
 		$ARGS{ktrans} ||= 1;
 		$ARGS{plimit} =~ s/\,/\./g;
 		$ARGS{plimit} =~ s/[^0-9\.]//g;
@@ -77,10 +82,10 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 			if($Usr) {	# Обновление
 				my $chg = ($active ne $Usr->{active})? 1:0;
 				$chg++	if($subscr ne $Usr->{subscr})? 1:0;
-				map {$chg++ if($ARGS{$_} ne $Usr->{$_})} ('name','addr','mgroup','sn','model','setdate','memo','tower_id','year','street','house','owner','plimit','dn','ktrans');
+				map {$chg++ if($ARGS{$_} ne $Usr->{$_})} ('name','addr','mgroup','sn','model','setdate','memo','tower_id','year','street','house','owner','plimit','dn','ktrans','parcel_id');
 				if($chg) {	# есть изменения
-					my $upd = $dbh->prepare("update counters set name=?,addr=?,mgroup=?,sn=?,model=?,setdate=?,memo=?,active=?,tower_id=?,year=?,modtime=now(),plimit=?,subscr=?,dn=?,ktrans=? where id=?");
-					$upd->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{plimit},$subscr,$ARGS{dn},$ARGS{ktrans},$id);
+					my $upd = $dbh->prepare("update counters set name=?,addr=?,mgroup=?,sn=?,model=?,setdate=?,memo=?,active=?,tower_id=?,year=?,modtime=now(),plimit=?,subscr=?,parcel_id=?,ktrans=? where id=?");
+					$upd->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{plimit},$subscr,$ARGS{parcel_id},$ARGS{ktrans},$id);
 				}
 				if($ARGS{balance_mgroup} && $Usr->{balance_mgroup} && ($ARGS{balance_mgroup} != $Usr->{balance_mgroup})) {
 					$dbh->do("UPDATE mgroup SET bid=null WHERE bid=$id");
@@ -96,8 +101,8 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 			} else {	# Новая запись
 				my ($passwd1,$passwd2) = ('','');
 				if($Ctypes->{$ARGS{model}}->{type} eq 'M230') { ($passwd1,$passwd2) = ('111111','222222'); }
-				my $ins = $dbh->prepare("insert into counters (name,addr,mgroup,sn,model,setdate,memo,active,tower_id,year,passwd,passwd2,modtime,plimit,subscr,dn,ktrans) values (?,?,?,?,?,?,?,?,?,?,?,?,?,\'$passwd1\',\'$passwd2\',now(),?,?,?,?) RETURNING id");
-				$ins->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{plimit},$subscr,$ARGS{dn},$ARGS{ktrans});
+				my $ins = $dbh->prepare("insert into counters (name,addr,mgroup,sn,model,setdate,memo,active,tower_id,year,passwd,passwd2,modtime,plimit,subscr,parcel_id,ktrans) values (?,?,?,?,?,?,?,?,?,?,\'$passwd1\',\'$passwd2\',now(),?,?,?,?) RETURNING id");
+				$ins->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{plimit},$subscr,$ARGS{parcel_id},$ARGS{ktrans});
 				my ($cid) = $ins->fetchrow_array;
 				# Начальные показания счетчика (на момент установки)
 				map { $_ =~ s/\,/\./; $_ =~ s/[^\d\.]//g; } ($ARGS{t1i}, $ARGS{t2i});
@@ -176,7 +181,15 @@ $(document).ready(function() {
 </tr>
 <tr>
 <td>Участок:<br><small>формат: "ou=Уч.,ou=Улица"</small></td>
-<td><input type="text" name="dn" value="<%$ARGS{dn} || (!$ARGS{submit} ? $Usr->{dn} : "")%>" <% ($auth->{gid} >1) ? "disabled":"" %>></td>
+<td><input type="text" name="dn" value="<%$ARGS{dn} || (!$ARGS{submit} ? $Usr->{dn} : "")%>" <% ($auth->{gid} >1) ? "disabled":"" %>><br>
+<select name="parcel_id" <% ($auth->{gid} >1) ? "disabled":"" %>>
+<option></option>
+%	foreach my $parcel (@$Parcels) {
+<option value="<%$parcel->{id}%>" <% ((!$ARGS{submit} ? $Usr->{parcel_id} : $ARGS{parcel_id}) eq $parcel->{id})? "selected":"" %>><%$parcel->{street_sname}%>-<%$parcel->{number}%></option>
+%	}
+</select></td>
+</select>
+</td>
 </tr>
 <tr>
 <td>Столб:</td>

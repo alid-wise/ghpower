@@ -19,11 +19,10 @@ foreach(keys %ARGS) {
         last;
     }
 }
-my $sth = $dbh->prepare("SELECT A.dn FROM counters A WHERE A.id=?");
+my $sth = $dbh->prepare("SELECT A.parcel_id FROM counters A WHERE A.id=?");
 $sth->execute($cid);
 my ($dn) = $sth->fetchrow_array;
 $sth->finish;
-
 </%init>
 <script language="javascript">
 $(document).ready(function() { window.print(); });

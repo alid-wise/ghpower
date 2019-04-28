@@ -106,7 +106,7 @@ if($trigger) {	# Запуск по триггеру
 #my $delay = $opts{L} || 0;
 
 # Шаблон сообщения (если не используется шабон из базы)
-my $SUBJ = '"Зеленая горка": показания счетчика';
+my $SUBJ = '"GHPOWER": показания счетчика';
 my $BODY = <<ATEXT;
 Участок: {ADDR}\r
 Показания счетчика электроэнергии на {DATE}г.
@@ -144,23 +144,18 @@ if($template_id) {
 	($SUBJ, $BODY) = ($subj, $body);
 }
 
-my $sth = $dbh->prepare("select A.id,A.sn,A.ktrans,A.dn,C.modtime as tm,C.se1 as t1,C.se2 as t2 from counters A inner join status C on A.id=C.cid where A.active=1 and A.subscr=1".($cid ? " AND A.id=$cid":""));
+my $sth = $dbh->prepare("select A.id,A.sn,A.ktrans,A.parcel_id AS dn,C.modtime as tm,C.se1 as t1,C.se2 as t2 from counters A inner join status C on A.id=C.cid where A.active=1 and A.subscr=1".($cid ? " AND A.id=$cid":""));
 my $log = $dbh->prepare("INSERT INTO feed_log (id,auth,cid,dn,target,msg,status,err,posted,parts,cost) VALUES (?,?,?,?,?,?,?,?,now(),?,?)");
 my $seq = $dbh->prepare("SELECT nextval('feed_log_id_seq'::regclass)");
 
 $sth->execute();
-my $ghldap = new GHPowerLDAP;
 my $ghpower = new GHPower($dbh);
 my $T = $ghpower->tariff();	# Текущий тариф
 while(my $r = $sth->fetchrow_hashref) {
 	my $status = 1;	# 0-ok, 1-отправлено, 2 - нет адреса (target)
 	my $err = '';
-	my ($street_name,$domain);
-	if($r->{dn} &&  ($r->{dn} =~ m/ou=([^,]+),\s*ou=([^,]+)/)) {    # Можно получить дополнительную информацию в LDAP
-		$domain = $1;
-		$street_name = $2;
-	}
-	my $Dom = $ghldap->get_Domain($r->{dn});
+	my $Dom = $ghpower->get_Domain($r->{dn});
+	my ($street_name,$domain) = ($Dom->{street_name}, $Dom->{number});
 	my $subj = $SUBJ; $subj =~ s/{.*}//g;
 	my $body = $BODY;
 	my $addr = "$street_name, $domain";
