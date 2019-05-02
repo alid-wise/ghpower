@@ -6,7 +6,6 @@ use strict;
 use lib "$ENV{MY}/lib/";
 use GHPower;
 use GHPowerUtils;
-use GHPowerLDAP;
 use DBI;
 use utf8;
 use open qw(:std :utf8);

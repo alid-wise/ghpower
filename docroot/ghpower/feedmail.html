@@ -58,22 +58,14 @@ elsif($ARGS{submit} && (length($ARGS{id_new}) == 32)) {	# Создать нов�
 			$ins->execute($ARGS{id_new},$ARGS{feed_name},$ARGS{subject},$ARGS{msg},$outnum);
 
 			# Здесь сама рассылка сообщений
-			$sth = $dbh->prepare("select id,dn from counters where active=1 and subscr=1");
+			$sth = $dbh->prepare("select id,parcel_id AS dn from counters where active=1 and subscr=1");
 			my $log = $dbh->prepare("INSERT INTO feed_log (comp,auth,cid,dn,target,msg,status,err,posted,parts,cost) VALUES (?,?,?,?,?,?,?,?,now(),?,?)");
-			my $ghldap = new GHPowerLDAP;
 			my $ghpower = new GHPower($dbh);
 			# список счетчиков с подпиской
 			$sth->execute();
 			while(my $r = $sth->fetchrow_hashref) {
 				my $status = 1;	# 0-ok, 1-отправлено, 2 - нет адреса (target)
 				my $err = '';
-				my ($street_name,$domain);
-				if($r->{dn} &&  ($r->{dn} =~ m/ou=([^,]+),\s*ou=([^,]+)/)) {    # Можно получить дополнительную информацию в LDAP
-					$domain = $1;
-					$street_name = $2;
-				}
-				my $Dom = $ghldap->get_Domain($r->{dn});
-				my $addr = "$street_name, $domain";
 				my $date = Now(UTime($r->{tm}));
 				$date =~ s/\d{2}:\d{2}:\d{2}//;
 				# Куда слать
@@ -87,7 +79,7 @@ elsif($ARGS{submit} && (length($ARGS{id_new}) == 32)) {	# Создать нов�
 				} else {
 					# Не удалось найти адреса
 					# Сообщение об ошибке - в лог
-					print STDERR "Unable to find any e-mail addresses: $addr\n";
+					print STDERR "Unable to find any e-mail addresses: $r->{dn}\n";
 					$status = 2;
 				}
 				$log->execute($ARGS{id_new},$auth->{id},$r->{id},$r->{dn},join(",",@emails),"$ARGS{subject}\n$ARGS{msg}",$status,$err,1,0);
