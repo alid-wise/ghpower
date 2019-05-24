@@ -116,7 +116,8 @@ $('#PrintModal').on('show.bs.modal', function (event) {
 %		foreach(@{$Dom->{$house}->{owners}}) {
 %			push @owners, $_->{cn};
 %		}
-%		my $counters = $ghpower->getcounters_dn("ou=$house,ou=$street");
+%#		my $counters = $ghpower->getcounters_dn("ou=$house,ou=$street");
+%		my $counters = $ghpower->getcounters_parcel_id($Dom->{$house}->{id});
 %		foreach my $cid (keys %{$counters}) {
 %			next	if($counters->{$cid} < 0);	# Не показывать удаленные счетчики
 <%perl>

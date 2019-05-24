@@ -310,6 +310,7 @@ sub getcounter_date {
 
 ############################### LDAP
 # Счетчики, привязанные к заданному участку
+# DEPRECATED
 sub getcounters_dn {
   my $self = shift;
   my $dn = shift; # формат: "ou=3,ou=Улица"
@@ -319,6 +320,21 @@ sub getcounters_dn {
   my $ret = undef;
   my $sth = $self->{dbh}->prepare("SELECT id,active FROM counters WHERE dn=?");
   $sth->execute($dn);
+  while(my $r = $sth->fetchrow_hashref) {
+    $ret->{$r->{id}} = $r->{active};
+  }
+  $sth->finish;
+  $ret = {} unless $ret;
+  return $ret;
+}
+sub getcounters_parcel_id {
+  my $self = shift;
+  my $parcel_id = shift; # 
+  return undef  unless($parcel_id);
+
+  my $ret = undef;
+  my $sth = $self->{dbh}->prepare("SELECT id,active FROM counters WHERE parcel_id=?");
+  $sth->execute($parcel_id);
   while(my $r = $sth->fetchrow_hashref) {
     $ret->{$r->{id}} = $r->{active};
   }
