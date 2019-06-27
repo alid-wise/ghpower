@@ -572,7 +572,7 @@ $(\'#OptModal\').on(\'show.bs.modal\', function(e) {
 #	}
 #	</script>');
 
-	$sth = $dbh->prepare("SELECT A.id AS id,B.name AS street,A.number AS number,A.square AS square FROM parcels A INNER JOIN street B ON A.street_id=B.id WHERE A.active=1 ORDER BY B.ord");
+	$sth = $dbh->prepare("SELECT A.id AS id,B.name AS street,A.number AS number,A.square AS square FROM parcels A INNER JOIN street B ON A.street_id=B.id WHERE A.active=1 ORDER BY B.ord,B.name,A.number");
 	$sth->execute();
 	while(my $r = $sth->fetchrow_hashref) {
 		my @a = ($r->{street},'<a href="?type='.$type.'&id='.$r->{id}.'"><div class="pull-right">'.($r->{number} || '-').'</div></a>', '<div class="pull-right">'.$r->{square}.'</div>');
