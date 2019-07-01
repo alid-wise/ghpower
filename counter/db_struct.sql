@@ -564,6 +564,7 @@ CREATE TABLE parcels (
 	street_id integer,
 	number character varying,
 	square numeric,
+	kadastr character varying,
 	owner integer[],	-- persons_id
 	manager integer[],	-- persons_id
 	maillist boolean default FALSE,

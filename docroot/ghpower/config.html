@@ -378,12 +378,8 @@ elsif($type == 4) {	# Проезды (улицы)
 }
 
 elsif($type == 5) {	# Участки
-	@Fields = ('Проезд','Участок','Площадь');
+	@Fields = ('Проезд','Участок','Площадь','Кадастровый номер');
 	$Title = 'Участки';
-
-my (@phone, @email);
-
-
 	my (@owner, @manager);
 	my $Streets = $m->comp("lib.msn:Street_list", dbh=>$dbh);
 	my $Person = $m->comp("lib.msn:Person_list", dbh=>$dbh);
@@ -405,51 +401,40 @@ my (@phone, @email);
 			$square =~ s/[^\d\.\,]//g;
 			$square =~ s/\,/\./;
 			$square = sprintf("%.2f", $square);
+			my $maillist = $ARGS{maillist} eq 'on' ? 1:0;
 
-#			my $mname = substr($ARGS{mname},0,100);
-#			my $lname = substr($ARGS{lname},0,100);
-#			my $nicname = substr($ARGS{nicname},0,100);
-#			my $birthdate = '';
-#			if($ARGS{birthdate} =~ /(\d{1,2})[\-\.](\d{1,2})[\-\.](\d{4})/) {
-#				$birthdate = sprintf("%d-%02d-%02d",$3,$2,$1);
-#			} else {
-#				$Err{birthdate}++	if($ARGS{birthdate});
-#			}
 			(@owner) = $m->{cgi_object}->param('owner');
-			map { $_ =~ s/\D//g; } @owner;
-			map { $_ =~ int($_); } @owner;
+			map { $_ =~ s/\D//g; shift @owner unless($_); } @owner;
+			push @owner,0	unless @owner;
 			(@manager) = $m->{cgi_object}->param('manager');
-			map { $_ =~ s/\D//g; } @manager;
+			map { $_ =~ s/\D//g; shift @manager unless($_); } @manager;
+			push @manager,0	unless @manager;
 
 			unless(%Err) {
 				my @ow_ph; map { push @ow_ph,'?::integer'; } @owner;
 				my @mg_ph; map { push @mg_ph,'?::integer'; } @manager;
 				if($id) {
-					$sth = $dbh->prepare("UPDATE parcels SET street_id=?,number=?,square=?,owner=ARRAY[".join(",",@ow_ph)."],manager=ARRAY[".join(",",@mg_ph)."],maillist=?,memo=?,active=1, auth=?, modtime=now() WHERE id=?");
-					$sth->execute($street_id,$number,$square,@owner,@manager,$ARGS{maillist}?'true':'false',$ARGS{memo}, $auth->{id}, $id);
-#					undef $id;
-#					$OK++;
+					$sth = $dbh->prepare("UPDATE parcels SET street_id=?,number=?,square=?,kadastr=?,owner=ARRAY[".join(",",@ow_ph)."],manager=ARRAY[".join(",",@mg_ph)."],maillist=?,memo=?,active=1, auth=?, modtime=now() WHERE id=?");
+					$sth->execute($street_id,$number,$square,$ARGS{kadastr},@owner,@manager,$ARGS{maillist}?'true':'false',$ARGS{memo}, $auth->{id}, $id);
+					undef $id;
+					$OK++;
 				} else {
-#					$sth = $dbh->prepare("SELECT id FROM persons WHERE fname=? AND mname=? AND lname=? AND auth=?");
-#					$sth->execute($fname, $mname, $lname, $auth->{id});
-#					my ($oid) = $sth->fetchrow_array;
-#					$sth->finish;
-#					unless($oid) {
-#						$sth = $dbh->prepare("INSERT INTO persons (fname,mname,lname,nicname,".($birthdate ? "birthdate,":"")."email,phone,memo,active,auth) VALUES (?,?,?,?,".($birthdate ? "?,":"")."ARRAY[".join(",",@em_ph)."],ARRAY[".join(",",@ph_ph)."],?,1,?)");
-#						if($birthdate) {
-#							$sth->execute($fname,$mname,$lname,$nicname,$birthdate,@email,@phone,$ARGS{memo},$auth->{id});
-#						} else {
-#							$sth->execute($fname,$mname,$lname,$nicname,@email,@phone,$ARGS{memo},$auth->{id});
-#						}
-#					}
-#					undef $ARGS{add_new};
-#					$OK++;
+					$sth = $dbh->prepare("SELECT id FROM parcels WHERE street_id=? AND number=? AND active=1");
+					$sth->execute($street_id, $number);
+					my ($oid) = $sth->fetchrow_array;
+					$sth->finish;
+					unless($oid) {
+						$sth = $dbh->prepare("INSERT INTO parcels (street_id,number,square,kadastr,owner,manager,maillist,memo,active,auth) VALUES (?,?,?,?,ARRAY[".join(",",@ow_ph)."],ARRAY[".join(",",@mg_ph)."],?,?,1,?)");
+						$sth->execute($street_id,$number,$square,$ARGS{kadastr},@owner,@manager,$maillist,$ARGS{memo},$auth->{id});
+					}
+					undef $ARGS{add_new};
+					$OK++;
 				}
 			}
 		}
 	} else {
-		if($id) {	# Редактирование записи
-			$sth = $dbh->prepare("SELECT id,street_id,number,square,owner,manager,maillist,memo,auth,modtime FROM parcels WHERE id=? LIMIT 1");
+		if($id) {	# Данныее участка для редактирования
+			$sth = $dbh->prepare("SELECT id,street_id,number,square,kadastr,owner,manager,maillist,memo,auth,modtime FROM parcels WHERE id=? LIMIT 1");
 			$sth->execute($id);
 			$Usr = $sth->fetchrow_hashref;
 			$sth->finish;
@@ -471,39 +456,49 @@ my (@phone, @email);
 	</tr>
 	<tr>
 		<td><div style=color:'.($Err{square} ? "red":"black").'>Площадь:</div></td>
-		<td><input type="text" name="square" value="'.($ARGS{square} || $Usr->{square} || '').'" class="input-xlarge"></td>
+		<td><input type="text" name="square" value="'.($ARGS{square} || $Usr->{square} || '').'" class="input-xlarge">&nbsp;кв.м</td>
 	</tr>
 	<tr>
-		<td><div style=color:'.($Err{owner} ? "red":"black").'><input type="button" class="btn btn-primary btn-xs" data-content="padd_$cred->{id}" data-backdrop="true" data-toggle="modal" data-target="#OptModal" value="+" title="добавить владельца">&nbsp;&nbsp;Владелец:</div></td>
-		<td><div id="ow">';
-#	my $i = 0;
-	$FORM_NEW .= '<select multiple="yes" size="'.(@owner ? (scalar @owner) : (ref $Usr->{owner} eq 'ARRAY' ? scalar @{$Usr->{owner}} : 1)).'" id="owner" name="owner">';
-	foreach(@owner ? @owner : (ref $Usr->{owner} eq 'ARRAY' ? @{$Usr->{owner}} : $Usr->{owner})) {
-#		$FORM_NEW .= '<br>'	if($i);
-#		$i++;
-#		$FORM_NEW .= '<input disabled multiple="yes" type="text" name="owner" value="'.$Person->{$_}->{lname}.' '.$Person->{$_}->{fname}.' '.$Person->{$_}->{mname}.'" class="input-xlarge"><input type="button" value="E">';
-		$FORM_NEW .= '<option selected value="'.$_.'">'.$Person->{$_}->{lname}.' '.$Person->{$_}->{fname}.' '.$Person->{$_}->{mname}.'</option>';
-	}
-	$FORM_NEW .= '</select>';
-#	$FORM_NEW .= '<input type=button value="+" title="Добавить поле" onclick=add_owner()>';
-	$FORM_NEW .= '</div></td>
+		<td><div style=color:'.($Err{square} ? "red":"black").'>Кадастровый номер:</div></td>
+		<td><input type="text" name="kadastr" value="'.($ARGS{kadastr} || $Usr->{kadastr} || '').'" class="input-xlarge"></td>
+	</tr>
 	<tr>
-		<td><div style=color:'.($Err{manager} ? "red":"black").'><input type="button" class="btn btn-primary btn-xs" id="XXXXXXX" data-content="'.$Usr->{manager}.'" data-backdrop="true" data-toggle="modal" data-target="#OptModal" value="+" title="добавить представителя">&nbsp;&nbsp;Представитель:</div></td>
-		<td><div id="mg">';
-#	$i = 0;
-#	$FORM_NEW .= '<select multiple="yes" size="'.(@manager ? (scalar @manager) : ( ref $Usr->{manager} eq 'ARRAY' ? scalar @{$Usr->{manager}}:1)).'" id="manager" name="manager">';
-	my $c_mg = '<select multiple="yes" hidden id="manager" name="manager">';
-	foreach(@manager ? @manager : (ref $Usr->{manager} eq 'ARRAY' ? @{$Usr->{manager}} : $Usr->{manager})) {
-		$FORM_NEW .= ''.$Person->{$_}->{lname}.' '.$Person->{$_}->{fname}.' '.$Person->{$_}->{mname}.'<br>';
+		<td valign="top"><div style=color:'.($Err{owner} ? "red":"black").'>Владелец:</div></td>
+		<td><div id="ow">';
+
+	my $c_mg = '<select multiple="yes" size="10" id="owner" name="owner" multiple>';
+	my $Person2 = $Person;
+	# Сначала известные владельцы
+	foreach(@owner ? @owner : (ref $Usr->{owner} eq 'ARRAY' ? @{$Usr->{owner}} : $Usr->{owner})) {
 		$c_mg .= '<option selected value="'.$_.'">'.$Person->{$_}->{lname}.' '.$Person->{$_}->{fname}.' '.$Person->{$_}->{mname}.'</option>';
+		delete $Person2->{$_};
+	}
+	$c_mg .= '<option></option>';
+	# Теперь все оставшиеся
+	foreach my $mid (sort {$Person2->{$a}->{lname} cmp $Person2->{$b}->{lname}} keys %{$Person2}) {
+		$c_mg .= '<option value="'.$mid.'">'.$Person2->{$mid}->{lname}.' '.$Person2->{$mid}->{fname}.' '.$Person2->{$mid}->{mname}.'</option>';
 	}
 	$c_mg .= '</select>';
 	$FORM_NEW .= $c_mg;
+	$FORM_NEW .= '</div></td>
+	<tr>
+		<td valign="top"><div style=color:'.($Err{manager} ? "red":"black").'>Представитель:</div></td>
+		<td><div id="mg">';
 
-#	$FORM_NEW .= '<input type=button value="+" title="Добавить поле" onclick=add_manager()>';
-#	$FORM_NEW .= '&nbsp;&nbsp;<input type="button" class="btn btn-primary btn-xs" data-content="padd_$cred->{id}" data-backdrop="true" data-toggle="modal" data-target="#OptModal" value="+" title="добавить представителя" onclick="showmodal()">';
-
-
+	$c_mg = '<select multiple="yes" size="10" id="manager" name="manager" multiple>';
+	$Person2 = $Person;
+	# Сначала известные представители
+	foreach(@manager ? @manager : (ref $Usr->{manager} eq 'ARRAY' ? @{$Usr->{manager}} : $Usr->{manager})) {
+		$c_mg .= '<option selected value="'.$_.'">'.$Person->{$_}->{lname}.' '.$Person->{$_}->{fname}.' '.$Person->{$_}->{mname}.'</option>';
+		delete $Person2->{$_};
+	}
+	$c_mg .= '<option></option>';
+	# Теперь все оставшиеся
+	foreach my $mid (sort {$Person2->{$a}->{lname} cmp $Person2->{$b}->{lname}} keys %{$Person2}) {
+		$c_mg .= '<option value="'.$mid.'">'.$Person2->{$mid}->{lname}.' '.$Person2->{$mid}->{fname}.' '.$Person2->{$mid}->{mname}.'</option>';
+	}
+	$c_mg .= '</select>';
+	$FORM_NEW .= $c_mg;
 	$FORM_NEW .= '</div></td>
 	</tr>
 
@@ -519,63 +514,10 @@ my (@phone, @email);
 	$FORM_EDIT = $FORM_NEW;
 
 
-#	function showmodal() {
-#		var modalWin = document.getElementById(\'popupWin\');
-#		modalWin.style.display = \'block\';
-#	}
-
-$SCRIPT = '
-$(\'#OptModal\').on(\'show.bs.modal\', function(e) {
-	var content = e.relatedTarget.dataset.content;
-	var $modal = $(this),
-	esseyId = e.relatedTarget.id;
-	alert(content);
-	$modal.find(\'.edit-content\').html(esseyId);
-});
-';
-
-#	function sendform() {
-#		alert(\'3\');
-#	}
-
-#	$m->out('<script type=text/javascript>'.$script.'</script>');
-
-
-	# Диалоговое окно поиска по списку персон
-	$MODAL .= '<select multiple="yes" size="20" id="manager" name="manager">';
-	foreach my $mid (sort {$Person->{$a}->{lname} cmp $Person->{$b}->{lname}} keys %{$Person}) {
-		$MODAL .= '<option value="'.$mid.'"';
-#		foreach(@manager ? @manager : (ref $Usr->{manager} eq 'ARRAY' ? @{$Usr->{manager}} : $Usr->{manager})) {
-#			$MODAL .= ' selected ' 	if($_ == $mid);
-#		}
-		$MODAL .= '>'.$Person->{$mid}->{lname}.' '.$Person->{$mid}->{fname}.' '.$Person->{$mid}->{mname}.'</option>';
-	}
-	$MODAL .= '</select>';
-
-
-#	foreach(@manager ? @manager : (ref $Usr->{manager} eq 'ARRAY' ? @{$Usr->{manager}} : $Usr->{manager})) {
-#		$FORM_NEW .= '<input multiple="yes" type="text" name="manager" value="'.$Person->{$_}->{lname}.' '.$Person->{$_}->{fname}.' '.$Person->{$_}->{mname}.'" class="input-xlarge">';
-#		$FORM_NEW .= '<option selected value="'.$_.'">'.$Person->{$_}->{lname}.' '.$Person->{$_}->{fname}.' '.$Person->{$_}->{mname}.'</option>';
-#	}
-
-
-
-
-
-
-
-#	function add_owner() {
-#	 document.getElementById("ow").innerHTML+="<br><input type=text id=\"owner\" name=\"owner\">";
-#	}
-#	function add_manager() {
-#	 document.getElementById("mg").innerHTML+="<br><input type=text id=\"manager\" name=\"manager\">";
-#	}
-#	</script>');
-
-	$sth = $dbh->prepare("SELECT A.id AS id,B.name AS street,A.number AS number,A.square AS square FROM parcels A INNER JOIN street B ON A.street_id=B.id WHERE A.active=1 ORDER BY B.ord,B.name,A.number");
+	$sth = $dbh->prepare("SELECT A.id AS id,B.name AS street,A.number AS number,A.square AS square,A.kadastr AS kadastr FROM parcels A INNER JOIN street B ON A.street_id=B.id WHERE A.active=1 ORDER BY B.ord,B.name,A.number");
 	$sth->execute();
 	while(my $r = $sth->fetchrow_hashref) {
-		my @a = ($r->{street},'<a href="?type='.$type.'&id='.$r->{id}.'"><div class="pull-right">'.($r->{number} || '-').'</div></a>', '<div class="pull-right">'.$r->{square}.'</div>');
+		my @a = ($r->{street},'<a href="?type='.$type.'&id='.$r->{id}.'"><div class="pull-right">'.($r->{number} || '-').'</div></a>', '<div class="pull-right">'.$r->{square}.'</div>', '<div class="pull-left">'.$r->{kadastr}.'</div>');
 		push @$List, \@a;
 	}
 }
@@ -794,7 +736,7 @@ $(document).ready(function() {
 <li><a href="?type=2">Типы счетчиков</a></li>
 <li><a href="?type=3">Столбы</a></li>
 <li><a href="?type=4">Проезды</a></li>
-%#<li><a href="?type=5">Участки</a></li>
+<li><a href="?type=5">Участки</a></li>
 <li><a href="?type=6">Персоны</a></li>
 </ul>
 </div>
