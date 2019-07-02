@@ -146,6 +146,42 @@ elsif($id == 3) {	# Можно использовать как шаблон дл
 		}
 	}
 } # id=3
+elsif($id == 4) {
+	$report_name = 'Список владельцев участков';
+	@fields = ('Участок','Владелец','Подпись');
+
+	my $ghpower = GHPower->new($dbh);
+	my $List = $ghpower->Domains_Struct;
+
+	# Порядок сортировки улиц
+	my %s_ord;
+	foreach my $street (keys %$List) {
+		my $Dom = ($List->{$street});
+		foreach my $house (keys %{$Dom}) {
+			$s_ord{$street} = $Dom->{$house}->{s_ord};
+			last;
+		}
+	}
+
+	foreach my $street (sort {$s_ord{$a} <=> $s_ord{$b}} keys %$List) {
+		my @a = ({subhead=>1,class=>"text-info lead bold",data=>'<br>'.$street});
+		push @$Data, \@a;
+		my $Dom = ($List->{$street});
+		foreach my $house (sort {$a <=> $b} keys %{$Dom}) {
+			my $P = $Dom->{$house};
+			#my @A = ({class=>'text-info',data=>$street},
+			my @A = ({class=>"text-right text-info bold",data=>$Dom->{$house}->{street_sname}.'-'.$house});
+			my @name;
+			foreach my $owner (@{$P->{owners}}) {
+				push @name, '<nobr>'.$owner->{cn}.'</nobr>';
+			}
+			push @A, {(data => join("<BR>", @name))};
+			push @A, {(data=>'&nbsp;')};
+			push @$Data, \@A;
+		}
+	}
+	
+} # id=4
 
 #use Data::Dumper;
 </%init>
@@ -184,12 +220,17 @@ elsif($id == 3) {	# Можно использовать как шаблон дл
 %my $i=1;
 %foreach my $row (@$Data) {
 <tr>
-<td><%$i%></td>
+%if($row->[0]->{subhead}) {
+<td colspan="<% scalar @fields + 1 %>" <% $row->[0]->{class} ? 'class="'.$row->[0]->{class}.'"':'' %>><% $row->[0]->{data} %></td>
+%	} else {
+<td class="text-center"><%$i%></td>
+%$i++;
 %foreach my $item (@$row) {
 <td <% $item->{class} ? 'class="'.$item->{class}.'"':'' %>><% $item->{data} %></td>
-%}
+%}}
+
 </tr>
-%$i++;}
+%}
 </tbody>
 </table>
 
@@ -198,6 +239,7 @@ elsif($id == 3) {	# Можно использовать как шаблон дл
 <div class="row">
 <ul>
 <li><a href="?id=2">Полный список участков</a></li>
+<li><a href="?id=4">Список владельцев участков (бланк)</a></li>
 <li><a href="?id=1">Членские взносы</a></li>
 <li><a href="?id=3">Показания счетчиков</a></li>
 </ul>
