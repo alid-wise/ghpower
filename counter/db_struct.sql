@@ -96,7 +96,7 @@ create table counters (
 	dn varchar,	-- участок ou=3,ou=Восточный
 	parcel_id integer,
 ---	owner varchar,	-- users.id
-	plimit decimal DEFAULT 3.6,	-- допустимая потребляемая мощность
+	plimit decimal DEFAULT 7.5,	-- допустимая потребляемая мощность
 	subscr integer default 0,	-- подписка владельца на алерты
 	primary key (id)
 );

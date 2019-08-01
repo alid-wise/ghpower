@@ -70,7 +70,7 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 		$ARGS{ktrans} ||= 1;
 		$ARGS{plimit} =~ s/\,/\./g;
 		$ARGS{plimit} =~ s/[^0-9\.]//g;
-		$ARGS{plimit} = 3.6	if(!$ARGS{plimit} or $ARGS{plimit} == 0 or $ARGS{plimit} > 10000);
+		$ARGS{plimit} = 7.5	if(!$ARGS{plimit} or $ARGS{plimit} == 0 or $ARGS{plimit} > 10000);
 		$Err{model}++	unless($ARGS{model});
 		$Err{addr}++	unless($ARGS{addr});
 		$Err{mgroup}++	unless($ARGS{mgroup});
@@ -82,7 +82,7 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 			if($Usr) {	# Обновление
 				my $chg = ($active ne $Usr->{active})? 1:0;
 				$chg++	if($subscr ne $Usr->{subscr})? 1:0;
-				map {$chg++ if($ARGS{$_} ne $Usr->{$_})} ('name','addr','mgroup','sn','model','setdate','memo','tower_id','year','street','house','owner','plimit','dn','ktrans','parcel_id');
+				map {$chg++ if($ARGS{$_} ne $Usr->{$_})} ('name','addr','mgroup','sn','model','setdate','memo','tower_id','year','street','house','owner','plimit','ktrans','parcel_id');
 				if($chg) {	# есть изменения
 					my $upd = $dbh->prepare("update counters set name=?,addr=?,mgroup=?,sn=?,model=?,setdate=?,memo=?,active=?,tower_id=?,year=?,modtime=now(),plimit=?,subscr=?,parcel_id=?,ktrans=? where id=?");
 					$upd->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{plimit},$subscr,$ARGS{parcel_id},$ARGS{ktrans},$id);
@@ -180,8 +180,10 @@ $(document).ready(function() {
 </select></td>
 </tr>
 <tr>
-<td>Участок:<br><small>формат: "ou=Уч.,ou=Улица"</small></td>
-<td><input type="text" name="dn" value="<%$ARGS{dn} || (!$ARGS{submit} ? $Usr->{dn} : "")%>" <% ($auth->{gid} >1) ? "disabled":"" %>><br>
+%#<td>Участок:<br><small>формат: "ou=Уч.,ou=Улица"</small></td>
+<td>Участок:</td>
+<td>
+%#<input type="text" name="dn" value="<%$ARGS{dn} || (!$ARGS{submit} ? $Usr->{dn} : "")%>" <% ($auth->{gid} >1) ? "disabled":"" %>><br>
 <select name="parcel_id" <% ($auth->{gid} >1) ? "disabled":"" %>>
 <option></option>
 %	foreach my $parcel (@$Parcels) {
