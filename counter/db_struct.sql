@@ -565,6 +565,7 @@ CREATE TABLE parcels (
 	number character varying,
 	square numeric,
 	kadastr character varying,
+	laccount character varying,
 	owner integer[],	-- persons_id
 	manager integer[],	-- persons_id
 	maillist boolean default FALSE,
@@ -585,6 +586,11 @@ CREATE TABLE persons (
 	birthdate date,
 	email varchar[],
 	phone varchar[],
+	membership date,
+	passport varchar,
+	passport_date date,
+	address varchar,
+	address_date date,
 	memo varchar,
 	auth integer default 0,
 	modtime timestamp without time zone default now(),
