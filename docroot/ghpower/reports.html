@@ -182,6 +182,67 @@ elsif($id == 4) {
 	}
 	
 } # id=4
+elsif($id == 5) {
+	$report_name = 'Список членов СНТ';
+	@fields = ('Участок','Член СНТ','Подпись');
+
+	my $ghpower = GHPower->new($dbh);
+	my $List = $ghpower->Domains_Struct;
+
+	#use Data::Dumper;
+	#$m->out('<pre>');
+	#$m->out(Dumper $List);
+	#$m->out('</pre>');
+
+	# Порядок сортировки улиц
+	my %s_ord;
+	foreach my $street (keys %$List) {
+		my $Dom = ($List->{$street});
+		foreach my $house (keys %{$Dom}) {
+			$s_ord{$street} = $Dom->{$house}->{s_ord};
+			last;
+		}
+	}
+	my %M;
+	foreach my $street (sort {$s_ord{$a} <=> $s_ord{$b}} keys %$List) {
+		my $sshow = 0;
+		my @a = ({subhead=>1,class=>"text-info lead bold",data=>'<br>'.$street});
+		push @$Data, \@a;
+		my $Dom = ($List->{$street});
+		foreach my $house (sort {$a <=> $b} keys %{$Dom}) {
+			my $P = $Dom->{$house};
+			my %oname;
+			foreach my $owner (@{$P->{owners}}) {
+				next	if(exists $M{$owner->{id}});
+				if($owner->{member}) {
+					$M{$owner->{id}}++;	# чтобы не повторялись
+					$oname{"$owner->{lname} $owner->{fname} $owner->{mname}"} = $owner->{id};
+				}
+			}
+			foreach my $member (keys %oname) {	# Все владельцы (теоретически, все они могут быть членами СНТ)
+				my @addr;	# список участков, которыми владеет эта персона
+				{
+					foreach my $street (sort {$s_ord{$a} <=> $s_ord{$b}} keys %$List) {
+						foreach my $house (sort {$a <=> $b} keys %{$List->{$street}}) {
+							foreach my $ow (@{$List->{$street}->{$house}->{owners}}) {
+								if($ow->{id} == $oname{$member}) {	# Добавим этой персоне участок
+									push @addr, $List->{$street}->{$house}->{street_sname}.'-'.$house;
+								}
+							}
+						}
+					}
+				}
+				my @A = ({class=>"text-right text-info bold",data=>join(", ", @addr)});
+				push @A, {(data=>$member)};
+				push @A, {(data=>'&nbsp;')};
+				push @$Data, \@A;
+				$sshow++;
+			}
+		}
+		# Отфильтровать "пустую" улицe
+		pop @$Data 	unless($sshow);
+	}
+} # id=5
 
 #use Data::Dumper;
 </%init>
@@ -240,6 +301,7 @@ elsif($id == 4) {
 <ul>
 <li><a href="?id=2">Полный список участков</a></li>
 <li><a href="?id=4">Список владельцев участков (бланк)</a></li>
+<li><a href="?id=5">Список членов СНТ (бланк)</a></li>
 <li><a href="?id=1">Членские взносы</a></li>
 <li><a href="?id=3">Показания счетчиков</a></li>
 </ul>

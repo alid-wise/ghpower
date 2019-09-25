@@ -37,7 +37,7 @@ $id =~ s/\D//g;
 my ($Usr, $List, @Fields);
 my %Err;
 my $sth;
-my ($OK, $FORM_NEW, $FORM_EDIT, $Title, $MODAL, $SCRIPT);
+my ($OK, $FORM_NEW, $FORM_EDIT, $Title, $MODAL, $SCRIPT, $FILTER);
 
 if($type == 1) {	# Доступ
 	@Fields = ('Имя','Email','Логин','Группа');
@@ -397,6 +397,7 @@ elsif($type == 5) {	# Участки
 			my $street_id = $ARGS{street_id};
 			$street_id =~ s/\D//g;
 			$street_id ||= 0;
+			$Err{street_id}++	unless($street_id);
 			my $square = $ARGS{square};
 			$square =~ s/[^\d\.\,]//g;
 			$square =~ s/\,/\./;
@@ -410,12 +411,28 @@ elsif($type == 5) {	# Участки
 			map { $_ =~ s/\D//g; shift @manager unless($_); } @manager;
 			push @manager,0	unless @manager;
 
+			my ($proof_date) = ('proof_date');
+			map {
+				if($ARGS{$_} =~ /(\d{1,2})[\-\.](\d{1,2})[\-\.](\d{4})/) {
+					my $t = sprintf("%d-%02d-%02d",$3,$2,$1);
+					if(ParseDate($t)) {
+						$_ = $t;
+					} else {
+						$Err{$_}++;
+						$_ = '';
+					}
+				} else {
+					$Err{$_}++	if($ARGS{$_});
+					$_ = '';
+				}
+			} ($proof_date);
+
 			unless(%Err) {
 				my @ow_ph; map { push @ow_ph,'?::integer'; } @owner;
 				my @mg_ph; map { push @mg_ph,'?::integer'; } @manager;
 				if($id) {
-					$sth = $dbh->prepare("UPDATE parcels SET street_id=?,number=?,square=?,kadastr=?,laccount=?,owner=ARRAY[".join(",",@ow_ph)."],manager=ARRAY[".join(",",@mg_ph)."],maillist=?,memo=?,active=1, auth=?, modtime=now() WHERE id=?");
-					$sth->execute($street_id,$number,$square,$ARGS{kadastr},$ARGS{laccount},@owner,@manager,$ARGS{maillist}?'true':'false',$ARGS{memo}, $auth->{id}, $id);
+					$sth = $dbh->prepare("UPDATE parcels SET street_id=?,number=?,square=?,kadastr=?,proof=?,proof_date=".($proof_date ? "'$proof_date'" : 'null' ).",laccount=?,owner=ARRAY[".join(",",@ow_ph)."],manager=ARRAY[".join(",",@mg_ph)."],maillist=?,memo=?,active=1, auth=?, modtime=now() WHERE id=?");
+					$sth->execute($street_id,$number,$square,$ARGS{kadastr},$ARGS{proof},$ARGS{laccount},@owner,@manager,$ARGS{maillist}?'true':'false',$ARGS{memo}, $auth->{id}, $id);
 					undef $id;
 					$OK++;
 				} else {
@@ -424,8 +441,8 @@ elsif($type == 5) {	# Участки
 					my ($oid) = $sth->fetchrow_array;
 					$sth->finish;
 					unless($oid) {
-						$sth = $dbh->prepare("INSERT INTO parcels (street_id,number,square,kadastr,laccount,owner,manager,maillist,memo,active,auth) VALUES (?,?,?,?,?,ARRAY[".join(",",@ow_ph)."],ARRAY[".join(",",@mg_ph)."],?,?,1,?)");
-						$sth->execute($street_id,$number,$square,$ARGS{kadastr},$ARGS{laccount},@owner,@manager,$maillist,$ARGS{memo},$auth->{id});
+						$sth = $dbh->prepare("INSERT INTO parcels (street_id,number,square,kadastr,proof,proof_date,laccount,owner,manager,maillist,memo,active,auth) VALUES (?,?,?,?,".($proof_date ? "'$proof_date'":'null').", ?,ARRAY[".join(",",@ow_ph)."],ARRAY[".join(",",@mg_ph)."],?,?,1,?)");
+						$sth->execute($street_id,$number,$square,$ARGS{kadastr},$ARGS{proof},$ARGS{laccount},@owner,@manager,$maillist,$ARGS{memo},$auth->{id});
 					}
 					undef $ARGS{add_new};
 					$OK++;
@@ -434,7 +451,7 @@ elsif($type == 5) {	# Участки
 		}
 	} else {
 		if($id) {	# Данныее участка для редактирования
-			$sth = $dbh->prepare("SELECT id,street_id,number,square,kadastr,laccount,owner,manager,maillist,memo,auth,modtime FROM parcels WHERE id=? LIMIT 1");
+			$sth = $dbh->prepare("SELECT id,street_id,number,square,kadastr,proof,proof_date,laccount,owner,manager,maillist,memo,auth,modtime FROM parcels WHERE id=? LIMIT 1");
 			$sth->execute($id);
 			$Usr = $sth->fetchrow_hashref;
 			$sth->finish;
@@ -461,6 +478,12 @@ elsif($type == 5) {	# Участки
 	<tr>
 		<td><div style=color:'.($Err{square} ? "red":"black").'>Кадастровый номер:</div></td>
 		<td><input type="text" name="kadastr" value="'.($ARGS{kadastr} || $Usr->{kadastr} || '').'" class="input-xlarge"></td>
+	</tr>
+	<tr>
+		<td><div style=color:'.($Err{proof_date} ? "red":"black").'>Право собственности:</div></td>
+		<td><input type="text" name="proof" value="'.($ARGS{proof} || $Usr->{proof} || '').'" class="input-xlarge">
+			<input type="text" name="proof_date" value="'.($ARGS{proof_date} || $m->comp("lib.msn:pretty_date",date=>$Usr->{proof_date}) || '').'" class="input-xlarge" onfocus="this.select();_Calendar.lcs(this)" onclick="event.cancelBubble=true;this.select();_Calendar.lcs(this)" placeholder="dd.mm.yyyy"></td>
+		</td>
 	</tr>
 	<tr>
 		<td><div style=color:'.($Err{laccount} ? "red":"black").'>Лицевой счет:</div></td>
@@ -527,7 +550,7 @@ elsif($type == 5) {	# Участки
 }
 
 elsif($type == 6) {	# Персоны
-	@Fields = ('Фамилия','Имя','Отчество');
+	@Fields = ('Фамилия','Имя','Отчество','СНТ','Владелец','Представитель','Примечания');
 	$Title = 'Персоны';
 	my (@phone, @email);
 	if($ARGS{submit}) {
@@ -542,15 +565,21 @@ elsif($type == 6) {	# Персоны
 			my $mname = substr($ARGS{mname},0,100);
 			my $lname = substr($ARGS{lname},0,100);
 			my $nicname = substr($ARGS{nicname},0,100);
-			my ($birthdate,$membership,$passport_date,$address_date) = ('birthdate','membership','passport_date','address_date');
+			my ($birthdate,$membership,$membership_end,$passport_date,$address_date) = ('birthdate','membership','membership_end','passport_date','address_date');
 			map {
 				if($ARGS{$_} =~ /(\d{1,2})[\-\.](\d{1,2})[\-\.](\d{4})/) {
-					$_ = sprintf("%d-%02d-%02d",$3,$2,$1);
+					my $t = sprintf("%d-%02d-%02d",$3,$2,$1);
+					if(ParseDate($t)) {
+						$_ = $t;
+					} else {
+						$Err{$_}++;
+						$_ = '';
+					}
 				} else {
 					$Err{$_}++	if($ARGS{$_});
 					$_ = '';
 				}
-			} ($birthdate,$membership,$passport_date,$address_date);
+			} ($birthdate,$membership,$membership_end,$passport_date,$address_date);
 
 			(@phone) = $m->{cgi_object}->param('phone');
 			map { $_ =~ s/[^\d\(\)\-\+]//g; } @phone;
@@ -562,7 +591,7 @@ elsif($type == 6) {	# Персоны
 				my @em_ph; map { push @em_ph,'?'; } @email;
 				my @ph_ph; map { push @ph_ph,'?'; } @phone;
 				if($id) {
-					$sth = $dbh->prepare("UPDATE persons SET fname=?, mname=?, lname=?, nicname=?, passport=?, passport_date=".($passport_date ? "'$passport_date'" : 'null' ).", address=?, address_date=".($address_date ? "'$address_date'" : 'null' ).",membership=".($membership ? "'$membership'" : 'null' ).", birthdate=".($birthdate ? "'$birthdate'" : 'null' ).", email=ARRAY[".join(",",@em_ph)."], phone=ARRAY[".join(",",@ph_ph)."], memo=?, active=1, auth=?, modtime=now() WHERE id=?");
+					$sth = $dbh->prepare("UPDATE persons SET fname=?, mname=?, lname=?, nicname=?, passport=?, passport_date=".($passport_date ? "'$passport_date'" : 'null' ).", address=?, address_date=".($address_date ? "'$address_date'" : 'null' ).",membership=".($membership ? "'$membership'" : 'null' ).",membership_end=".($membership_end ? "'$membership_end'" : 'null' ).", birthdate=".($birthdate ? "'$birthdate'" : 'null' ).", email=ARRAY[".join(",",@em_ph)."], phone=ARRAY[".join(",",@ph_ph)."], memo=?, active=1, auth=?, modtime=now() WHERE id=?");
 
 					$sth->execute($fname,$mname,$lname,$nicname,$ARGS{passport},$ARGS{address},@email,@phone,$ARGS{memo}, $auth->{id}, $id);
 
@@ -574,7 +603,7 @@ elsif($type == 6) {	# Персоны
 					my ($oid) = $sth->fetchrow_array;
 					$sth->finish;
 					unless($oid) {
-						$sth = $dbh->prepare("INSERT INTO persons (fname, mname, lname, nicname, passport, passport_date, address, address_date, membership, birthdate, email,phone,memo,active,auth) VALUES (?, ?, ?, ?, ?, ".($passport_date ? "'$passport_date'":'null').", ?, ".($address_date ? "'$address_date'" : 'null').", ".($membership ? "'$membership'" : 'null').", ".($birthdate ? "'$birthdate'":'null').", ARRAY[".join(",",@em_ph)."], ARRAY[".join(",",@ph_ph)."], ?, 1, ?)");
+						$sth = $dbh->prepare("INSERT INTO persons (fname, mname, lname, nicname, passport, passport_date, address, address_date, membership, membership_end, birthdate, email,phone,memo,active,auth) VALUES (?, ?, ?, ?, ?, ".($passport_date ? "'$passport_date'":'null').", ?, ".($address_date ? "'$address_date'" : 'null').", ".($membership ? "'$membership'" : 'null').", ".($membership_end ? "'$membership_end'" : 'null').", ".($birthdate ? "'$birthdate'":'null').", ARRAY[".join(",",@em_ph)."], ARRAY[".join(",",@ph_ph)."], ?, 1, ?)");
 						$sth->execute($fname,$mname,$lname,$nicname,$ARGS{passport},$ARGS{address},@email,@phone,$ARGS{memo},$auth->{id});
 					}
 					undef $ARGS{add_new};
@@ -584,7 +613,7 @@ elsif($type == 6) {	# Персоны
 		}
 	} else {
 		if($id) {	# Редактирование записи
-			$sth = $dbh->prepare("SELECT id, fname, mname, lname, nicname, birthdate, passport, passport_date, address, address_date, membership, email, phone, memo, modtime FROM persons WHERE id=? LIMIT 1");
+			$sth = $dbh->prepare("SELECT id, fname, mname, lname, nicname, birthdate, passport, passport_date, address, address_date, membership, membership_end, email, phone, memo, modtime FROM persons WHERE id=? LIMIT 1");
 			$sth->execute($id);
 			$Usr = $sth->fetchrow_hashref;
 			$sth->finish;
@@ -624,8 +653,9 @@ elsif($type == 6) {	# Персоны
 		</td>
 	</tr>
 	<tr>
-		<td><div style=color:'.($Err{membership} ? "red":"black").'>Членство:</div></td>
-		<td><input type="text" name="membership" value="'.($ARGS{membership} || $m->comp("lib.msn:pretty_date",date=>$Usr->{membership}) || '').'" class="input-xlarge" onfocus="this.select();_Calendar.lcs(this)" onclick="event.cancelBubble=true;this.select();_Calendar.lcs(this)" placeholder="dd.mm.yyyy"></td>
+		<td><div style=color:'.(($Err{membership} || $Err{membership_end}) ? "red":"black").'>Членство:</div></td>
+		<td><input type="text" name="membership" value="'.($ARGS{membership} || $m->comp("lib.msn:pretty_date",date=>$Usr->{membership}) || '').'" class="input-xlarge" onfocus="this.select();_Calendar.lcs(this)" onclick="event.cancelBubble=true;this.select();_Calendar.lcs(this)" placeholder="dd.mm.yyyy">
+		<input type="text" name="membership_end" value="'.($ARGS{membership_end} || $m->comp("lib.msn:pretty_date",date=>$Usr->{membership_end}) || '').'" class="input-xlarge" onfocus="this.select();_Calendar.lcs(this)" onclick="event.cancelBubble=true;this.select();_Calendar.lcs(this)" placeholder="dd.mm.yyyy"></td>
 		</td>
 	</tr>
 
@@ -660,6 +690,7 @@ elsif($type == 6) {	# Персоны
 		<td><textarea name="memo" cols="30" rows="2">'.($ARGS{memo} || $Usr->{memo} || '').'</textarea></td>
 		</td>
 	</tr>';
+	$FORM_NEW .= '<input type="hidden" name="showdel" value="'.$ARGS{showdel}.'">';
 	$FORM_EDIT = $FORM_NEW;
 
 	$m->out('<script type=text/javascript>
@@ -671,10 +702,38 @@ elsif($type == 6) {	# Персоны
 	}
 	</script>');
 
-	$sth = $dbh->prepare("SELECT id,fname,mname,lname FROM persons WHERE active=1 ORDER BY lname, fname");
+
+
+	# Полный список
+#	$FILTER = '<form name="filter" method="POST">';
+#	$FILTER .= '<label class="checkbox">';
+#	$FILTER .= 'Показывать удаленные&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="checkbox" name="showdel"';
+#	$FILTER .= $ARGS{showdel} ? "checked":"";
+##	$FILTER .= '></label><input class="btn" type="submit" name="sel" value="Выбрать"></form>';
+#	$FILTER .= ' onclick=alert(this.checked);document.location.href="?showdel=">';
+
+
+	$sth = $dbh->prepare("SELECT id,active,fname,mname,lname,CASE WHEN membership is not null AND membership_end is null THEN '+' END AS member,memo FROM persons ".($ARGS{showdel} ? "":"WHERE active=1")." ORDER BY lname, fname, mname");
+	my $own = $dbh->prepare("select S.sname || '-' || P.number from parcels P inner join street S ON P.street_id=S.id where ? = ANY (owner)");
+	my $mng = $dbh->prepare("select S.sname || '-' || P.number from parcels P inner join street S ON P.street_id=S.id where ? = ANY (manager)");
 	$sth->execute();
 	while(my $r = $sth->fetchrow_hashref) {
-		my @a = ('<a href="?type='.$type.'&id='.$r->{id}.'">'.($r->{lname} || '-').'</a>', $r->{fname}, $r->{mname});
+		$own->execute($r->{id});
+		my @owned;
+		while(my $s = $own->fetchrow_arrayref) {
+			push @owned, $s->[0];
+		}
+		$own->finish;
+
+		$mng->execute($r->{id});
+		my @mngd;
+		while(my $s = $mng->fetchrow_arrayref) {
+			push @mngd, $s->[0];
+		}
+		$mng->finish;
+
+		my @a = ('<a href="?type='.$type.'&id='.$r->{id}.'" style=text-decoration:'.($r->{active} ? 'none':'line-through').'
+>'.($r->{lname} || '-').'</a>', $r->{fname}, $r->{mname}, $r->{member}, join(", ", @owned), join(", ", @mngd), $r->{memo});
 		push @$List, \@a;
 	}
 }
@@ -705,6 +764,7 @@ $(document).ready(function() {
 </script>
 %}
 <h4><% $Title %></h4>
+<%$FILTER%>
 
 %if($id || $ARGS{add_new}) {
 %# Модальное окно
@@ -751,7 +811,7 @@ $(document).ready(function() {
 %#<input type="hidden" name="type" value="<%$type%>">
 </form>
 %} else {
-<h1>Управление конфигурацией</h1>
+<h1>Управление списками</h1>
 
 <div class="row">
 <ul>

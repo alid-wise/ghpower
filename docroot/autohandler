@@ -3,6 +3,7 @@
 </%args>
 <%init>
 use strict;
+use Date::Manip;
 use lib "$ENV{MY}/lib/";
 use GHPower;
 use GHPowerUtils;

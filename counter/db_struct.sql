@@ -565,6 +565,8 @@ CREATE TABLE parcels (
 	number character varying,
 	square numeric,
 	kadastr character varying,
+	proof character varying,
+	proof_date date,
 	laccount character varying,
 	owner integer[],	-- persons_id
 	manager integer[],	-- persons_id
@@ -587,6 +589,7 @@ CREATE TABLE persons (
 	email varchar[],
 	phone varchar[],
 	membership date,
+	membership_end date,
 	passport varchar,
 	passport_date date,
 	address varchar,
