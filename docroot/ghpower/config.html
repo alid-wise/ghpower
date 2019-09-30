@@ -45,7 +45,7 @@ if($type == 1) {	# Доступ
 	my $Grp = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'auth_grp');
 	if($ARGS{submit}) {
 		if($ARGS{drop}) {
-			$sth = $dbh->prepare("UPDATE auth SET active=0 WHERE id=?");
+			$sth = $dbh->prepare("UPDATE auth SET active=0,modtime=now() WHERE id=?");
 			$sth->execute($id);
 			undef $ARGS{drop};
 			undef $id;
