@@ -216,7 +216,7 @@ sub collector {
 		my $retr_opt = (exists $Bal{$counter->{id}}) ? "-r".($retries * 3) : "-r$retries";
 		if($counter->{type} =~ /M203/) {
 			print " M203 $retr_opt\n"	if $verb;
-			eval{ $Data = `$cget203 $counter->{addr} $counter->{dev} $retr_opt`; };
+			eval{ $Data = `$cget203 $counter->{addr} $counter->{dev} $retr_opt 2>/dev/null`; };
 			chomp $Data;
 			$Data =~ s/,/\./g;
 			($addr, $mv1,$mc1,$mf,$mps,$mss,$se1ai,$se2ai) = split(";",$Data);
@@ -233,8 +233,8 @@ sub collector {
 			# Коррекция часов
 			if($maintenance_do) {
 				my $ret;
-				eval{ $ret = system("$adjtime203 ".$counter->{addr}." ".$counter->{dev}." ".($verb ? '-v':'')); };
-				eval{ $ret = `$gettime203 $counter->{addr} $counter->{dev}`; };
+				eval{ $ret = system("$adjtime203 $counter->{addr} $counter->{dev}".($verb ? '-v':'')." 2>/dev/null"); };
+				eval{ $ret = `$gettime203 $counter->{addr} $counter->{dev}  2>/dev/null`; };
 				my ($delta) = ($ret=~/([\d\-]+)$/);
 				$tmok = (abs($delta) < 10) ? "1":"0";	# Ошибка не более 10 секунд
 				$maintenance_cnt = 1	unless($tmok);	# Не откладывать надолго следующую коррекцию часов
@@ -243,7 +243,7 @@ sub collector {
 		}
 		elsif($counter->{type} =~ /M230/) {
 			print " M230 $retr_opt\n"	if $verb;
-			eval{ $Data = `$cget230 $counter->{addr} $counter->{passwd} $counter->{dev} $counter->{ktrans} $retr_opt`; };
+			eval{ $Data = `$cget230 $counter->{addr} $counter->{passwd} $counter->{dev} $counter->{ktrans} $retr_opt  2>/dev/null`; };
 			chomp $Data;
 			$Data =~ s/,/\./g;
 			($addr,$mv1,$mv2,$mv3,$mc1,$mc2,$mc3,$mf,$ma1,$ma2,$ma3,$mps,$mp1,$mp2,$mp3,$mqs,$mq1,$mq2,$mq3,$mss,$ms1,$ms2,$ms3,$mks,$mk1,$mk2,$mk3,$se1ai,$se1ae,$se1ri,$se1re,$se2ai,$se2ae,$se2ri,$se2re) = split(";",$Data);
@@ -258,8 +258,8 @@ sub collector {
 			}
 			if($maintenance_do) {
 				my $ret;
-				eval{ $ret = system("$adjtime230 ".$counter->{addr}." ".$counter->{passwd}." ".$counter->{passwd2}." ".$counter->{dev}." ".($verb ? '-v':'').""); };
-				eval{ $ret = `$gettime230 $counter->{addr} $counter->{passwd} $counter->{passwd2} $counter->{dev}`; };
+				eval{ $ret = system("$adjtime230 $counter->{addr} $counter->{passwd} $counter->{passwd2} $counter->{dev}".($verb ? '-v':'')." 2>/dev/null"); };
+				eval{ $ret = `$gettime230 $counter->{addr} $counter->{passwd} $counter->{passwd2} $counter->{dev}  2>/dev/null`; };
 				my ($delta) = ($ret=~/([\d\-]+)$/);
 				$tmok = (abs($delta) < 10) ? "1":"0";	# Ошибка не более 10 секунд
 				$maintenance_cnt = 1	unless($tmok);	# Не откладывать надолго следующую коррекцию часов

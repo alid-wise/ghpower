@@ -73,6 +73,7 @@ use strict;
 # Заполнение таблицы daily
 # ежедневные показания счетчиков на начало суток
 # 2015-02-05 alid
+# 2019-10-14 Показания счетчика - самое последнее значение за предыдущий день
 #
 
 my (@args, %opts);
@@ -116,31 +117,31 @@ if($clean) {
 }
 foreach my $date (@Dates) {
 
-	my $date2 = "$date 23:59:59";
-	print "Date: $date - $date2\n"	if($verb);
+#	my $date2 = "$date 23:59:59";
+	print "Date: $date - $date\n"	if($verb);
 	my ($total,$updated,$inserted) = (0,0,0);
 	# Список счетчиков
 	my @clist;
-	my $sth = $dbh->prepare("select counter from monitor where dt>=? and dt<=? group by counter");
-	$sth->execute($date,$date2);
+	my $sth = $dbh->prepare("select counter from monitor where dt>=(date \'$date\' - interval '1 day') and dt<? group by counter");
+	$sth->execute($date);
 	while(my $r = $sth->fetchrow_array) {
 		push @clist, $r;
 		$total++;
 	}
 	$sth->finish;
 
-	$sth = $dbh->prepare("select se1ai,se2ai from monitor where counter=? and dt>=? and dt<=? order by dt limit 1");
+	$sth = $dbh->prepare("select se1ai,se2ai from monitor where counter=? and dt>=(date \'$date\' - interval '1 day') and dt<? order by dt desc limit 1");
 	my $cget = $dbh->prepare("select id from daily where cid=? and date = ?");
 	my $ins = $dbh->prepare("insert into daily (cid,date,se1,se2) values (?,?,?,?)");
 	my $upd = $dbh->prepare("update daily set se1=?,se2=? where id=?");
 
 	foreach my $cid (@clist) {
 		next	if($acid && ($acid != $cid));	# Только для одного счетчика
-		$sth->execute($cid, $date, $date2);
+		$sth->execute($cid, $date);
 		my ($se1,$se2) = $sth->fetchrow_array;
 		$sth->finish;
 		next	unless(($se1 =~ m/\d+/) && ($se2 =~ m/\d+/));	# Хоть какие-нибудь данные должны быть
-		print "\t$cid\t$date\t$date2\t$se1\t$se2\n"	if($verb);
+		print "\t$cid\t$date\t$date\t$se1\t$se2\n"	if($verb);
 		$cget->execute($cid,$date);
 		my ($id) = $cget->fetchrow_array;
 		$cget->finish;
