@@ -119,7 +119,7 @@ unless($cid) {
 } else {
 	# Баланс на луче
 	unless(-e "$dpath/$mgid/balance.rrd") {	# база баланса
-		my $res = system("rrdtool","create","$dpath/$mgid/balance.rrd","--start","1200000000","--step","300","DS:delta:GAUGE:600:U:U","RRA:LAST:0.1:1:600","RRA:LAST:0.1:6:300","RRA:LAST:0.1:24:300","RRA:LAST:0.1:72:300","RRA:LAST:0.1:288:300");
+		my $res = system("rrdtool","create","$dpath/$mgid/balance.rrd","--start","1200000000","--step","300","DS:delta:GAUGE:600:U:U","RRA:AVERAGE:0.1:1:600","RRA:AVERAGE:0.1:6:300","RRA:AVERAGE:0.1:24:300","RRA:AVERAGE:0.1:72:300","RRA:AVERAGE:0.1:288:300");
 		die "Can't create balance database: $dpath/$mgid/balance.rrd - $!"	if $res;
 	}
 	my $bal = `$balcmd $database $cid $mgid`;
@@ -138,37 +138,37 @@ unless($cid) {
 	system("rrdtool graph $gpath/$mgid/balance-day.png --imgformat PNG -z "
 		."--start -24h --end now "
 		."--title \"Balance today\" "
-		."DEF:delta=$dpath/$mgid/balance.rrd:delta:LAST "
+		."DEF:delta=$dpath/$mgid/balance.rrd:delta:AVERAGE "
 		."LINE:delta#FF0000:Delta"
 	." >/dev/null");
 	system("rrdtool graph $gpath/$mgid/balance-yesterday.png --imgformat PNG -z "
 		."--start -48h --end -24h "
 		."--title \"Balance yesterday\" "
-		."DEF:delta=$dpath/$mgid/balance.rrd:delta:LAST "
+		."DEF:delta=$dpath/$mgid/balance.rrd:delta:AVERAGE "
 		."LINE:delta#FF0000:Delta"
 	." >/dev/null");
 	system("rrdtool graph $gpath/$mgid/balance-week.png --imgformat PNG -z "
 		."--start -7d --end now "
 		."--title \"Balance last week\" "
-		."DEF:delta=$dpath/$mgid/balance.rrd:delta:LAST "
+		."DEF:delta=$dpath/$mgid/balance.rrd:delta:AVERAGE "
 		."LINE:delta#FF0000:Delta"
 	." >/dev/null");
 	system("rrdtool graph $gpath/$mgid/balance-month.png --imgformat PNG -z "
 		."--start -30d --end now "
 		."--title \"Balance last month\" "
-		."DEF:delta=$dpath/$mgid/balance.rrd:delta:LAST "
+		."DEF:delta=$dpath/$mgid/balance.rrd:delta:AVERAGE "
 		."LINE:delta#FF0000:Delta"
 	." >/dev/null");
 	system("rrdtool graph $gpath/$mgid/balance-3month.png --imgformat PNG -z "
 		."--start -91d --end now "
 		."--title \"Balance last three month\" "
-		."DEF:delta=$dpath/$mgid/balance.rrd:delta:LAST "
+		."DEF:delta=$dpath/$mgid/balance.rrd:delta:AVERAGE "
 		."LINE:delta#FF0000:Delta"
 	." >/dev/null");
 	system("rrdtool graph $gpath/$mgid/balance-year.png --imgformat PNG -z "
 		."--start -365d --end now "
 		."--title \"Balance last year\" "
-		."DEF:delta=$dpath/$mgid/balance.rrd:delta:LAST "
+		."DEF:delta=$dpath/$mgid/balance.rrd:delta:AVERAGE "
 		."LINE:delta#FF0000:Delta"
 	." >/dev/null");
 }	# balance
@@ -177,7 +177,7 @@ unless($cid) {
 $sth = $dbh->prepare("select date,ise,mp1,mp2,mp3 from ONLY monitor where counter=? order by date desc limit 1");
 foreach my $id (@Glist) {
 	unless(-e "$dpath/$mgid/$id.rrd") {	# база этого счетчика
-		my $res = system("rrdtool","create","$dpath/$mgid/$id.rrd","--start","1200000000","--step","300","DS:ise:GAUGE:600:U:U","RRA:LAST:0.1:1:600","RRA:LAST:0.1:6:300","RRA:LAST:0.1:24:300","RRA:LAST:0.1:72:300","RRA:LAST:0.1:288:300");
+		my $res = system("rrdtool","create","$dpath/$mgid/$id.rrd","--start","1200000000","--step","300","DS:ise:GAUGE:600:U:U","RRA:AVERAGE:0.1:1:600","RRA:AVERAGE:0.1:6:300","RRA:AVERAGE:0.1:24:300","RRA:AVERAGE:0.1:72:300","RRA:AVERAGE:0.1:288:300");
 		die "Can't create counter database: $dpath/$mgid/$id.rrd - $!"	if $res;
 	}
 	$sth->execute($id);
@@ -197,25 +197,25 @@ foreach my $id (@Glist) {
 	system("rrdtool graph $gpath/$mgid/$id-day.png --imgformat PNG -z "
 		."--start -24h --end now "
 		."--title \"Power today\" "
-		."DEF:ise=$dpath/$mgid/$id.rrd:ise:LAST "
+		."DEF:ise=$dpath/$mgid/$id.rrd:ise:AVERAGE "
 		."LINE:ise#0000FF:Power"
 	." >/dev/null");
 	system("rrdtool graph $gpath/$mgid/$id-yesterday.png --imgformat PNG -z "
 		."--start -48h --end -24h "
 		."--title \"Power yesterday\" "
-		."DEF:ise=$dpath/$mgid/$id.rrd:ise:LAST "
+		."DEF:ise=$dpath/$mgid/$id.rrd:ise:AVERAGE "
 		."LINE:ise#0000FF:Power"
 	." >/dev/null");
 	system("rrdtool graph $gpath/$mgid/$id-week.png --imgformat PNG -z "
 		."--start -7d --end now "
 		."--title \"Power last week\" "
-		."DEF:ise=$dpath/$mgid/$id.rrd:ise:LAST "
+		."DEF:ise=$dpath/$mgid/$id.rrd:ise:AVERAGE "
 		."LINE:ise#0000FF:Power"
 	." >/dev/null");
 	system("rrdtool graph $gpath/$mgid/$id-month.png --imgformat PNG -z "
 		."--start -30d --end now "
 		."--title \"Power last month\" "
-		."DEF:ise=$dpath/$mgid/$id.rrd:ise:LAST "
+		."DEF:ise=$dpath/$mgid/$id.rrd:ise:AVERAGE "
 		."LINE:ise#0000FF:Power"
 	." >/dev/null");
 #	system("rrdtool graph $gpath/$mgid/$id-3month.png --imgformat PNG -z "
@@ -227,7 +227,7 @@ foreach my $id (@Glist) {
 	system("rrdtool graph $gpath/$mgid/$id-year.png --imgformat PNG -z "
 		."--start -365d --end now "
 		."--title \"Power last year\" "
-		."DEF:ise=$dpath/$mgid/$id.rrd:ise:LAST "
+		."DEF:ise=$dpath/$mgid/$id.rrd:ise:AVERAGE "
 		."LINE:ise#0000FF:Power"
 	." >/dev/null");
 
@@ -240,7 +240,7 @@ foreach my $id (@Glist) {
 				"DS:mp1:GAUGE:600:U:U",
 				"DS:mp2:GAUGE:600:U:U",
 				"DS:mp3:GAUGE:600:U:U",
-				"RRA:LAST:0.1:1:600","RRA:LAST:0.1:6:300","RRA:LAST:0.1:24:300","RRA:LAST:0.1:72:300","RRA:LAST:0.1:288:300");
+				"RRA:AVERAGE:0.1:1:600","RRA:AVERAGE:0.1:6:300","RRA:AVERAGE:0.1:24:300","RRA:AVERAGE:0.1:72:300","RRA:AVERAGE:0.1:288:300");
 			die "Can't create counter database: $dpath/$mgid/$id.3f.rrd - $!"	if $res;
 		}
 
@@ -259,9 +259,9 @@ foreach my $id (@Glist) {
 		system("rrdtool graph $gpath/$mgid/$id.3f-day.png --imgformat PNG -z "
 			."--start -24h --end now "
 			."--title \"Phase Power today\" "
-			."DEF:mp1=$dpath/$mgid/$id.3f.rrd:mp1:LAST "
-			."DEF:mp2=$dpath/$mgid/$id.3f.rrd:mp2:LAST "
-			."DEF:mp3=$dpath/$mgid/$id.3f.rrd:mp3:LAST "
+			."DEF:mp1=$dpath/$mgid/$id.3f.rrd:mp1:AVERAGE "
+			."DEF:mp2=$dpath/$mgid/$id.3f.rrd:mp2:AVERAGE "
+			."DEF:mp3=$dpath/$mgid/$id.3f.rrd:mp3:AVERAGE "
 			."LINE:mp1#0000FF:Phase-1 "
 			."LINE:mp2#00FF00:Phase-2 "
 			."LINE:mp3#FF0000:Phase-3 "
@@ -272,9 +272,9 @@ foreach my $id (@Glist) {
 		system("rrdtool graph $gpath/$mgid/$id.3f-yesterday.png --imgformat PNG -z "
 			."--start -48h --end -24h "
 			."--title \"Phase Power yesterday\" "
-			."DEF:mp1=$dpath/$mgid/$id.3f.rrd:mp1:LAST "
-			."DEF:mp2=$dpath/$mgid/$id.3f.rrd:mp2:LAST "
-			."DEF:mp3=$dpath/$mgid/$id.3f.rrd:mp3:LAST "
+			."DEF:mp1=$dpath/$mgid/$id.3f.rrd:mp1:AVERAGE "
+			."DEF:mp2=$dpath/$mgid/$id.3f.rrd:mp2:AVERAGE "
+			."DEF:mp3=$dpath/$mgid/$id.3f.rrd:mp3:AVERAGE "
 			."LINE:mp1#0000FF:Phase-1 "
 			."LINE:mp2#00FF00:Phase-2 "
 			."LINE:mp3#FF0000:Phase-3 "
@@ -285,9 +285,9 @@ foreach my $id (@Glist) {
 		system("rrdtool graph $gpath/$mgid/$id.3f-week.png --imgformat PNG -z "
 			."--start -7d --end now "
 			."--title \"Phase Power last week\" "
-			."DEF:mp1=$dpath/$mgid/$id.3f.rrd:mp1:LAST "
-			."DEF:mp2=$dpath/$mgid/$id.3f.rrd:mp2:LAST "
-			."DEF:mp3=$dpath/$mgid/$id.3f.rrd:mp3:LAST "
+			."DEF:mp1=$dpath/$mgid/$id.3f.rrd:mp1:AVERAGE "
+			."DEF:mp2=$dpath/$mgid/$id.3f.rrd:mp2:AVERAGE "
+			."DEF:mp3=$dpath/$mgid/$id.3f.rrd:mp3:AVERAGE "
 			."LINE:mp1#0000FF:Phase-1 "
 			."LINE:mp2#00FF00:Phase-2 "
 			."LINE:mp3#FF0000:Phase-3 "
@@ -298,9 +298,9 @@ foreach my $id (@Glist) {
 		system("rrdtool graph $gpath/$mgid/$id.3f-month.png --imgformat PNG -z "
 			."--start -30d --end now "
 			."--title \"Phase Power last month\" "
-			."DEF:mp1=$dpath/$mgid/$id.3f.rrd:mp1:LAST "
-			."DEF:mp2=$dpath/$mgid/$id.3f.rrd:mp2:LAST "
-			."DEF:mp3=$dpath/$mgid/$id.3f.rrd:mp3:LAST "
+			."DEF:mp1=$dpath/$mgid/$id.3f.rrd:mp1:AVERAGE "
+			."DEF:mp2=$dpath/$mgid/$id.3f.rrd:mp2:AVERAGE "
+			."DEF:mp3=$dpath/$mgid/$id.3f.rrd:mp3:AVERAGE "
 			."LINE:mp1#0000FF:Phase-1 "
 			."LINE:mp2#00FF00:Phase-2 "
 			."LINE:mp3#FF0000:Phase-3 "
@@ -325,9 +325,9 @@ foreach my $id (@Glist) {
 		system("rrdtool graph $gpath/$mgid/$id.3f-year.png --imgformat PNG -z "
 			."--start -365d --end now "
 			."--title \"Phase Power last year\" "
-			."DEF:mp1=$dpath/$mgid/$id.3f.rrd:mp1:LAST "
-			."DEF:mp2=$dpath/$mgid/$id.3f.rrd:mp2:LAST "
-			."DEF:mp3=$dpath/$mgid/$id.3f.rrd:mp3:LAST "
+			."DEF:mp1=$dpath/$mgid/$id.3f.rrd:mp1:AVERAGE "
+			."DEF:mp2=$dpath/$mgid/$id.3f.rrd:mp2:AVERAGE "
+			."DEF:mp3=$dpath/$mgid/$id.3f.rrd:mp3:AVERAGE "
 			."LINE:mp1#0000FF:Phase-1 "
 			."LINE:mp2#00FF00:Phase-2 "
 			."LINE:mp3#FF0000:Phase-3 "
