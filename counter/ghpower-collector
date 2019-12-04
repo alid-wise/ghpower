@@ -260,7 +260,7 @@ sub collector {
 				my $ret;
 				eval{ $ret = system("$adjtime230 $counter->{addr} $counter->{passwd} $counter->{passwd2} $counter->{dev}".($verb ? '-v':'')." 2>/dev/null"); };
 				eval{ $ret = `$gettime230 $counter->{addr} $counter->{passwd} $counter->{passwd2} $counter->{dev}  2>/dev/null`; };
-				my ($delta) = ($ret=~/([\d\-]+)$/);
+				my ($delta) = ($ret=~/([\d\-]+)$/); $delta ||= 0;
 				$tmok = (abs($delta) < 10) ? "1":"0";	# Ошибка не более 10 секунд
 				$maintenance_cnt = 1	unless($tmok);	# Не откладывать надолго следующую коррекцию часов
 			}
