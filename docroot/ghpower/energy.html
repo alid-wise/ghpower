@@ -80,7 +80,7 @@ while(my $row = $sth->fetchrow_hashref) {
 <td><b><% $row->{tm} %></b></td>
 <td align="right"><%$row->{se1ai}%></td>
 <td align="right"><%$row->{se2ai}%></td>
-%my $mark = ($row->{over}) ? "class=redbold":"";
+%my $mark = ($row->{over}) ? "class=redbold":(($row->{ise} > 0.75 * $Info->{plimit}) ? "class=yellowbold":"");
 <td align="right"><div <%$mark%> ><%$row->{ise}%></div></td>
 </tr>
 %}
@@ -127,6 +127,18 @@ while(my $row = $sth->fetchrow_hashref) {
 %#<img src="graph/<%$Info->{mgroup}%>/<%$id%>.3f-3month.png">
 <br>
 <img src="graph/<%$Info->{mgroup}%>/<%$id%>.3f-year.png">
+<br>
+<img src="graph/<%$Info->{mgroup}%>/<%$id%>.3fc-day.png">
+<br>
+<img src="graph/<%$Info->{mgroup}%>/<%$id%>.3fc-yesterday.png">
+<br>
+<img src="graph/<%$Info->{mgroup}%>/<%$id%>.3fc-week.png">
+<br>
+<img src="graph/<%$Info->{mgroup}%>/<%$id%>.3fc-month.png">
+%#<br>
+%#<img src="graph/<%$Info->{mgroup}%>/<%$id%>.3fc-3month.png">
+<br>
+<img src="graph/<%$Info->{mgroup}%>/<%$id%>.3fc-year.png">
 %}
 
 %if($Info->{mgid}) {

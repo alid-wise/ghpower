@@ -151,7 +151,7 @@ sub lastcounter {
   my $ret = undef;
   my $sth;
   if($id) {
-    $sth = $self->{dbh}->prepare("select A.modtime AS tm,A.se1 AS t1,A.se2 AS t2, A.lpower, A.lpower>B.plimit AS over,A.state,A.tmok from status A inner join counters B on A.cid=B.id where A.cid=? order by A.modtime desc LIMIT 1");
+    $sth = $self->{dbh}->prepare("select A.modtime AS tm,A.se1 AS t1,A.se2 AS t2, A.lpower, A.lpower>B.plimit AS over,A.state,A.tmok,B.plimit from status A inner join counters B on A.cid=B.id where A.cid=? order by A.modtime desc LIMIT 1");
     $sth->execute($id);
     while(my $r = $sth->fetchrow_hashref) {
       $r->{t1} = sprintf("%0.2f",$r->{t1});
@@ -161,7 +161,7 @@ sub lastcounter {
       $ret = $r;
     }
   } else {  # Полный список
-    $sth = $self->{dbh}->prepare("select A.modtime AS tm,A.se1 AS t1,A.se2 AS t2, A.cid, A.lpower, A.lpower>B.plimit AS over,A.state,A.tmok from status A inner join counters B on A.cid=B.id where A.state=0".($opts{plimit} ? " and A.lpower>B.plimit":""));
+    $sth = $self->{dbh}->prepare("select A.modtime AS tm,A.se1 AS t1,A.se2 AS t2, A.cid, A.lpower, A.lpower>B.plimit AS over,A.state,A.tmok,B.plimit from status A inner join counters B on A.cid=B.id where A.state=0".($opts{plimit} ? " and A.lpower>B.plimit":""));
     $sth->execute();
     while(my $r = $sth->fetchrow_hashref) {
       $r->{t1} = sprintf("%0.2f",$r->{t1});

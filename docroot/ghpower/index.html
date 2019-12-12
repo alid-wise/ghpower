@@ -368,7 +368,7 @@ $(document).ready(function() {
 <td id="t1_<%$item->{id}%>" align="right"><%$LastCounter->{$item->{id}}->{t1}%></td>
 <td id="t2_<%$item->{id}%>"align="right"><%$LastCounter->{$item->{id}}->{t2}%></td>
 
-%my $mark = ($LastCounter->{$item->{id}}->{over}) ? "class=redbold":"";
+%my $mark = ($LastCounter->{$item->{id}}->{over}) ? "class=redbold":(($LastCounter->{$item->{id}}->{lpower} > 0.75 * $LastCounter->{$item->{id}}->{plimit})?"class=yellowbold":"");
 <td align="right"><a href="energy.html?id=<%$item->{id}%><%$filter ? "&filter=$filter":""%>"><div id="p_<%$item->{id}%>" <%$mark%>> <%$LastCounter->{$item->{id}}->{lpower} ? $LastCounter->{$item->{id}}->{lpower} : "_"%></div></a></td>
 <td bgcolor="<% defined $item->{state} ? ($item->{state} ? "red":"green") : "yellow" %>"><input type="checkbox" name="id_<%$item->{id}%>" <% ($ARGS{"id_".$item->{id}} || $item->{active}) ? "checked":""%> disabled></td>
 <td>
