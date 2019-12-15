@@ -69,6 +69,7 @@ $| = 1;
 # Вычисление распределения групп по портам iface
 # 2014-05-12 alid
 # 2017-02-05 Mercury203.pm & Mercury230.pm
+# 2019-12-15 sdelay - Задержка при запуске из cron по @reboot
 #
 
 use utf8;
@@ -86,12 +87,18 @@ foreach(@ARGV){
 my $verb = exists $opts{v};
 my $commit = exists $opts{f};	# Коммитить изменения в базу. Без этого ключа - демо режим.
 my $retries = (exists $opts{r}) ? $opts{r} : 10;
+my $sdelay = $opts{t} || 60;
 my ($database) = (@args);
 die "Usage: $0 database"	unless($database);
 
 my $plock = '/tmp/port_locator.lock';
 my $lock = Lock->new($plock,1);
 die "port_locator: Locked"	if($lock->set);
+
+# Задержка на запуск системных сервисов при reboot (актуально для linux-систем, субд запускается позже, чем cron)
+if($sdelay) {
+	sleep($sdelay);
+}
 
 my $dbh = DBI->connect("dbi:Pg:dbname=$database","","",{AutoCommit => 0})	or die;
 # Список интерфейсов

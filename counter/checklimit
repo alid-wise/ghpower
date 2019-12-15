@@ -82,11 +82,10 @@ my (@args, %opts);
 foreach(@ARGV){
 	if(/^\-(\S)(\S*)/) { $opts{$1} = $2; } else {  push @args, $_; }
 }
-my ($database, $limit, $emails) = (@args);
-die "Usage: $0 database limit"		unless($database);
+my ($database, $main_counter_id, $limit, $emails) = (@args);
+die "Usage: $0 database counter_id limit"		unless($database);
 my $verb = exists $opts{v};
 my $pgport = 5432;
-my $main_counter_id = 1;
 
 my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1, AutoCommit => 0});
 my $sth = $dbh->prepare("select dt,ise from ONLY monitor where counter=? order by date desc limit 1");
