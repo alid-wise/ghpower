@@ -291,6 +291,7 @@ CREATE TABLE towers (
     setdate date,
     type character varying,
     lamp boolean default false,
+    sup boolean default false,
     modtime timestamp without time zone DEFAULT now() NOT NULL,
     primary key (id)
 );

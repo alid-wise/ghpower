@@ -213,7 +213,7 @@ elsif($type == 2) {	# Типы счетчиков
 }
 elsif($type == 3) {	# Столбы
 
-	@Fields = ('Название', 'Тип', 'Фонарь', 'Дата установки', 'Описание');
+	@Fields = ('Название', 'Тип', 'Доп.опора', 'Фонарь', 'Дата установки', 'Описание');
 	$Title = 'Столбы';
 	my @Types = ('Дер.','Ж/б','Мет.');
 	if($ARGS{submit}) {
@@ -235,13 +235,14 @@ elsif($type == 3) {	# Столбы
 				$Err{setdate}++	if($ARGS{setdate});
 			}
 			my $lamp = $ARGS{lamp} eq 'on' ? 1:0;
+			my $sup = $ARGS{sup} eq 'on' ? 1:0;
 			unless(%Err) {
 				if($id) {
-					$sth = $dbh->prepare("UPDATE towers SET name=?, type=?, setdate=".($setdate ? "?":"null").", memo=?, lamp=?, auth=?, modtime=now() WHERE id=?");
+					$sth = $dbh->prepare("UPDATE towers SET name=?, type=?, setdate=".($setdate ? "?":"null").", memo=?, sup=?, lamp=?, auth=?, modtime=now() WHERE id=?");
 					if($setdate) {
-						$sth->execute($cname, $ctype, $setdate, $ARGS{memo}, $lamp, $auth->{id}, $id);
+						$sth->execute($cname, $ctype, $setdate, $ARGS{memo}, $sup, $lamp, $auth->{id}, $id);
 					} else {
-						$sth->execute($cname, $ctype, $ARGS{memo}, $lamp, $auth->{id}, $id);
+						$sth->execute($cname, $ctype, $ARGS{memo}, $sup, $lamp, $auth->{id}, $id);
 					}
 					undef $id;
 					$OK++;
@@ -255,11 +256,11 @@ elsif($type == 3) {	# Столбы
 					my ($oid) = $sth->fetchrow_array;
 					$sth->finish;
 					unless($oid) {
-						$sth = $dbh->prepare("INSERT INTO towers (name,type,".($setdate ? "setdate,":"")."memo,lamp,auth) VALUES (?,?,".($setdate ? "?,":"")."?,?,?)");
+						$sth = $dbh->prepare("INSERT INTO towers (name,type,".($setdate ? "setdate,":"")."memo,sup,lamp,auth) VALUES (?,?,".($setdate ? "?,":"")."?,?,?,?)");
 						if($setdate) {
-							$sth->execute($cname, $ctype, $setdate, $ARGS{memo}, $lamp, $auth->{id});
+							$sth->execute($cname, $ctype, $setdate, $ARGS{memo}, $sup, $lamp, $auth->{id});
 						} else {
-							$sth->execute($cname, $ctype, $ARGS{memo}, $lamp, $auth->{id});
+							$sth->execute($cname, $ctype, $ARGS{memo}, $sup, $lamp, $auth->{id});
 						}
 					}
 					undef $ARGS{add_new};
@@ -269,9 +270,9 @@ elsif($type == 3) {	# Столбы
 		}
 	} else {
 		if($id) {	# Редактирование записи
-			$sth = $dbh->prepare("SELECT name, type, memo, setdate, lamp FROM towers WHERE id=? LIMIT 1");
+			$sth = $dbh->prepare("SELECT name, type, memo, setdate, lamp, sup FROM towers WHERE id=? LIMIT 1");
 			$sth->execute($id);
-			($Usr->{cname}, $Usr->{ctype}, $Usr->{memo}, $Usr->{setdate}, $Usr->{lamp}) = $sth->fetchrow_array;
+			($Usr->{cname}, $Usr->{ctype}, $Usr->{memo}, $Usr->{setdate}, $Usr->{lamp}, $Usr->{sup}) = $sth->fetchrow_array;
 			$sth->finish;
 		}
 	}
@@ -290,6 +291,10 @@ elsif($type == 3) {	# Столбы
 		</td>
 	</tr>
 	<tr>
+		<td><div style=color:'.($Err{sup} ? "red":"black").'> Доп.опора:</div></td>
+		<td><input type="checkbox" name="sup" '.($ARGS{submit} ? ($ARGS{sup} eq 'on' ? 'checked':'') : $Usr->{sup} ? 'checked' : '').'></td>
+	</tr>
+	<tr>
 		<td><div style=color:'.($Err{lamp} ? "red":"black").'> Фонарь:</div></td>
 		<td><input type="checkbox" name="lamp" '.($ARGS{submit} ? ($ARGS{lamp} eq 'on' ? 'checked':'') : $Usr->{lamp} ? 'checked' : '').'></td>
 	</tr>
@@ -305,10 +310,10 @@ elsif($type == 3) {	# Столбы
 	</tr>';
 	$FORM_EDIT = $FORM_NEW;
 
-	$sth = $dbh->prepare("SELECT id,name,memo,setdate,type,lamp FROM towers ORDER BY name");
+	$sth = $dbh->prepare("SELECT id,name,memo,setdate,type,lamp,sup FROM towers ORDER BY name");
 	$sth->execute();
 	while(my $r = $sth->fetchrow_hashref) {
-		my @a = ('<a href="?type='.$type.'&id='.$r->{id}.'">'.$r->{name}.'</a>', $r->{type}, '<div align="center">'.($r->{lamp} ? '+':'-').'</div>', '<div align="right">'.$m->comp("lib.msn:pretty_date", date=>$r->{setdate}).'</div>', $r->{memo});
+		my @a = ('<a href="?type='.$type.'&id='.$r->{id}.'">'.$r->{name}.'</a>', $r->{type}, '<div align="center">'.($r->{sup} ? '+':'-').'</div>', '<div align="center">'.($r->{lamp} ? '+':'-').'</div>', '<div align="right">'.$m->comp("lib.msn:pretty_date", date=>$r->{setdate}).'</div>', $r->{memo});
 		push @$List, \@a;
 	}
 }
