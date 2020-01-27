@@ -117,7 +117,7 @@ if($counter_id) {
 }
 
 
-my $gp = $dbh->prepare("SELECT id,date,prev1,prev2,current1,current2,amount,balance,mode,init FROM payments WHERE cid=? ORDER BY modtime DESC LIMIT 1");
+my $gp = $dbh->prepare("SELECT id,date,prev1,prev2,current1,current2,amount,balance,(select tmode from counters where id=P.cid) as mode,init FROM payments P WHERE cid=? ORDER BY modtime DESC LIMIT 1");
 my $up = $dbh->prepare("UPDATE daily SET exp1=?, exp2=?, amount=?, mode=?, tariff_id=? WHERE id=?");
 my $bl = $dbh->prepare("SELECT date,balance FROM balance WHERE cid=? ORDER BY date DESC LIMIT 1");
 my $gc = $dbh->prepare("SELECT id,se1,se2 FROM daily WHERE cid=? and date=? limit 1");

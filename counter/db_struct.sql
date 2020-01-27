@@ -91,13 +91,11 @@ create table counters (
 	modtime timestamp default now(),
 	tower_id integer,
 	year integer,
----	street integer,
----	house varchar,
-	dn varchar,	-- участок ou=3,ou=Восточный
+	dn varchar,	-- участок ou=3,ou=Восточный - DEPRECATED
 	parcel_id integer,
----	owner varchar,	-- users.id
 	plimit decimal DEFAULT 7.5,	-- допустимая потребляемая мощность
 	subscr integer default 0,	-- подписка владельца на алерты
+	tmode integer default 2,	-- тариф (1- одноставочный, 2- двухставочный)
 	primary key (id)
 );
 

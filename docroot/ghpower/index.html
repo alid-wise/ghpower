@@ -65,8 +65,8 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 	} else {
 		my $active = $ARGS{active}? 1:0;
 		my $subscr = $ARGS{subscr}? 1:0;
-		map { $ARGS{$_} =~ s/\D//g; $ARGS{$_} ||= 0 } ('addr','mgroup','sn','model','tower_id','year','ktrans','balance_mgroup','parcel_id');
-		map { $ARGS{$_} = 0 if($ARGS{$_} > 2000000000) } ('addr','mgroup','sn','model','tower_id','year','ktrans','balance_mgroup','parcel_id');
+		map { $ARGS{$_} =~ s/\D//g; $ARGS{$_} ||= 0 } ('addr','mgroup','sn','model','tower_id','year','ktrans','balance_mgroup','parcel_id','tmode');
+		map { $ARGS{$_} = 0 if($ARGS{$_} > 2000000000) } ('addr','mgroup','sn','model','tower_id','year','ktrans','balance_mgroup','parcel_id','tmode');
 		$ARGS{ktrans} ||= 1;
 		$ARGS{plimit} =~ s/\,/\./g;
 		$ARGS{plimit} =~ s/[^0-9\.]//g;
@@ -74,6 +74,7 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 		$Err{model}++	unless($ARGS{model});
 		$Err{addr}++	unless($ARGS{addr});
 		$Err{mgroup}++	unless($ARGS{mgroup});
+		$Err{tmode}++	unless($ARGS{tmode});
 		my ($mday,$mon,$year) = (localtime)[3,4,5];
 		$ARGS{setdate} ||= sprintf("%4d-%02d-%02d",$year+1900,$mon+1,$mday);
 
@@ -82,10 +83,10 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 			if($Usr) {	# Обновление
 				my $chg = ($active ne $Usr->{active})? 1:0;
 				$chg++	if($subscr ne $Usr->{subscr})? 1:0;
-				map {$chg++ if($ARGS{$_} ne $Usr->{$_})} ('name','addr','mgroup','sn','model','setdate','memo','tower_id','year','street','house','owner','plimit','ktrans','parcel_id');
+				map {$chg++ if($ARGS{$_} ne $Usr->{$_})} ('name','addr','mgroup','sn','model','setdate','memo','tower_id','year','street','house','owner','plimit','ktrans','parcel_id','tmode');
 				if($chg) {	# есть изменения
-					my $upd = $dbh->prepare("update counters set name=?,addr=?,mgroup=?,sn=?,model=?,setdate=?,memo=?,active=?,tower_id=?,year=?,modtime=now(),plimit=?,subscr=?,parcel_id=?,ktrans=? where id=?");
-					$upd->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{plimit},$subscr,$ARGS{parcel_id},$ARGS{ktrans},$id);
+					my $upd = $dbh->prepare("update counters set name=?,addr=?,mgroup=?,sn=?,model=?,setdate=?,memo=?,active=?,tower_id=?,year=?,modtime=now(),plimit=?,subscr=?,parcel_id=?,ktrans=?,tmode=? where id=?");
+					$upd->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{plimit},$subscr,$ARGS{parcel_id},$ARGS{ktrans},$ARGS{tmode},$id);
 				}
 				if($ARGS{balance_mgroup} && $Usr->{balance_mgroup} && ($ARGS{balance_mgroup} != $Usr->{balance_mgroup})) {
 					$dbh->do("UPDATE mgroup SET bid=null WHERE bid=$id");
@@ -101,13 +102,13 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 			} else {	# Новая запись
 				my ($passwd1,$passwd2) = ('','');
 				if($Ctypes->{$ARGS{model}}->{type} eq 'M230') { ($passwd1,$passwd2) = ('111111','222222'); }
-				my $ins = $dbh->prepare("insert into counters (name,addr,mgroup,sn,model,setdate,memo,active,tower_id,year,passwd,passwd2,modtime,plimit,subscr,parcel_id,ktrans) values (?,?,?,?,?,?,?,?,?,?,\'$passwd1\',\'$passwd2\',now(),?,?,?,?) RETURNING id");
-				$ins->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{plimit},$subscr,$ARGS{parcel_id},$ARGS{ktrans});
+				my $ins = $dbh->prepare("insert into counters (name,addr,mgroup,sn,model,setdate,memo,active,tower_id,year,passwd,passwd2,modtime,plimit,subscr,parcel_id,ktrans,tmode) values (?,?,?,?,?,?,?,?,?,?,\'$passwd1\',\'$passwd2\',now(),?,?,?,?,?) RETURNING id");
+				$ins->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{plimit},$subscr,$ARGS{parcel_id},$ARGS{ktrans},$ARGS{tmode});
 				my ($cid) = $ins->fetchrow_array;
 				# Начальные показания счетчика (на момент установки)
 				map { $_ =~ s/\,/\./; $_ =~ s/[^\d\.]//g; } ($ARGS{t1i}, $ARGS{t2i});
-				$ins = $dbh->prepare("insert into daily (cid,date,se1,se2) values (?,?,?,?)");
-				$ins->execute($cid,$ARGS{setdate},$ARGS{t1i}, $ARGS{t2i});
+				$ins = $dbh->prepare("insert into daily (cid,date,se1,se2,mode) values (?,?,?,?,?)");
+				$ins->execute($cid,$ARGS{setdate},$ARGS{t1i}, $ARGS{t2i}, $ARGS{tmode});
 				# Для балансного счетчика
 				$bal->execute($cid, $ARGS{balance_mgroup})	if($ARGS{balance_mgroup});
 			}
@@ -232,6 +233,13 @@ $(document).ready(function() {
 <tr>
 <td>Подписка:</td>
 <td><input type="checkbox" name="subscr" <% $ARGS{subscr} || (!$ARGS{submit} ? $Usr->{subscr} : "") ? "checked":""%><% ($auth->{gid} >1) ? "disabled":"" %>>&nbsp;&nbsp;отправлять владельцу информацию о статусе</td>
+</tr>
+<td><div style=color:<% $Err{tmode} ? "red":"black"%>>Тарифный план:</div></td>
+<td><select name="tmode" <% ($auth->{gid} >1) ? "disabled":"" %>>
+%map {
+<option value="<%$_%>" <% ((!$ARGS{submit} ? $Usr->{tmode} : $ARGS{tmode}) eq $_)? "selected":"" %>><%$_%></option>
+%} (2,1);
+</select></td>
 </tr>
 <tr>
 <td>Примечания:</td>

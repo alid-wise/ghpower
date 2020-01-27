@@ -132,7 +132,7 @@ foreach my $date (@Dates) {
 
 	$sth = $dbh->prepare("select se1ai,se2ai from monitor where counter=? and dt>=(date \'$date\' - interval '1 day') and dt<? order by dt desc limit 1");
 	my $cget = $dbh->prepare("select id from daily where cid=? and date = ?");
-	my $ins = $dbh->prepare("insert into daily (cid,date,se1,se2) values (?,?,?,?)");
+	my $ins = $dbh->prepare("insert into daily (cid,date,se1,se2,mode) values (?,?,?,?,(select tmode from counters where id=?))");
 	my $upd = $dbh->prepare("update daily set se1=?,se2=? where id=?");
 
 	foreach my $cid (@clist) {
@@ -149,7 +149,7 @@ foreach my $date (@Dates) {
 			$upd->execute($se1,$se2,$id);
 			$updated++;
 		} else {
-			$ins->execute($cid,$date,$se1,$se2);
+			$ins->execute($cid,$date,$se1,$se2,$cid);
 			$inserted++;
 		}
 	}

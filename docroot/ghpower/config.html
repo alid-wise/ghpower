@@ -213,7 +213,7 @@ elsif($type == 2) {	# Типы счетчиков
 }
 elsif($type == 3) {	# Столбы
 
-	@Fields = ('Название', 'Тип', 'Доп.опора', 'Фонарь', 'Дата установки', 'Описание');
+	@Fields = ('Название', 'Тип', 'Доп.опора', 'Фонарь', 'Дата установки', 'Подкл.участки', 'Описание');
 	$Title = 'Столбы';
 	my @Types = ('Дер.','Ж/б','Мет.');
 	if($ARGS{submit}) {
@@ -311,9 +311,16 @@ elsif($type == 3) {	# Столбы
 	$FORM_EDIT = $FORM_NEW;
 
 	$sth = $dbh->prepare("SELECT id,name,memo,setdate,type,lamp,sup FROM towers ORDER BY name");
+	my $sth2 = $dbh->prepare("SELECT C.parcel_id,P.number,S.sname FROM counters C INNER JOIN parcels P ON C.parcel_id=P.id INNER JOIN street S ON P.street_id=S.id WHERE C.tower_id=? AND C.active=1");
 	$sth->execute();
 	while(my $r = $sth->fetchrow_hashref) {
-		my @a = ('<a href="?type='.$type.'&id='.$r->{id}.'">'.$r->{name}.'</a>', $r->{type}, '<div align="center">'.($r->{sup} ? '+':'-').'</div>', '<div align="center">'.($r->{lamp} ? '+':'-').'</div>', '<div align="right">'.$m->comp("lib.msn:pretty_date", date=>$r->{setdate}).'</div>', $r->{memo});
+		$sth2->execute($r->{id});
+		my @connected;
+		while(my $c = $sth2->fetchrow_hashref) {
+			push @connected, $c->{sname}."-".$c->{number};
+		}
+		$sth2->finish;
+		my @a = ('<a href="?type='.$type.'&id='.$r->{id}.'">'.$r->{name}.'</a>', $r->{type}, '<div align="center">'.($r->{sup} ? '+':'-').'</div>', '<div align="center">'.($r->{lamp} ? '+':'-').'</div>', '<div align="right">'.$m->comp("lib.msn:pretty_date", date=>$r->{setdate}).'</div>',join(",",@connected), $r->{memo});
 		push @$List, \@a;
 	}
 }
