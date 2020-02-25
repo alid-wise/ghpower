@@ -86,8 +86,8 @@ my $mgid = $opts{g} || 0;	# только для этой группы (id)
 my $pgport = 5432;
 
 # тарифное расписание
-my $T1 = '07:00';
-my $T2 = '23:00';
+my $T2 = '6:55';
+my $T1 = '22:55';
 
 
 my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1});
@@ -107,7 +107,7 @@ while(my $r = $sth->fetchrow_hashref) {
 }
 $sth->finish;
 
-$sth = $dbh->prepare("select counters.id,counters.name,counters.addr,counters.passwd,counters.ktrans,counter_type.type,status.id as status_id,status.state,status.pstate,counters.sn,counters.setdate,towers.name as tname,street.name as sname,counters.house from counters left outer join counter_type on model=counter_type.id left outer join status on counters.id=status.cid left outer join towers on towers.id=counters.tower_id left outer join street on street.id=counters.street where counters.mgroup=? and counters.active=1");
+$sth = $dbh->prepare("select counters.id,counters.name,counters.addr,counters.passwd,counters.ktrans,counter_type.type,status.id as status_id,status.state,status.pstate,counters.sn,counters.setdate,towers.name as tname,street.name as sname,parcels.number as house from counters left outer join counter_type on model=counter_type.id left outer join status on counters.id=status.cid left outer join towers on towers.id=counters.tower_id left outer join parcels on counters.parcel_id=parcels.id left outer join street on street.id=parcels.street_id where counters.mgroup=? and counters.active=1");
 my $se = $dbh->prepare("select date,se1ai,se2ai from ONLY monitor where counter=? order by date desc limit 300");
 
 foreach my $mg (@$Glist) {
@@ -125,12 +125,12 @@ foreach my $mg (@$Glist) {
 		unless($t1 & $t2) {
 			print STDERR "NO DATA".($quiet ? " $mg->{name}":"").": $str\n";
 		}
-#		elsif(($t1 eq $T1) && ($t2 eq $T2)) {
-#			print "OK ($t1,$t2): $str\n"	unless $quiet;
-#		}
+		elsif(($t1 eq $T1) && ($t2 eq $T2)) {
+			print "OK ($t1,$t2): $str\n"	unless $quiet;
+		}
 		else {
 #			print STDERR "ERROR ($t1,$t2)".($quiet ? " $mg->{name}":"").": $str\n";
-			print "($t1,$t2)".($quiet ? " $mg->{name}":"").": $str\n";
+			print "\x1b[31m($t1,$t2)".($quiet ? " $mg->{name}":"").": $str\x1b[0m\n";
 		}
 
 	}
