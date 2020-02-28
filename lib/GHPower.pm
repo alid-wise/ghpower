@@ -147,7 +147,7 @@ sub Counters_list {
 #    Последние показания счетчика
 sub lastcounter {
   my $self = shift;
-  my ($id, %opts) = @_;
+  my ($id, $opts) = @_;
 
   my $ret = undef;
   my $sth;
@@ -162,7 +162,7 @@ sub lastcounter {
       $ret = $r;
     }
   } else {  # Полный список
-    $sth = $self->{dbh}->prepare("select A.modtime AS tm,A.se1 AS t1,A.se2 AS t2, A.cid, A.lpower, A.lpower>B.plimit AS over,A.state,A.tmok,B.plimit from status A inner join counters B on A.cid=B.id where A.state=0".($opts{plimit} ? " and A.lpower>B.plimit":""));
+    $sth = $self->{dbh}->prepare("select A.modtime AS tm,A.se1 AS t1,A.se2 AS t2, A.cid, A.lpower, A.lpower>B.plimit AS over,A.state,A.tmok,B.plimit from status A inner join counters B on A.cid=B.id where A.state=0".($opts->{plimit} ? " and A.lpower>B.plimit":""));
     $sth->execute();
     while(my $r = $sth->fetchrow_hashref) {
       $r->{t1} = sprintf("%0.2f",$r->{t1});
@@ -536,8 +536,8 @@ sub Street_List {
 # Список участков
 sub Domains_List {
   my $self = shift;
-  my %opts = shift;
-  my $active = exists $opts{active};
+  my $opts = shift;
+  my $active = exists $opts->{active};
   my $sth = $self->{dbh}->prepare("SELECT A.id,A.active,A.street_id,S.name as street_name,S.sname as street_sname,S.ord AS s_ord,A.number,A.square,A.owner,A.manager,A.maillist,A.memo FROM parcels A inner join street S on A.street_id=S.id ".($active ? "where A.active=1":"")." order by S.ord,A.number");
   $sth->execute();
   my $ret;
@@ -551,8 +551,8 @@ sub Domains_List {
 # Вся структура ou=domains с владельцами и пр.
 sub Domains_Struct {
   my $self = shift;
-  my %opts = shift;
-  my $active = exists $opts{active};
+  my $opts = shift;
+#  my $active = exists $opts->{active};
   my $data = $self->Domains_List({active=>1});
   my $Data;
   foreach my $r (@$data) {
