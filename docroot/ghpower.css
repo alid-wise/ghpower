@@ -81,3 +81,4 @@ A:hover { color: green; }
 .initpay { background: #98FB98; }
 .badinitpay { background: #FF0000; }
 .inactive { background: #9C9C9C; }
+.nobr { white-space: nowrap; }

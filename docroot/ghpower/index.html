@@ -65,6 +65,7 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 	} else {
 		my $active = $ARGS{active}? 1:0;
 		my $subscr = $ARGS{subscr}? 1:0;
+		my $plimiter = $ARGS{plimiter}? 1:0;
 		map { $ARGS{$_} =~ s/\D//g; $ARGS{$_} ||= 0 } ('addr','mgroup','sn','model','tower_id','year','ktrans','balance_mgroup','parcel_id','tmode');
 		map { $ARGS{$_} = 0 if($ARGS{$_} > 2000000000) } ('addr','mgroup','sn','model','tower_id','year','ktrans','balance_mgroup','parcel_id','tmode');
 		$ARGS{ktrans} ||= 1;
@@ -83,10 +84,11 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 			if($Usr) {	# Обновление
 				my $chg = ($active ne $Usr->{active})? 1:0;
 				$chg++	if($subscr ne $Usr->{subscr})? 1:0;
+				$chg++	if($plimiter ne $Usr->{plimiter})? 1:0;
 				map {$chg++ if($ARGS{$_} ne $Usr->{$_})} ('name','addr','mgroup','sn','model','setdate','memo','tower_id','year','street','house','owner','plimit','ktrans','parcel_id','tmode');
 				if($chg) {	# есть изменения
-					my $upd = $dbh->prepare("update counters set name=?,addr=?,mgroup=?,sn=?,model=?,setdate=?,memo=?,active=?,tower_id=?,year=?,modtime=now(),plimit=?,subscr=?,parcel_id=?,ktrans=?,tmode=? where id=?");
-					$upd->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{plimit},$subscr,$ARGS{parcel_id},$ARGS{ktrans},$ARGS{tmode},$id);
+					my $upd = $dbh->prepare("update counters set name=?,addr=?,mgroup=?,sn=?,model=?,setdate=?,memo=?,active=?,tower_id=?,year=?,modtime=now(),plimit=?,subscr=?,parcel_id=?,ktrans=?,tmode=?,plimiter=? where id=?");
+					$upd->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{plimit},$subscr,$ARGS{parcel_id},$ARGS{ktrans},$ARGS{tmode},$plimiter,$id);
 				}
 				if($ARGS{balance_mgroup} && $Usr->{balance_mgroup} && ($ARGS{balance_mgroup} != $Usr->{balance_mgroup})) {
 					$dbh->do("UPDATE mgroup SET bid=null WHERE bid=$id");
@@ -102,8 +104,8 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 			} else {	# Новая запись
 				my ($passwd1,$passwd2) = ('','');
 				if($Ctypes->{$ARGS{model}}->{type} eq 'M230') { ($passwd1,$passwd2) = ('111111','222222'); }
-				my $ins = $dbh->prepare("insert into counters (name,addr,mgroup,sn,model,setdate,memo,active,tower_id,year,passwd,passwd2,modtime,plimit,subscr,parcel_id,ktrans,tmode) values (?,?,?,?,?,?,?,?,?,?,\'$passwd1\',\'$passwd2\',now(),?,?,?,?,?) RETURNING id");
-				$ins->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{plimit},$subscr,$ARGS{parcel_id},$ARGS{ktrans},$ARGS{tmode});
+				my $ins = $dbh->prepare("insert into counters (name,addr,mgroup,sn,model,setdate,memo,active,tower_id,year,passwd,passwd2,modtime,plimit,subscr,parcel_id,ktrans,tmode,plimiter) values (?,?,?,?,?,?,?,?,?,?,\'$passwd1\',\'$passwd2\',now(),?,?,?,?,?,?) RETURNING id");
+				$ins->execute($ARGS{name},$ARGS{addr},$ARGS{mgroup},$ARGS{sn},$ARGS{model},$ARGS{setdate},$ARGS{memo},$active,$ARGS{tower_id},$ARGS{year},$ARGS{plimit},$subscr,$ARGS{parcel_id},$ARGS{ktrans},$ARGS{tmode},$plimiter);
 				my ($cid) = $ins->fetchrow_array;
 				# Начальные показания счетчика (на момент установки)
 				map { $_ =~ s/\,/\./; $_ =~ s/[^\d\.]//g; } ($ARGS{t1i}, $ARGS{t2i});
@@ -184,7 +186,6 @@ $(document).ready(function() {
 %#<td>Участок:<br><small>формат: "ou=Уч.,ou=Улица"</small></td>
 <td>Участок:</td>
 <td>
-%#<input type="text" name="dn" value="<%$ARGS{dn} || (!$ARGS{submit} ? $Usr->{dn} : "")%>" <% ($auth->{gid} >1) ? "disabled":"" %>><br>
 <select name="parcel_id" <% ($auth->{gid} >1) ? "disabled":"" %>>
 <option></option>
 %	foreach my $parcel (@$Parcels) {
@@ -228,7 +229,8 @@ $(document).ready(function() {
 </tr>
 <tr>
 <td>Лимит мощности:</td>
-<td><input type="text" name="plimit" value="<%$ARGS{plimit} || (!$ARGS{plimit} ? $Usr->{plimit} : "")%>" <% ($auth->{gid} >1) ? "disabled":"" %>></td>
+<td><input type="text" name="plimit" value="<%$ARGS{plimit} || (!$ARGS{plimit} ? $Usr->{plimit} : "")%>" <% ($auth->{gid} >1) ? "disabled":"" %>>
+Ограничитель:&nbsp;<input type="checkbox" name="plimiter" <% $ARGS{plimiter} || (!$ARGS{submit} ? $Usr->{plimiter} : "") ? "checked":""%><% ($auth->{gid} >1) ? "disabled":"" %>></td>
 </tr>
 <tr>
 <td>Подписка:</td>
@@ -341,7 +343,7 @@ $(document).ready(function() {
 <tr>
 <td><input type="checkbox" name="mgid_<%$mgid%>" <% ($ARGS{"mgid_".$mgid} || $List->{mgid}->{active}) ? "checked":""%> disabled></td>
 <td><b><% $List->{$mgid}->{name}%></b></td>
-<td colspan="9"><% $List->{$mgid}->{memo}%></td>
+<td colspan="10"><% $List->{$mgid}->{memo}%></td>
 </tr>
 %	my $i=1;
 %	foreach my $item (sort { $a->{street_name} cmp $b->{street_name} || $a->{domain} <=> $b->{domain} || $a->{name} cmp $b->{name}} @{$List->{$mgid}->{items}}) {
@@ -374,21 +376,23 @@ $(document).ready(function() {
 <td><% join ", ", @owners %></td>
 <td><%$Towers->{$item->{tower_id}}->{name}%></td>
 <td id="t1_<%$item->{id}%>" align="right"><%$LastCounter->{$item->{id}}->{t1}%></td>
-<td id="t2_<%$item->{id}%>"align="right"><%$LastCounter->{$item->{id}}->{t2}%></td>
+<td id="t2_<%$item->{id}%>" align="right"><%$LastCounter->{$item->{id}}->{t2}%></td>
 
 %my $mark = ($LastCounter->{$item->{id}}->{over}) ? "class=redbold":(($LastCounter->{$item->{id}}->{lpower} > 0.75 * $LastCounter->{$item->{id}}->{plimit})?"class=yellowbold":"");
-<td align="right"><a href="energy.html?id=<%$item->{id}%><%$filter ? "&filter=$filter":""%>"><div id="p_<%$item->{id}%>" <%$mark%>> <%$LastCounter->{$item->{id}}->{lpower} ? $LastCounter->{$item->{id}}->{lpower} : "_"%></div></a></td>
-<td bgcolor="<% defined $item->{state} ? ($item->{state} ? "red":"green") : "yellow" %>"><input type="checkbox" name="id_<%$item->{id}%>" <% ($ARGS{"id_".$item->{id}} || $item->{active}) ? "checked":""%> disabled></td>
+<td><input type="checkbox" name="plimiter_<%$item->{id}%>" <% ($ARGS{"plimiter_".$item->{id}} || $item->{plimiter}) ? "checked":""%> disabled title="ограничитель"></td>
+<td align="right"><a href="energy.html?id=<%$item->{id}%><%$filter ? "&filter=$filter":""%>"><div id="p_<%$item->{id}%>" <%$mark%>><%$LastCounter->{$item->{id}}->{lpower} ? $LastCounter->{$item->{id}}->{lpower} : "_"%></div></a></td>
+
+<td bgcolor="<% defined $item->{state} ? ($item->{state} ? "red":"green") : "yellow" %>"><input type="checkbox" name="id_<%$item->{id}%>" <% ($ARGS{"id_".$item->{id}} || $item->{active}) ? "checked":""%> disabled title="используется"></td>
 <td>
 %if($auth->{gid} eq 1) {
 <a  data-content="<%$item->{id}%>" data-backdrop="true" data-toggle="modal" data-target="#PingModal">ping</a>
 %}
 </td>
-<td><input type="checkbox" name="subscr_<%$item->{id}%>" <% ($ARGS{"subscr_".$item->{id}} || $item->{subscr}) ? "checked":""%> disabled id="cansub_<%$item->{id}%>"></td>
+<td><input type="checkbox" name="subscr_<%$item->{id}%>" <% ($ARGS{"subscr_".$item->{id}} || $item->{subscr}) ? "checked":""%> disabled id="cansub_<%$item->{id}%>" title="рассылка"></td>
 </tr>
 %	$i++;
 %	}
-<tr><td colspan=7 align=right>Сумма:</td><td align=right><div id="mgid_<%$mgid%>" class="bold"><% $m->comp("lib.msn:grsum", dbh=>$dbh, gid=>$mgid)->{lpsum} %></div></td><td colspan=3></td></tr>
+<tr><td colspan=8 align=right>Сумма:</td><td align=right><div id="mgid_<%$mgid%>" class="bold"><% $m->comp("lib.msn:grsum", dbh=>$dbh, gid=>$mgid)->{lpsum} %></div></td><td colspan=3></td></tr>
 %}
 </table>
 
@@ -519,6 +523,7 @@ $(document).ready(function() {
 
 
 %#<pre>
+%use Data::Dumper;
 %#<% Dumper $List %>
 %#<% Dumper $Usr %>
 %#<% Dumper %ARGS %>

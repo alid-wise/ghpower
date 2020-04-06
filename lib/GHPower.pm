@@ -97,7 +97,7 @@ sub Counter_info {
 
   my $ret = undef;
 #  my $sth = $self->{dbh}->prepare("SELECT A.subscr,A.dn,A.id as id,A.name as name,A.addr as addr,A.mgroup as mgroup,A.mgroup as gid,A.passwd as passwd,A.model as model,A.plimit,A.memo,A.active,A.modtime,A.year,A.sn,A.setdate,B.name AS model,B.type as type,D.dev AS iface,D.id AS if,F.name AS tower,A.ktrans AS ktrans FROM counters A INNER JOIN counter_type B ON A.model=B.id INNER JOIN mgroup C ON A.mgroup=C.id INNER JOIN iface D ON C.if_id=D.id LEFT OUTER JOIN towers F ON F.id=A.tower_id WHERE A.id=? LIMIT 1");
-  my $sth = $self->{dbh}->prepare("SELECT A.subscr,A.parcel_id,P.number as domain,S.name as street_name,S.sname as street_sname,P.owner,A.id as id,A.name as name,A.addr as addr,A.mgroup as mgroup,A.mgroup as gid,A.passwd as passwd,A.model as model,A.plimit,A.memo,A.active,A.modtime,A.year,A.sn,A.setdate,B.name AS model,B.type as type,D.dev AS iface,D.id AS if,F.name AS tower,A.ktrans AS ktrans FROM counters A INNER JOIN counter_type B ON A.model=B.id INNER JOIN mgroup C ON A.mgroup=C.id INNER JOIN iface D ON C.if_id=D.id LEFT OUTER JOIN towers F ON F.id=A.tower_id LEFT OUTER JOIN parcels P ON A.parcel_id=P.id LEFT OUTER JOIN street S ON P.street_id=S.id WHERE A.id=? LIMIT 1");
+  my $sth = $self->{dbh}->prepare("SELECT A.subscr,A.parcel_id,P.number as domain,S.name as street_name,S.sname as street_sname,P.owner,A.id as id,A.name as name,A.addr as addr,A.mgroup as mgroup,A.mgroup as gid,A.passwd as passwd,A.model as model,A.plimit,A.plimiter,A.memo,A.active,A.modtime,A.year,A.sn,A.setdate,B.name AS model,B.type as type,D.dev AS iface,D.id AS if,F.name AS tower,A.ktrans AS ktrans FROM counters A INNER JOIN counter_type B ON A.model=B.id INNER JOIN mgroup C ON A.mgroup=C.id INNER JOIN iface D ON C.if_id=D.id LEFT OUTER JOIN towers F ON F.id=A.tower_id LEFT OUTER JOIN parcels P ON A.parcel_id=P.id LEFT OUTER JOIN street S ON P.street_id=S.id WHERE A.id=? LIMIT 1");
   $sth->execute($id);
   while(my $r = $sth->fetchrow_hashref) {
     $ret = $r;
@@ -120,7 +120,7 @@ sub Counters_list {
 
   my $ret = undef;
   my $usr = $self->{dbh}->prepare("select lname,fname,mname from persons where id=?");
-  my $sth = $self->{dbh}->prepare("select A.id,A.name,A.addr,A.mgroup,A.passwd,A.sn,A.model,A.setdate,A.memo,A.active,A.modtime,A.passwd2,A.ktrans,A.tower_id,A.year,A.plimit,A.subscr,B.id as status_id,B.state,B.pstate,B.se1,B.se2,B.modtime as status_modtime,A.parcel_id,P.number as domain,S.name as street_name,S.sname as street_sname,P.owner from counters A left outer join status B on B.cid=A.id left outer join parcels P on A.parcel_id=P.id left outer join street S on P.street_id=S.id".((!$showdel) ? " where not (A.active < 0)":""));
+  my $sth = $self->{dbh}->prepare("select A.id,A.name,A.addr,A.mgroup,A.passwd,A.sn,A.model,A.setdate,A.memo,A.active,A.modtime,A.passwd2,A.ktrans,A.tower_id,A.year,A.plimit,A.plimiter,A.subscr,B.id as status_id,B.state,B.pstate,B.se1,B.se2,B.modtime as status_modtime,A.parcel_id,P.number as domain,S.name as street_name,S.sname as street_sname,P.owner from counters A left outer join status B on B.cid=A.id left outer join parcels P on A.parcel_id=P.id left outer join street S on P.street_id=S.id".((!$showdel) ? " where not (A.active < 0)":""));
   $sth->execute();
   while(my $r = $sth->fetchrow_hashref) {
 #    if($r->{dn} &&  ($r->{dn} =~ m/ou=([^,]+),\s*ou=([^,]+)/)) {  # Можно получить дополнительную информацию в LDAP

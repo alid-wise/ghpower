@@ -94,6 +94,7 @@ create table counters (
 	dn varchar,	-- участок ou=3,ou=Восточный - DEPRECATED
 	parcel_id integer,
 	plimit decimal DEFAULT 7.5,	-- допустимая потребляемая мощность
+	plimiter integer DEFAULT 0,	-- установлен ограничитель мощности
 	subscr integer default 0,	-- подписка владельца на алерты
 	tmode integer default 2,	-- тариф (1- одноставочный, 2- двухставочный)
 	primary key (id)
