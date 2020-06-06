@@ -66,6 +66,7 @@
 $|=1;
 use DBI;
 use Time::Local;
+use Date::Manip;
 use strict;
 
 #
@@ -82,10 +83,10 @@ die "Usage: $0 database"		unless($database);
 my $verb = exists $opts{v};
 my $pgport = 5432;
 
-my $lm = `date -v-1m "+%Y-%m"`;
-chomp $lm;
-my $sdate = $opts{s} || $lm;
+#my $lm = `date -v-1m "+%Y-%m"`;
+my $lm = UnixDate(DateCalc(sprintf("%04d-%02d-%02d", sub{($_[5]+1900,$_[4]+1,$_[3])}->(localtime)),"-1 Mon"), "%Y-%m");
 
+my $sdate = $opts{s} || $lm;
 
 #my ($sdate,$edate) =('2008-06','2012-06');
 my $mon = 0;
@@ -109,7 +110,10 @@ for(my $year=int($syear);$year<=int($eyear);$year++){
 		if(int($year) == ($eyear)) {
 			last	if(int($mon) > int($emon));
 		}
-		my $date2 = `date -j -f "%Y-%m-%d" -v+1m "+%Y-%m-%d" $year-$mon-01`;
+		#my $date2 = `date -j -f "%Y-%m-%d" -v+1m "+%Y-%m-%d" $year-$mon-01`;
+		my $date2 = UnixDate(DateCalc("$year-$mon-01","+1 Mon"), "%Y-%m-%d");
+
+
 		my ($year2,$mon2) = ($date2 =~ /(\d{4})\-(\d{2})/);
 		my $table = "monitor_Y".$year."M".$mon;
 		print "$year-$mon $table\n"	if($verb);
