@@ -86,6 +86,7 @@ my $verb = exists $opts{v};
 my $template_id = $opts{T};	# Шаблон из базы
 #my $sms = exists $opts{s};
 my $pgport = 5432;
+my $pghost = 'localhost';
 my $database = $opts{D} || 'ghpower';
 my $trigger = $opts{t};		# проверять триггер
 # 2018-02-11
@@ -118,7 +119,7 @@ my $BODY = <<ATEXT;
 Сообщение сформировано автоматически, отвечать на него не нужно.
 ATEXT
 
-my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1, AutoCommit => 1});
+my $dbh = DBI->connect("dbi:Pg:dbname=$database;host=$pghost;port=$pgport","","", { RaiseError => 1, AutoCommit => 1});
 # 2018-12-14 Шаблон сообщения из базы
 if($template_id) {
 	my $sth = $dbh->prepare("SELECT subj,body FROM feeds_template WHERE id=?");

@@ -84,9 +84,10 @@ foreach(@ARGV){
 }
 my $verb = exists $opts{v};
 my $pgport = 5432;
+my $pghost = 'localhost';
 my $database = $opts{D} || 'ghpower';
 
-my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1, AutoCommit => 1});
+my $dbh = DBI->connect("dbi:Pg:dbname=$database;host=$pghost;port=$pgport","","", { RaiseError => 1, AutoCommit => 1});
 my $ghpower = GHPower->new($dbh);
 my $List = $ghpower->Domains_Struct;
 

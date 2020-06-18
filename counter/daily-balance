@@ -89,8 +89,9 @@ die "Usage: $0 database [counter_id]"		unless($database);
 my $verb = exists $opts{v};
 my $force = exists $opts{F};		# Коммитить записи
 my $pgport = 5432;
+my $pghost = 'localhost';
 
-my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1, AutoCommit => 0});
+my $dbh = DBI->connect("dbi:Pg:dbname=$database;host=$pghost;port=$pgport","","", { RaiseError => 1, AutoCommit => 0});
 my $sth;
 
 # Тарифы

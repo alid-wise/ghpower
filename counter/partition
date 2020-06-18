@@ -82,6 +82,7 @@ my ($database) = (@args);
 die "Usage: $0 database"		unless($database);
 my $verb = exists $opts{v};
 my $pgport = 5432;
+my $pghost = 'localhost';
 
 #my $lm = `date -v-1m "+%Y-%m"`;
 my $lm = UnixDate(DateCalc(sprintf("%04d-%02d-%02d", sub{($_[5]+1900,$_[4]+1,$_[3])}->(localtime)),"-1 Mon"), "%Y-%m");
@@ -97,7 +98,7 @@ my $edate = $opts{e} || $sdate;
 my ($syear,$smon) = ($sdate =~ /(\d{4})\-(\d{2})/);
 my ($eyear,$emon) = ($edate =~ /(\d{4})\-(\d{2})/);
 
-my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1, AutoCommit => 0});
+my $dbh = DBI->connect("dbi:Pg:dbname=$database;host=$pghost;port=$pgport","","", { RaiseError => 1, AutoCommit => 0});
 my $sth;
 
 

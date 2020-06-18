@@ -86,8 +86,9 @@ my ($database, $main_counter_id, $limit, $emails) = (@args);
 die "Usage: $0 database counter_id limit"		unless($database);
 my $verb = exists $opts{v};
 my $pgport = 5432;
+my $pghost = 'localhost';
 
-my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1, AutoCommit => 0});
+my $dbh = DBI->connect("dbi:Pg:dbname=$database;host=$pghost;port=$pgport","","", { RaiseError => 1, AutoCommit => 0});
 my $sth = $dbh->prepare("select dt,ise from ONLY monitor where counter=? order by date desc limit 1");
 $sth->execute($main_counter_id);
 my ($date,$ise) = $sth->fetchrow_array;

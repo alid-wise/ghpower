@@ -86,6 +86,7 @@ my $verb = exists $opts{v};
 my $fill = exists $opts{F};		# Заполнить, начиная с указанной даты
 my $clean = exists $opts{C};	# предварительно очистить таблицу
 my $pgport = 5432;
+my $pghost = 'localhost';
 my $acid = $opts{c};			# Только для этого счетчика
 
 undef $date 	unless ($date =~ m/(\d{4})-(\d{2})-(\d{2})/);
@@ -110,7 +111,7 @@ if($fill) {
 	push @Dates, $date;
 }
 
-my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1, AutoCommit => 0});
+my $dbh = DBI->connect("dbi:Pg:dbname=$database;host=$pghost;port=$pgport","","", { RaiseError => 1, AutoCommit => 0});
 if($clean) {
 	print "Cleaning table daily\n"	if($verb);
 	$dbh->do("delete from daily");

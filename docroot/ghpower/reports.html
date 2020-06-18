@@ -187,6 +187,7 @@ elsif($id == 4) {
 elsif($id == 5) {
 	$report_name = 'Список членов СНТ';
 	@fields = ('Участок','Член СНТ','Подпись');
+	push @fields, 'email'	if($ARGS{email});
 
 	my $ghpower = GHPower->new($dbh);
 	my $List = $ghpower->Domains_Struct;
@@ -213,12 +214,13 @@ elsif($id == 5) {
 		my $Dom = ($List->{$street});
 		foreach my $house (sort {$a <=> $b} keys %{$Dom}) {
 			my $P = $Dom->{$house};
-			my %oname;
+			my (%oname, %email);
 			foreach my $owner (@{$P->{owners}}) {
 				next	if(exists $M{$owner->{id}});
 				if($owner->{member}) {
 					$M{$owner->{id}}++;	# чтобы не повторялись
 					$oname{"$owner->{lname} $owner->{fname} $owner->{mname}"} = $owner->{id};
+					$email{$owner->{id}} = $owner->{email};
 				}
 			}
 			foreach my $member (keys %oname) {	# Все владельцы (теоретически, все они могут быть членами СНТ)
@@ -237,6 +239,7 @@ elsif($id == 5) {
 				my @A = ({class=>"text-right text-info bold",data=>join(", ", @addr)});
 				push @A, {(data=>$member)};
 				push @A, {(data=>'&nbsp;')};
+				push @A, {(data=>join(",", @{$email{$oname{$member}}}))}	if($ARGS{email});
 				push @$Data, \@A;
 				$sshow++;
 			}

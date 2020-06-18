@@ -83,12 +83,13 @@ foreach(@ARGV){
 }
 
 my $pgport = 5432;
+my $pghost = 'localhost';
 my $database = $opts{D} || 'ghpower';
 # Возможность задержки отправки очередного сообщения (если есть ограничения у используемого почтового сервера)
 my $delay = $opts{L} || 0;
 
 
-my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1, AutoCommit => 1});
+my $dbh = DBI->connect("dbi:Pg:dbname=$database;host=$pghost;port=$pgport","","", { RaiseError => 1, AutoCommit => 1});
 my $sth = $dbh->prepare("SELECT id,\"from\",\"to\",subj,body,opts FROM feeds_queue ORDER BY id LIMIT 1");
 my $del = $dbh->prepare("DELETE FROM feeds_queue WHERE id=?");
 

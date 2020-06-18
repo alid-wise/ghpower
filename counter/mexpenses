@@ -82,8 +82,9 @@ die "Usage: $0 database"		unless($database);
 my $verb = exists $opts{v};
 my $full = exists $opts{f};	# полное обновление таблицы
 my $pgport = 5432;
+my $pghost = 'localhost';
 
-my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1, AutoCommit => 0});
+my $dbh = DBI->connect("dbi:Pg:dbname=$database;host=$pghost;port=$pgport","","", { RaiseError => 1, AutoCommit => 0});
 my $sth = $dbh->prepare("SELECT id FROM counters");
 my $sel = $dbh->prepare("SELECT id,(SELECT COUNT(*) FROM mexpenses WHERE cid=? AND year=? AND month=?) FROM mexpenses WHERE cid=? AND year=? AND month=?");
 my $upd = $dbh->prepare("UPDATE mexpenses SET exp1=?,exp2=?,amount=?,modtime=now() WHERE id=?");

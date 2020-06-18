@@ -82,6 +82,7 @@ my ($database,$mgid) = (@args);
 die "Usage: $0 database counter_id group_id [start date] [end date]"		unless($database);
 my $verb = exists $opts{v};
 my $pgport = 5432;
+my $pghost = 'localhost';
 
 my $dpath = $ENV{MY}."data/$database/rrd";
 my $gpath = $ENV{MY}."data/$database/graph";
@@ -89,7 +90,7 @@ my $balcmd = $ENV{MY}."counter/balance";
 my $canbalance = 0;
 
 
-my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1});
+my $dbh = DBI->connect("dbi:Pg:dbname=$database;host=$pghost;port=$pgport","","", { RaiseError => 1});
 # Список счетчиков луча
 my @Glist;
 my $cnt = 0;

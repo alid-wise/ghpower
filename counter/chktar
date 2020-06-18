@@ -84,13 +84,14 @@ my $quiet = exists $opts{q};	# показывать только ошибки
 my $force = exists $opts{f};	# выбирать все группы, невзирая на отсутствие флага active
 my $mgid = $opts{g} || 0;	# только для этой группы (id)
 my $pgport = 5432;
+my $pghost = 'localhost';
 
 # тарифное расписание
 my $T2 = '6:55';
 my $T1 = '22:55';
 
 
-my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1});
+my $dbh = DBI->connect("dbi:Pg:dbname=$database;host=$pghost;port=$pgport","","", { RaiseError => 1});
 my $sth;
 
 # mgroups

@@ -84,9 +84,10 @@ my ($database,$emails) = (@args);
 die "Usage: $0 database"		unless($database);
 my $verb = exists $opts{v};
 my $pgport = 5432;
+my $pghost = 'localhost';
 my $Alerts;
 
-my $dbh = DBI->connect("dbi:Pg:dbname=$database;port=$pgport","","", { RaiseError => 1, AutoCommit => 0});
+my $dbh = DBI->connect("dbi:Pg:dbname=$database;host=$pghost;port=$pgport","","", { RaiseError => 1, AutoCommit => 0});
 my $sth = $dbh->prepare("select id,cid,state,pstate,se1,se2,modtime from status where state<>pstate");
 my $alt = $dbh->prepare("insert into alerts (cid,state,pstate,se1,se2,atime) values (?,?,?,?,?,?)");
 my $inf = $dbh->prepare("select E.name as model,A.addr as addr,A.sn as sn,B.name as mgroup,D.name as tower from counters A inner join mgroup B on B.id=A.mgroup left outer join towers D on D.id=A.tower_id inner join counter_type E on E.id=a.model where A.id=?");
