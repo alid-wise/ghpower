@@ -617,7 +617,7 @@ sub get_Domain_subscr_emails {
   foreach my $manager (sort { $a->{cn} cmp $b->{cn} } @{$P->{managers}}) {
     next  unless($manager->{active});
     foreach(sort { $a cmp $b } ref $manager->{email} eq 'ARRAY' ? @{$manager->{email}} : ($manager->{email} || ())) {
-      push @emails, $_;
+      push @emails, $_  if($_);
     }
   }
   # Если нет адресов, то смотрим владельцев
@@ -625,11 +625,11 @@ sub get_Domain_subscr_emails {
     foreach my $owner (sort { $a->{cn} cmp $b->{cn} } @{$P->{owners}}) {
       next  unless($owner->{active});
       foreach(sort { $a cmp $b } ref $owner->{email} eq 'ARRAY' ? @{$owner->{email}} : ($owner->{email} || ())) {
-        push @emails, $_;
+        push @emails, $_  if($_);
       }
     }
   }
-  return @emails;
+  return @emails || '';
 }
 
 
