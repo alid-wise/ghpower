@@ -219,7 +219,8 @@ while(my $r = $sth->fetchrow_hashref) {
                         print "Body: $body\n";
 		}
 		# Сообщение об ошибке - в лог
-		print STDERR "Unable to find any e-mail addresses: $addr\n";
+		$err = "Unable to find any e-mail addresses: $addr";
+		print STDERR "$err\n";
 		$status = 2;
 	}
 	$log->execute($outnum,0,$r->{id},$r->{dn},join(",",@emails),"$subj\n$body",$status,$err,1,0)	unless($verb);

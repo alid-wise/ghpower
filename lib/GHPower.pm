@@ -629,7 +629,7 @@ sub get_Domain_subscr_emails {
       }
     }
   }
-  return @emails || '';
+  return @emails;
 }
 
 
