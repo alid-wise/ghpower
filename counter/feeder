@@ -173,7 +173,7 @@ while(my $r = $sth->fetchrow_hashref) {
 		$warn =~ s/\{BALANCE\}/$balance_p/;
 		$warn =~ s/\{ALERT\}/$alert/;
 	}
-	map { $_ =~ s/\{T1\}/$se1/; $_ =~ s/\{T2\}/$se2/; $_ =~ s/\{ADDR\}/$addr/; $_ =~ s/\{DATE\}/$date/; $_ =~ s/\{BALANCE\}/$balance_p/; $_ =~ s/\{WARN\}/$warn/; $_ =~ s/\{SN\}/$r->{sn}/; } ($subj,$body);
+	map { $_ =~ s/\{T1\}/$r->{t1}/; $_ =~ s/\{T2\}/$r->{t2}/; $_ =~ s/\{ADDR\}/$addr/; $_ =~ s/\{DATE\}/$date/; $_ =~ s/\{BALANCE\}/$balance_p/; $_ =~ s/\{WARN\}/$warn/; $_ =~ s/\{SN\}/$r->{sn}/; } ($subj,$body);
 	my $KTRANS = ($r->{ktrans} > 1) ? "(коэффициент преобразования $r->{ktrans})":"";
 	$body =~ s/\{KTRANS\}/$KTRANS/;
 	my $tartext;

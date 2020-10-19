@@ -1,0 +1,26 @@
+#!/usr/bin/perl -w
+$|=1;
+use strict;
+use Net::Ping;
+use POSIX qw(strftime);
+
+my $target = '1.1.1.1';
+#my $log = '/var/log/conn_check.log';
+my $status = '/tmp/conn_check.status';
+
+my $p = Net::Ping->new('icmp');
+my $res = $p->ping($target);
+if($res) {
+        if(-e $status) {
+                unlink $status;
+                print strftime("%Y-%m-%d %H:%M:%S", localtime())." ping $target is OK\n";
+        }
+} else {
+        unless(-e $status) {
+                open ST, ">$status";
+                close ST;
+                print strftime("%Y-%m-%d %H:%M:%S", localtime())." ping $target is ERROR\n";
+        }
+}
+$p->close;
+
