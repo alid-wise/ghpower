@@ -489,19 +489,25 @@ sub get_next_outnum {
     ($ynum) = (($date) =~ m/^\d{2}(\d{2})/);
   }
 
-  # Последний существующий номер
-  my $sth = $self->{dbh}->prepare("SELECT id,auth,modtime,docdate,docto,subj FROM outnum WHERE id LIKE ? ORDER BY modtime DESC LIMIT 1");
-  $sth->execute('%/'.$ynum);
-  my ($r) = $sth->fetchrow_hashref;
+#  # Последний существующий номер
+#  my $sth = $self->{dbh}->prepare("SELECT id,auth,modtime,docdate,docto,subj FROM outnum WHERE id LIKE ? ORDER BY modtime DESC LIMIT 1");
+#  $sth->execute('%/'.$ynum);
+#  my ($r) = $sth->fetchrow_hashref;
+#  $sth->finish;
+#  my $dnum;
+#  if($r->{id}) {  # генерим следующий номер
+#    ($dnum) = (($r->{id}) =~ m|(\d+)/|);
+#  }
+#  $dnum++;
+#  my $next_ountum = $dnum.'/'.$ynum;
+#  my $ins = $self->{dbh}->prepare("INSERT INTO outnum (id,auth,modtime,docdate,docto,subj) VALUES (?,?,now(),?,?,?)");
+#  $ins->execute($next_ountum,$auth,$date,$to,$subj);
+
+  my $sth = $self->{dbh}->prepare("WITH w AS (UPDATE outnum_w SET id = outnum_next() RETURNING id) INSERT INTO outnum (id,auth,modtime,docdate,docto,subj) SELECT id,?,now(),?,?,? FROM w RETURNING id");
+  $sth->execute($auth,$date,$to,$subj);
+  my ($next_ountum) = $sth->fetchrow_array;
   $sth->finish;
-  my $dnum;
-  if($r->{id}) {  # генерим следующий номер
-    ($dnum) = (($r->{id}) =~ m|(\d+)/|);
-  }
-  $dnum++;
-  my $next_ountum = $dnum.'/'.$ynum;
-  my $ins = $self->{dbh}->prepare("INSERT INTO outnum (id,auth,modtime,docdate,docto,subj) VALUES (?,?,now(),?,?,?)");
-  $ins->execute($next_ountum,$auth,$date,$to,$subj);
+
   return $next_ountum;
 }
 # Последний зарегистрированный исходящий номер

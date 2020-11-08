@@ -1,0 +1,12 @@
+name: --botname--
+user: --botuser--
+token: '--telegram token--'
+
+dbhost: localhost
+database: ghpower
+dbport: 5432
+
+tg_user_allowed:
+  123456789: username1
+  012345678: username2
+

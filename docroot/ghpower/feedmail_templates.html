@@ -49,9 +49,9 @@ if($ARGS{submit}) {
 			$m->clear_buffer;
 			$m->redirect($self);
 		} else {
-			my $upd = $dbh->prepare("UPDATE feeds_template SET auth=$auth->{id},modtime=now(),name=?,subj=?,body=?,memo=? WHERE id=?");
+			my $upd = $dbh->prepare("UPDATE feeds_template SET auth=$auth->{id},modtime=now(),name=?,subj=?,body=?,memo=?,is_default=? WHERE id=?");
 			unless(%Err) {
-				$upd->execute($ARGS{tname},$ARGS{subj},$ARGS{body},$ARGS{memo},$id);
+				$upd->execute($ARGS{tname},$ARGS{subj},$ARGS{body},$ARGS{memo},($ARGS{is_default}? "true":"false"),$id);
 #				undef $id;
 				$r->status_line('');
 				$m->clear_buffer;
@@ -59,9 +59,9 @@ if($ARGS{submit}) {
 			}
 		}
 	} else { # Новая запись
-		my $ins = $dbh->prepare("INSERT INTO feeds_template (active,auth,name,subj,body,memo) values (1,$auth->{id},?,?,?,?)");
+		my $ins = $dbh->prepare("INSERT INTO feeds_template (active,auth,name,subj,body,memo,is_default) values (1,$auth->{id},?,?,?,?,?)");
 		unless(%Err) {
-			$ins->execute($ARGS{tname},$ARGS{subj},$ARGS{body},$ARGS{memo});
+			$ins->execute($ARGS{tname},$ARGS{subj},$ARGS{body},$ARGS{memo},($ARGS{is_default}? "true":"false"));
 #			undef $ARGS{add_new};
 			$r->status_line('');
 			$m->clear_buffer;
@@ -73,7 +73,7 @@ if($ARGS{submit}) {
 
 # Шаблоны в базе
 my $T;
-my $sth = $dbh->prepare("SELECT id,auth,name,subj,body,memo,modtime FROM feeds_template WHERE active=1");
+my $sth = $dbh->prepare("SELECT id,auth,name,subj,body,memo,modtime,is_default FROM feeds_template WHERE active=1");
 $sth->execute();
 while(my $r = $sth->fetchrow_hashref) {
 	$T->{$r->{id}} = $r;
@@ -92,7 +92,9 @@ $sth->finish;
 <table border="1">
 <tr><td colspan="5" align="right"><nobr>
 <input type="submit" name="cancel" value="X" title="отменить"></nobr></td></tr>
-<tr><td><div style=color:<% $Err{tname} ? "red":"black"%>>Имя шаблона:</div></td><td colspan="3"><input type="text" name="tname" value="<% $ARGS{tname} || $T->{$id}->{name} || ""%>"</td></tr>
+<tr><td><div style=color:<% $Err{tname} ? "red":"black"%>>Имя шаблона:</div></td><td colspan="3"><input type="text" name="tname" value="<% $ARGS{tname} || $T->{$id}->{name} || ""%>">
+&nbsp;&nbsp;Применять по-умолчанию&nbsp;&nbsp;<input type="checkbox" name="is_default" <% ($ARGS{is_default} || $T->{$id}->{is_default})? "checked":"" %>>
+</td></tr>
 <tr><td>Тема (subj):</td><td colspan="3"><input type="text" name="subj" value="<% $ARGS{subj} || $T->{$id}->{subj} || ""%>"></td></tr>
 <tr><td valign="top">Содержимое (body):</div></td><td colspan="3"><textarea id="body" name="body" cols="60" rows="20"><% $ARGS{body} || $T->{$id}->{body} || ""%></textarea></td></tr>
 <tr><td valign="top">Описание:</td><td colspan="3"><textarea id="memo" name="memo" cols="60" rows="5"><% $ARGS{memo} || $T->{$id}->{memo} || ""%></textarea></td></tr>
@@ -119,7 +121,7 @@ $sth->finish;
 %foreach my $tid (sort { $T->{$b}->{modtime} cmp $T->{$a}->{modtime}} keys %{$T}) {
 %	next unless($tid);
 <tr>
-<td align="center"><% $n %></td>
+<td align="center" <% $T->{$tid}->{is_default} ? "style=\"background-color: #66BC29;\"":"" %>><% $n %></td>
 <td><a href="?id=<% $T->{$tid}->{id}%>"><% $T->{$tid}->{name} %></a></div></td>
 <td><% $m->comp("lib.msn:pretty_date",date=>$T->{$tid}->{modtime}) %></td>
 <td><% $T->{$tid}->{memo} %></td>

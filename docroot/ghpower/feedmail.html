@@ -102,11 +102,13 @@ while(my $r = $sth->fetchrow_hashref) {
 $sth->finish;
 # Список шаблонов
 my %T;
+my $T_default;
 if($feed_new) {
-	$sth = $dbh->prepare("SELECT id,name FROM feeds_template WHERE active=1");
+	$sth = $dbh->prepare("SELECT id,name,is_default FROM feeds_template WHERE active=1");
 	$sth->execute();
 	while(my $r = $sth->fetchrow_hashref) {
 		$T{$r->{id}} = $r->{name};
+		$T_default = $r->{id}	if($r->{is_default});
 	}
 	$sth->finish;
 }
@@ -147,7 +149,7 @@ if($feed_new) {
 <td><select name="template">
 <option></option>
 %	foreach my $tid (sort { $T{$a} cmp $T{$b} } keys %T) {
-<option value="<%$tid%>" <% ((!$ARGS{submit} ? $Usr->{template} : $ARGS{template}) eq $tid)? "selected":"" %>><%$T{$tid}%></option>
+<option value="<%$tid%>" <% ((!$ARGS{submit} ? $Usr->{template} : $ARGS{template}) == $tid)? "selected":(($T_default == $tid)? "selected":"") %>><%$T{$tid}%></option>
 %	}
 </select></td>
 </tr>

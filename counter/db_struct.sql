@@ -427,9 +427,28 @@ CREATE TABLE feeds_template (
 	subj varchar,
 	body text,
 	memo varchar,
+	is_default boolean default false,
 	modtime timestamp without time zone DEFAULT now(),
 	primary key (id)
 );
+
+CREATE OR REPLACE FUNCTION feeds_template_check_is_default() RETURNS trigger AS
+$$
+BEGIN
+	IF NEW.is_default = TRUE THEN
+		IF NEW.id > 0 THEN
+			UPDATE feeds_template SET is_default = FALSE WHERE is_default = TRUE AND active = 1 AND id <> NEW.id;
+		ELSE
+			UPDATE feeds_template SET is_default = FALSE WHERE is_default = TRUE AND active = 1;
+		END IF;
+	END IF;
+	RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER feeds_template_check_is_default_insert_t BEFORE INSERT ON feeds_template FOR EACH ROW EXECUTE FUNCTION feeds_template_check_is_default();
+CREATE TRIGGER feeds_template_check_is_default_update_t BEFORE UPDATE ON feeds_template FOR EACH ROW EXECUTE FUNCTION feeds_template_check_is_default();
+
 
 ------------------------------------------------
 -- Членские взносы и другие платежи
@@ -493,6 +512,30 @@ CREATE TABLE outnum (
 	subj varchar,
 	primary key (id)
 );
+CREATE TABLE outnum_w (id varchar);
+INSERT INTO outnum_w VALUES ('0/0'); -- С самого начала. Либо, если номера уже есть, сюда надо последний номер.
+
+CREATE OR REPLACE FUNCTION outnum_next() RETURNS VARCHAR AS
+$$
+DECLARE
+	idlast INTEGER;
+	yelast INTEGER;
+	yenow INTEGER;
+BEGIN
+	SELECT split_part(id, '/', 1), split_part(id, '/', 2) INTO idlast, yelast FROM outnum_w LIMIT 1;
+	yenow := substring(date_part('year',now())::varchar,3,4)::integer;
+	IF yenow = yelast THEN
+		idlast := idlast + 1;
+	ELSE
+		idlast := 1;
+	END IF;
+	RETURN concat_ws('/', idlast, yenow)::varchar;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Получение нового номера
+-- WITH w AS (UPDATE outnum_w SET id = outnum_next() RETURNING id) INSERT INTO outnum SELECT id FROM w RETURNING id;
+
 
 ----------------------------------------------------------------------------------
 -- Управление доступом
