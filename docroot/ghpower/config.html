@@ -37,7 +37,7 @@ $id =~ s/\D//g;
 my ($Usr, $List, @Fields);
 my %Err;
 my $sth;
-my ($OK, $FORM_NEW, $FORM_EDIT, $Title, $MODAL, $SCRIPT, $FILTER);
+my ($OK, $FORM_NEW, $FORM_EDIT, $Title, $MODAL, $SCRIPT, $FILTER, $Modtime);
 
 if($type == 1) {	# Доступ
 	@Fields = ('Имя','Email','Логин','Группа');
@@ -104,9 +104,9 @@ if($type == 1) {	# Доступ
 		}
 	} else {
 		if($id) {	# Редактирование записи
-			$sth = $dbh->prepare("SELECT name,login,email,gid,memo FROM auth WHERE id=? LIMIT 1");
+			$sth = $dbh->prepare("SELECT name,login,email,gid,memo,modtime FROM auth WHERE id=? LIMIT 1");
 			$sth->execute($id);
-			($Usr->{cname}, $Usr->{login}, $Usr->{email}, $Usr->{gid}, $Usr->{memo}) = $sth->fetchrow_array;
+			($Usr->{cname}, $Usr->{login}, $Usr->{email}, $Usr->{gid}, $Usr->{memo}, $Usr->{modtime}) = $sth->fetchrow_array;
 			$sth->finish;
 		}
 	}
@@ -182,9 +182,9 @@ elsif($type == 2) {	# Типы счетчиков
 		}
 	} else {
 		if($id) {	# Редактирование записи
-			$sth = $dbh->prepare("SELECT name, type FROM counter_type WHERE id=? LIMIT 1");
+			$sth = $dbh->prepare("SELECT name, type, modtime FROM counter_type WHERE id=? LIMIT 1");
 			$sth->execute($id);
-			($Usr->{cname}, $Usr->{ctype}) = $sth->fetchrow_array;
+			($Usr->{cname}, $Usr->{ctype}, $Usr->{modtime}) = $sth->fetchrow_array;
 			$sth->finish;
 		}
 	}
@@ -270,9 +270,9 @@ elsif($type == 3) {	# Столбы
 		}
 	} else {
 		if($id) {	# Редактирование записи
-			$sth = $dbh->prepare("SELECT name, type, memo, setdate, lamp, sup FROM towers WHERE id=? LIMIT 1");
+			$sth = $dbh->prepare("SELECT name, type, memo, setdate, lamp, sup, modtime FROM towers WHERE id=? LIMIT 1");
 			$sth->execute($id);
-			($Usr->{cname}, $Usr->{ctype}, $Usr->{memo}, $Usr->{setdate}, $Usr->{lamp}, $Usr->{sup}) = $sth->fetchrow_array;
+			($Usr->{cname}, $Usr->{ctype}, $Usr->{memo}, $Usr->{setdate}, $Usr->{lamp}, $Usr->{sup}, $Usr->{modtime}) = $sth->fetchrow_array;
 			$sth->finish;
 		}
 	}
@@ -361,9 +361,9 @@ elsif($type == 4) {	# Проезды (улицы)
 		}
 	} else {
 		if($id) {	# Редактирование записи
-			$sth = $dbh->prepare("SELECT name, sname, ord FROM street WHERE id=? LIMIT 1");
+			$sth = $dbh->prepare("SELECT name, sname, ord, modtime FROM street WHERE id=? LIMIT 1");
 			$sth->execute($id);
-			($Usr->{cname}, $Usr->{sname},$Usr->{ord}) = $sth->fetchrow_array;
+			($Usr->{cname}, $Usr->{sname},$Usr->{ord},$Usr->{modtime}) = $sth->fetchrow_array;
 			$sth->finish;
 		}
 	}
@@ -553,7 +553,7 @@ elsif($type == 5) {	# Участки
 	$FORM_EDIT = $FORM_NEW;
 
 
-	$sth = $dbh->prepare("SELECT A.id AS id,B.name AS street,A.number AS number, substring(A.number from '\\d+')::integer AS number2, A.square AS square,A.kadastr AS kadastr,A.laccount AS laccount FROM parcels A INNER JOIN street B ON A.street_id=B.id WHERE A.active=1 ORDER BY B.ord,B.name,number2,A.number");
+	$sth = $dbh->prepare("SELECT A.id AS id,B.name AS street,A.number AS number, substring(A.number from '\\d+')::integer AS number2, A.square AS square,A.kadastr AS kadastr,A.laccount AS laccount,A.modtime AS modtime FROM parcels A INNER JOIN street B ON A.street_id=B.id WHERE A.active=1 ORDER BY B.ord,B.name,number2,A.number");
 	$sth->execute();
 	while(my $r = $sth->fetchrow_hashref) {
 		my @a = ($r->{street},'<a href="?type='.$type.'&id='.$r->{id}.'"><div class="pull-right">'.($r->{number} || '-').'</div></a>', '<div class="pull-right">'.$r->{square}.'</div>', '<div class="pull-left">'.$r->{kadastr}.'</div>', '<div class="pull-right">'.$r->{laccount}.'</div>');
@@ -562,7 +562,7 @@ elsif($type == 5) {	# Участки
 }
 
 elsif($type == 6) {	# Персоны
-	@Fields = ('Фамилия','Имя','Отчество','СНТ','Владелец','Представитель','Примечания');
+	@Fields = ('Фамилия','Имя','Отчество','СНТ','Владелец','Представитель','Договор','Примечания');
 	$Title = 'Персоны';
 	my (@phone, @email);
 	if($ARGS{submit}) {
@@ -577,7 +577,7 @@ elsif($type == 6) {	# Персоны
 			my $mname = substr($ARGS{mname},0,100);
 			my $lname = substr($ARGS{lname},0,100);
 			my $nicname = substr($ARGS{nicname},0,100);
-			my ($birthdate,$membership,$membership_end,$passport_date,$address_date) = ('birthdate','membership','membership_end','passport_date','address_date');
+			my ($birthdate,$membership,$membership_end,$passport_date,$address_date,$contract_date) = ('birthdate','membership','membership_end','passport_date','address_date','contract_date');
 			map {
 				if($ARGS{$_} =~ /(\d{1,2})[\-\.](\d{1,2})[\-\.](\d{4})/) {
 					my $t = sprintf("%d-%02d-%02d",$3,$2,$1);
@@ -591,7 +591,7 @@ elsif($type == 6) {	# Персоны
 					$Err{$_}++	if($ARGS{$_});
 					$_ = '';
 				}
-			} ($birthdate,$membership,$membership_end,$passport_date,$address_date);
+			} ($birthdate,$membership,$membership_end,$passport_date,$address_date,$contract_date);
 
 			(@phone) = $m->{cgi_object}->param('phone');
 			map { $_ =~ s/[^\d\(\)\-\+]//g; } @phone;
@@ -603,9 +603,9 @@ elsif($type == 6) {	# Персоны
 				my @em_ph; map { push @em_ph,'?'; } @email;
 				my @ph_ph; map { push @ph_ph,'?'; } @phone;
 				if($id) {
-					$sth = $dbh->prepare("UPDATE persons SET fname=?, mname=?, lname=?, nicname=?, passport=?, passport_date=".($passport_date ? "'$passport_date'" : 'null' ).", address=?, address_date=".($address_date ? "'$address_date'" : 'null' ).",membership=".($membership ? "'$membership'" : 'null' ).",membership_end=".($membership_end ? "'$membership_end'" : 'null' ).", birthdate=".($birthdate ? "'$birthdate'" : 'null' ).", email=ARRAY[".join(",",@em_ph)."], phone=ARRAY[".join(",",@ph_ph)."], memo=?, active=1, auth=?, modtime=now() WHERE id=?");
+					$sth = $dbh->prepare("UPDATE persons SET fname=?, mname=?, lname=?, nicname=?, passport=?, passport_date=".($passport_date ? "'$passport_date'" : 'null' ).", address=?, address_date=".($address_date ? "'$address_date'" : 'null' ).",membership=".($membership ? "'$membership'" : 'null' ).",membership_end=".($membership_end ? "'$membership_end'" : 'null' ).", birthdate=".($birthdate ? "'$birthdate'" : 'null' ).", email=ARRAY[".join(",",@em_ph)."], phone=ARRAY[".join(",",@ph_ph)."], memo=?, contract=?, contract_date=".($contract_date ? "'$contract_date'" : 'null' ).", active=1, auth=?, modtime=now() WHERE id=?");
 
-					$sth->execute($fname,$mname,$lname,$nicname,$ARGS{passport},$ARGS{address},@email,@phone,$ARGS{memo}, $auth->{id}, $id);
+					$sth->execute($fname, $mname, $lname, $nicname, $ARGS{passport}, $ARGS{address}, @email, @phone, $ARGS{memo}, $ARGS{contract}, $auth->{id}, $id);
 
 					undef $id;
 					$OK++;
@@ -615,8 +615,8 @@ elsif($type == 6) {	# Персоны
 					my ($oid) = $sth->fetchrow_array;
 					$sth->finish;
 					unless($oid) {
-						$sth = $dbh->prepare("INSERT INTO persons (fname, mname, lname, nicname, passport, passport_date, address, address_date, membership, membership_end, birthdate, email,phone,memo,active,auth) VALUES (?, ?, ?, ?, ?, ".($passport_date ? "'$passport_date'":'null').", ?, ".($address_date ? "'$address_date'" : 'null').", ".($membership ? "'$membership'" : 'null').", ".($membership_end ? "'$membership_end'" : 'null').", ".($birthdate ? "'$birthdate'":'null').", ARRAY[".join(",",@em_ph)."], ARRAY[".join(",",@ph_ph)."], ?, 1, ?)");
-						$sth->execute($fname,$mname,$lname,$nicname,$ARGS{passport},$ARGS{address},@email,@phone,$ARGS{memo},$auth->{id});
+						$sth = $dbh->prepare("INSERT INTO persons (fname, mname, lname, nicname, passport, passport_date, address, address_date, membership, membership_end, birthdate, email,phone,memo,contract,contract_date, active,auth) VALUES (?, ?, ?, ?, ?, ".($passport_date ? "'$passport_date'":'null').", ?, ".($address_date ? "'$address_date'" : 'null').", ".($membership ? "'$membership'" : 'null').", ".($membership_end ? "'$membership_end'" : 'null').", ".($birthdate ? "'$birthdate'":'null').", ARRAY[".join(",",@em_ph)."], ARRAY[".join(",",@ph_ph)."], ?, ?, ".($contract_date ? "'$contract_date'":'null').", 1, ?)");
+						$sth->execute($fname, $mname, $lname, $nicname, $ARGS{passport}, $ARGS{address}, @email, @phone, $ARGS{memo}, $ARGS{contract}, $auth->{id});
 					}
 					undef $ARGS{add_new};
 					$OK++;
@@ -625,7 +625,7 @@ elsif($type == 6) {	# Персоны
 		}
 	} else {
 		if($id) {	# Редактирование записи
-			$sth = $dbh->prepare("SELECT id, fname, mname, lname, nicname, birthdate, passport, passport_date, address, address_date, membership, membership_end, email, phone, memo, modtime FROM persons WHERE id=? LIMIT 1");
+			$sth = $dbh->prepare("SELECT id, fname, mname, lname, nicname, birthdate, passport, passport_date, address, address_date, membership, membership_end, contract, contract_date, email, phone, memo, modtime FROM persons WHERE id=? LIMIT 1");
 			$sth->execute($id);
 			$Usr = $sth->fetchrow_hashref;
 			$sth->finish;
@@ -670,9 +670,12 @@ elsif($type == 6) {	# Персоны
 		<input type="text" name="membership_end" value="'.($ARGS{membership_end} || $m->comp("lib.msn:pretty_date",date=>$Usr->{membership_end}) || '').'" class="input-xlarge" onfocus="this.select();_Calendar.lcs(this)" onclick="event.cancelBubble=true;this.select();_Calendar.lcs(this)" placeholder="dd.mm.yyyy"></td>
 		</td>
 	</tr>
-
-
-
+	<tr>
+		<td><div style=color:'.($Err{contract_date} ? "red":"black").'>Договор:</div></td>
+		<td><input type="text" name="contract" value="'.($ARGS{contract} || $Usr->{contract} || '').'" class="input-xlarge">
+			<input type="text" name="contract_date" value="'.($ARGS{contract_date} || $m->comp("lib.msn:pretty_date",date=>$Usr->{contract_date}) || '').'" class="input-xlarge" onfocus="this.select();_Calendar.lcs(this)" onclick="event.cancelBubble=true;this.select();_Calendar.lcs(this)" placeholder="dd.mm.yyyy"></td>
+		</td>
+	</tr>
 
 	<tr>
 		<td><div style=color:'.($Err{phone} ? "red":"black").'>Телефон:</div></td>
@@ -725,7 +728,7 @@ elsif($type == 6) {	# Персоны
 #	$FILTER .= ' onclick=alert(this.checked);document.location.href="?showdel=">';
 
 
-	$sth = $dbh->prepare("SELECT id,active,fname,mname,lname,CASE WHEN membership is not null AND membership_end is null THEN '+' END AS member,memo FROM persons ".($ARGS{showdel} ? "":"WHERE active=1")." ORDER BY lname, fname, mname");
+	$sth = $dbh->prepare("SELECT id,active,fname,mname,lname,CASE WHEN membership is not null AND membership_end is null THEN '+' END AS member,memo,contract FROM persons ".($ARGS{showdel} ? "":"WHERE active=1")." ORDER BY lname, fname, mname");
 	my $own = $dbh->prepare("select S.sname || '-' || P.number from parcels P inner join street S ON P.street_id=S.id where ? = ANY (owner)");
 	my $mng = $dbh->prepare("select S.sname || '-' || P.number from parcels P inner join street S ON P.street_id=S.id where ? = ANY (manager)");
 	$sth->execute();
@@ -745,7 +748,7 @@ elsif($type == 6) {	# Персоны
 		$mng->finish;
 
 		my @a = ('<a href="?type='.$type.'&id='.$r->{id}.'" style=text-decoration:'.($r->{active} ? 'none':'line-through').'
->'.($r->{lname} || '-').'</a>', $r->{fname}, $r->{mname}, $r->{member}, join(", ", @owned), join(", ", @mngd), $r->{memo});
+>'.($r->{lname} || '-').'</a>', $r->{fname}, $r->{mname}, $r->{member}, join(", ", @owned), join(", ", @mngd), $r->{contract}, $r->{memo});
 		push @$List, \@a;
 	}
 }
@@ -804,7 +807,8 @@ $(document).ready(function() {
 
 <form method="POST">
 <table border="1">
-<tr><td colspan="2" align="right"><input type="submit" name="cancel" value="X" title="отменить"></td></tr>
+% $Usr->{modtime} =~ /(.+)\.\d+/;
+<tr><td colspan="2" align="right"><% $1 ? "<small>modtime: $1</small>":"" %>&nbsp;&nbsp;&nbsp;<input type="submit" name="cancel" value="X" title="отменить"></td></tr>
 %if($ARGS{add_new}) {
 <%$FORM_NEW%>
 <input type="hidden" name="add_new" value="1">

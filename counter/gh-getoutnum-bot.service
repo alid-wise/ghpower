@@ -1,0 +1,22 @@
+[Unit]
+Description=Telegram Bot for generate document numbers
+After=postgresql.service
+
+[Service]
+Type=forking
+Environment="MY=/opt/ghpower"
+PIDFile=/opt/ghpower/data/gh-getoutnum-bot.pid
+WorkingDirectory=/opt/ghpower/counter
+User=ghpower
+Group=ghpower
+PermissionsStartOnly=true
+#Restart=always
+RestartSec=10
+Restart=on-failure
+ExecStart=/opt/ghpower/counter/gh-getoutnum-bot.pl -d
+#ExecStop=/bin/kill -s TERM $MAINPID
+TimeoutSec=600
+
+
+[Install]
+WantedBy=multi-user.target 

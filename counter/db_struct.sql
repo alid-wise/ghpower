@@ -587,7 +587,6 @@ CREATE TABLE details (
 );
 
 -----------------------------------------------------------------------------------
--- DRAFT ONLY!!!
 -- 2018-12-28
 -- Infrastructure
 CREATE TABLE street (
@@ -637,6 +636,8 @@ CREATE TABLE persons (
 	passport_date date,
 	address varchar,
 	address_date date,
+	contract varchar,
+	contract_date date,
 	memo varchar,
 	auth integer default 0,
 	modtime timestamp without time zone default now(),
