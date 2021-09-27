@@ -86,6 +86,7 @@ create table counters (
 	model integer,
 	ktrans integer default 1,	-- коэффициент пересчета
 	setdate date,	-- дата установки
+	last_check_date date,	-- дата последней поверки счётчика
 	memo varchar,
 	active integer,
 	modtime timestamp default now(),
