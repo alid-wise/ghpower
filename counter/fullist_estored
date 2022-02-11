@@ -107,7 +107,7 @@ $XML .= "<field><name>street</name><order>1</order><label>Проезд</label><s
 $XML .= "<field><name>number</name><order>2</order><label>Участок</label><style>text-center</style></field>\n";
 $XML .= "<field><name>serial</name><order>3</order><label>Номер счётчика</label><style>text-right</style></field>\n";
 $XML .= "<field><name>se1</name><order>4</order><label>Т1</label><style>text-right</style></field>\n";
-$XML .= "<field><name>se2</name><order>5</order><label>Т1</label><style>text-right</style></field>\n";
+$XML .= "<field><name>se2</name><order>5</order><label>Т2</label><style>text-right</style></field>\n";
 $XML .= "</fields>\n";
 $XML .= "<items>\n";
 
