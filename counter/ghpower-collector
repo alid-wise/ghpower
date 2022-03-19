@@ -213,7 +213,7 @@ sub collector {
 		}
 
 		# Для балансных счетчиков - больше попыток
-		my $retr_opt = (exists $Bal{$counter->{id}}) ? "-r".($retries * 3) : "-r$retries";
+		my $retr_opt = (exists $Bal{$counter->{id}}) ? "-r".($retries * 7) : "-r$retries";
 		if($counter->{type} =~ /M203/) {
 			print " M203 $retr_opt\n"	if $verb;
 			eval{ $Data = `$cget203 $counter->{addr} $counter->{dev} $retr_opt 2>/dev/null`; };

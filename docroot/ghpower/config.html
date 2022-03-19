@@ -453,7 +453,7 @@ elsif($type == 5) {	# Участки
 					my ($oid) = $sth->fetchrow_array;
 					$sth->finish;
 					unless($oid) {
-						$sth = $dbh->prepare("INSERT INTO parcels (street_id,number,square,kadastr,proof,proof_date,laccount,owner,manager,maillist,memo,active,auth) VALUES (?,?,?,?,".($proof_date ? "'$proof_date'":'null').", ?,ARRAY[".join(",",@ow_ph)."],ARRAY[".join(",",@mg_ph)."],?,?,1,?)");
+						$sth = $dbh->prepare("INSERT INTO parcels (street_id,number,square,kadastr,proof,proof_date,laccount,owner,manager,maillist,memo,active,auth) VALUES (?,?,?,?,?,".($proof_date ? "'$proof_date'":'null').", ?,ARRAY[".join(",",@ow_ph)."],ARRAY[".join(",",@mg_ph)."],?,?,1,?)");
 						$sth->execute($street_id,$number,$square,$ARGS{kadastr},$ARGS{proof},$ARGS{laccount},@owner,@manager,$maillist,$ARGS{memo},$auth->{id});
 					}
 					undef $ARGS{add_new};
