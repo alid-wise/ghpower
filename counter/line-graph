@@ -175,14 +175,14 @@ unless($cid) {
 }	# balance
 
 # Графики потребления счетчиков луча
-$sth = $dbh->prepare("select date,ise,mp1,mp2,mp3,mc1,mc2,mc3 from ONLY monitor where counter=? order by date desc limit 1");
+$sth = $dbh->prepare("select date,ise,mp1,mp2,mp3,mc1,mc2,mc3,mv1,mv2,mv3 from ONLY monitor where counter=? order by date desc limit 1");
 foreach my $id (@Glist) {
 	unless(-e "$dpath/$mgid/$id.rrd") {	# база этого счетчика
 		my $res = system("rrdtool","create","$dpath/$mgid/$id.rrd","--start","1200000000","--step","300","DS:ise:GAUGE:600:U:U","RRA:MAX:0.1:1:600","RRA:MAX:0.1:6:300","RRA:MAX:0.1:24:300","RRA:MAX:0.1:72:300","RRA:MAX:0.1:288:300");
 		die "Can't create counter database: $dpath/$mgid/$id.rrd - $!"	if $res;
 	}
 	$sth->execute($id);
-	my ($tm,$val,$mp1,$mp2,$mp3,$mc1,$mc2,$mc3) = $sth->fetchrow_array;
+	my ($tm,$val,$mp1,$mp2,$mp3,$mc1,$mc2,$mc3,$mv1,$mv2,$mv3) = $sth->fetchrow_array;
 	$sth->finish;
 	if($tm && defined $val) {
 		$val *= 1000;	# Ватты
@@ -234,7 +234,7 @@ foreach my $id (@Glist) {
 
 
 	# Для трехфазных счетчиков - распределение по фазам
-	if($mp2 || $mp3) {	# Трехфазный счетчик
+	if($mv2 || $mv3) {	# Трехфазный счетчик
 
 		unless(-e "$dpath/$mgid/$id.3f.rrd") {	# база этого счетчика
 			my $res = system("rrdtool","create","$dpath/$mgid/$id.3f.rrd","--start","1200000000","--step","300",

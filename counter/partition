@@ -123,15 +123,15 @@ for(my $year=int($syear);$year<=int($eyear);$year++){
 		print "$sql\n"	if($verb);
 		$dbh->do($sql);
 
-		$sql = "drop index if exists monitor_dt_i";
-		print "$sql\n"	if($verb);
-		$dbh->do($sql);
+#		$sql = "drop index if exists monitor_dt_i";
+#		print "$sql\n"	if($verb);
+#		$dbh->do($sql);
 
-		$sql = "create index monitor_dt_i on monitor (dt) where (dt >= '$year-$mon-01 00:00:00' AND dt < '$year2-$mon2-01 00:00:00')";
-		print "$sql\n"	if($verb);
-		$dbh->do($sql);
+#		$sql = "create index monitor_dt_i on monitor (dt) where (dt >= '$year-$mon-01 00:00:00' AND dt < '$year2-$mon2-01 00:00:00')";
+#		print "$sql\n"	if($verb);
+#		$dbh->do($sql);
 
-		$sql = "insert into ".$table." (dt,date,counter,mv1,mv2,mv3,mc1,mc2,mc3,mf,ma1,ma2,ma3,mps,mp1,mp2,mp3,mqs,mq1,mq2,mq3,mss,ms1,ms2,ms3,mks,mk1,mk2,mk3,se1ai,se1ae,se1ri,se1re,se2ai,se2ae,se2ri,se2re,ise) select dt,date,counter,mv1,mv2,mv3,mc1,mc2,mc3,mf,ma1,ma2,ma3,mps,mp1,mp2,mp3,mqs,mq1,mq2,mq3,mss,ms1,ms2,ms3,mks,mk1,mk2,mk3,se1ai,se1ae,se1ri,se1re,se2ai,se2ae,se2ri,se2re,ise from ONLY monitor where dt >= '$year-$mon-01' AND dt < '$year2-$mon2-01'";
+		$sql = "insert into ".$table." (loss,sid,dt,date,counter,mv1,mv2,mv3,mc1,mc2,mc3,mf,ma1,ma2,ma3,mps,mp1,mp2,mp3,mqs,mq1,mq2,mq3,mss,ms1,ms2,ms3,mks,mk1,mk2,mk3,se1ai,se1ae,se1ri,se1re,se2ai,se2ae,se2ri,se2re,ise) select loss,sid,dt,date,counter,mv1,mv2,mv3,mc1,mc2,mc3,mf,ma1,ma2,ma3,mps,mp1,mp2,mp3,mqs,mq1,mq2,mq3,mss,ms1,ms2,ms3,mks,mk1,mk2,mk3,se1ai,se1ae,se1ri,se1re,se2ai,se2ae,se2ri,se2re,ise from ONLY monitor where dt >= '$year-$mon-01' AND dt < '$year2-$mon2-01'";
 		print "$sql\n"	if($verb);
 		$dbh->do($sql);
 
@@ -151,17 +151,25 @@ for(my $year=int($syear);$year<=int($eyear);$year++){
 		print "$sql\n"  if($verb);
 		$dbh->do($sql);
 
+		$sql = "CREATE INDEX ".$table."_sid_i ON ".$table." (sid)";
+		print "$sql\n"	if($verb);
+		$dbh->do($sql);
+
+		$sql = "CREATE INDEX ".$table."_the_date_i ON ".$table." (the_date)";
+		print "$sql\n"	if($verb);
+		$dbh->do($sql);
+
 		$sql = "delete from ONLY monitor where dt >= '$year-$mon-01' AND dt < '$year2-$mon2-01'";
 		print "$sql\n"	if($verb);
 		$dbh->do($sql);
 
-		$sql = "drop index monitor_dt_i";
-		print "$sql\n"	if($verb);
-		$dbh->do($sql);
+#		$sql = "drop index monitor_dt_i";
+#		print "$sql\n"	if($verb);
+#		$dbh->do($sql);
 
-		$sql = "grant select on ".$table." to remstats";
-		print "$sql\n"	if($verb);
-		$dbh->do($sql);
+#		$sql = "grant select on ".$table." to remstats";
+#		print "$sql\n"	if($verb);
+#		$dbh->do($sql);
 	}
 }
 

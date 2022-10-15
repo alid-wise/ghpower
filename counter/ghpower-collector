@@ -71,6 +71,7 @@ $| = 1;
 # 2016-02-17 Возможность отключения коррекции часов счетчика (maintenance=-1)
 # 2016-03-04 Установка времени вместо коррекции для М230
 # 2017-02-05 Minor changes
+# 2022-06-16 Добавлен расчёт потерь по лучам (loss)
 #
 
 use DBI;
@@ -102,8 +103,14 @@ exit 1	if($Plock->get());
 #
 my $dbh = DBI->connect("dbi:Pg:dbname=$database","","",{AutoCommit => 1})	or die;
 
+# Заголовок сессии - дата и sid
+my $sth = $dbh->prepare("SELECT nextval('monitor_sid_seq') AS sid, now()::date AS the_date");
+$sth->execute();
+my ($sid, $the_date) = $sth->fetchrow_array;
+$sth->finish;
+
 # список групп
-my $sth = $dbh->prepare("SELECT A.id,A.name,A.memo,A.if_id,B.dev,A.modtime,A.rank,A.bid FROM mgroup A INNER JOIN iface B ON A.if_id=B.id WHERE A.active=1");
+$sth = $dbh->prepare("SELECT A.id,A.name,A.memo,A.if_id,B.dev,A.modtime,A.rank,A.bid FROM mgroup A INNER JOIN iface B ON A.if_id=B.id WHERE A.active=1");
 $sth->execute()	or die;
 my $MGr; my %Bal;
 while(my $r = $sth->fetchrow_hashref) {
@@ -121,7 +128,7 @@ foreach my $mgr (values %{$MGr}) {
 		my $child;
 		unless($child = fork) {
 			die "Cat't fork: $!"	unless defined $child;
-			collector($mgr);
+			collector($mgr,$sid,$the_date);
 		}
 		$pids{$child}++;
 		$cps++;
@@ -132,6 +139,52 @@ foreach my $mgr (values %{$MGr}) {
 	}
 }
 while(%pids) { sleep(1); }
+
+#
+# Считаем потери по лучам
+#
+$dbh = DBI->connect("dbi:Pg:dbname=$database","","",{AutoCommit => 0})	or die;
+# Предыдущий sid
+$sth = $dbh->prepare("SELECT sid FROM ONLY monitor WHERE (the_date ||' '|| (date_trunc('hour', dt::time) + floor(date_part('minute', dt::time)::decimal / 5) * interval '5 min')::time)::timestamp = (SELECT (the_date ||' '|| (date_trunc('hour', dt::time) + floor(date_part('minute', dt::time)::decimal / 5) * interval '5 min')::time)::timestamp - interval '5 min' FROM ONLY monitor WHERE sid=? LIMIT 1) LIMIT 1");
+$sth->execute($sid);
+my ($sid_prev) = $sth->fetchrow_array;
+$sth->finish;
+
+$sth = $dbh->prepare("WITH
+ bc AS (SELECT A.id,A.ktrans FROM counters A INNER JOIN mgroup G ON A.id=G.bid WHERE G.id=? LIMIT 1),
+ sids AS (SELECT ?::integer AS sid1, ?::integer AS sid2),
+ ctrs AS (SELECT id,ktrans FROM counters WHERE mgroup=?),
+ cb AS (SELECT sum(cbalance) AS cbal FROM (
+  SELECT
+   (sum(se1ai) FILTER (WHERE sid=(SELECT sid1 FROM sids)) - sum(se1ai) FILTER (WHERE sid=(SELECT sid2 FROM sids)))*(SELECT ktrans FROM ctrs WHERE id=counter) +  
+   (sum(se2ai) FILTER (WHERE sid=(SELECT sid1 FROM sids)) - sum(se2ai) FILTER (WHERE sid=(SELECT sid2 FROM sids)))*(SELECT ktrans FROM ctrs WHERE id=counter) AS cbalance,
+   counter 
+  FROM only monitor
+  WHERE counter IN (SELECT id FROM ctrs) AND sid IN ((SELECT sid1 FROM sids),(SELECT sid2 FROM sids))
+ GROUP BY counter) AS A),
+lb AS (SELECT
+  (avg(se1ai) FILTER (WHERE sid=(SELECT sid1 FROM sids)) - avg(se1ai) FILTER (WHERE sid=(SELECT sid2 FROM sids)))*(SELECT ktrans FROM bc) + 
+  (avg(se2ai) FILTER (WHERE sid=(SELECT sid1 FROM sids)) - avg(se2ai) FILTER (WHERE sid=(SELECT sid2 FROM sids)))*(SELECT ktrans FROM bc) AS balance 
+ FROM only monitor
+ WHERE counter=(SELECT id FROM bc) AND sid IN ((SELECT sid1 FROM sids),(SELECT sid2 FROM sids))
+)
+SELECT cbal,balance FROM (SELECT cbal FROM cb) AA, (SELECT balance FROM lb) BB");
+
+my $upd = $dbh->prepare("UPDATE ONLY monitor SET loss=? WHERE counter=? AND sid=?");
+
+foreach my $mgr (values %{$MGr}) {
+	next	unless($mgr->{bid});
+   $sth->execute($mgr->{id},$sid,$sid_prev,$mgr->{id});
+   my ($cbalance,$balance) = $sth->fetchrow_array;
+   $sth->finish;
+   ($cbalance,$balance) = (1,1)	unless($balance);
+	my $loss = sprintf("%0.2f",( ($balance-$cbalance)*100/$balance));
+	$upd->execute($loss,$mgr->{bid},$sid);
+}
+
+$dbh->commit;
+$dbh->disconnect;
+
 
 print time()." collector: completed in ".(time() - $^T)." sec\n" if($verb);
 
@@ -150,7 +203,7 @@ sub reaper {
 ##################################################################
 # Процесс обрабатывает счетчики группы
 sub collector {
-	my ($mgrp) = @_;
+	my ($mgrp,$sid,$the_date) = @_;
 	exit(1)	unless($mgrp->{id});
 	my $mgid = $mgrp->{id};
 	$SIG{CHLD} = '';
@@ -170,7 +223,7 @@ sub collector {
 
 	my $dbh = DBI->connect("dbi:Pg:dbname=$database","","",{AutoCommit => 1})	or die;
 	# список счетчиков
-	my $sth = $dbh->prepare("select counters.id,counters.name,counters.addr,counters.passwd,iface.dev,counters.ktrans,counter_type.type,status.id as status_id,status.state,status.pstate,status.maintenance,counters.passwd2 from counters inner join mgroup on mgroup.id=counters.mgroup inner join iface on mgroup.if_id=iface.id inner join counter_type on model=counter_type.id left outer join status on counters.id=status.cid where counters.active=1 and counters.mgroup=? order by counters.id");
+	my $sth = $dbh->prepare("SELECT counters.id,counters.name,counters.addr,counters.passwd,iface.dev,counters.ktrans,counter_type.type,status.id AS status_id,status.state,status.pstate,status.maintenance,counters.passwd2 FROM counters INNER JOIN mgroup ON mgroup.id=counters.mgroup INNER JOIN iface ON mgroup.if_id=iface.id INNER JOIN counter_type ON model=counter_type.id LEFT OUTER JOIN status ON counters.id=status.cid WHERE counters.active=1 AND counters.mgroup=? ORDER BY counters.id");
 	$sth->execute($mgid)	or die;
 	my $List;
 	while(my $row = $sth->fetchrow_hashref) {
@@ -178,11 +231,11 @@ sub collector {
 	}
 	$sth->finish;
 
-	my $sins = $dbh->prepare("insert into status (cid,state,pstate,se1,se2,lpower,maintenance,modtime) values (?,?,?,?,?,?,0,now())");
-	my $supd = $dbh->prepare("update status set state=?,pstate=?,se1=?,se2=?,lpower=?,maintenance=?,modtime=now() where id=?");
-	my $supd2 = $dbh->prepare("update status set state=?,pstate=?,se1=?,se2=?,lpower=?,maintenance=?,tmok=?,modtime=now() where id=?");
-	my $ins1 = $dbh->prepare("insert into monitor (dt,date,counter,mv1,mc1,mf,mps,mss,se1ai,se2ai) values (?,?,?,?,?,?,?,?,?,?) returning ise");
-	my $ins2 = $dbh->prepare("insert into monitor (dt,date,counter,mv1,mv2,mv3,mc1,mc2,mc3,mf,ma1,ma2,ma3,mps,mp1,mp2,mp3,mqs,mq1,mq2,mq3,mss,ms1,ms2,ms3,mks,mk1,mk2,mk3,se1ai,se1ae,se1ri,se1re,se2ai,se2ae,se2ri,se2re) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) returning ise");
+	my $sins = $dbh->prepare("INSERT INTO status (cid,state,pstate,se1,se2,lpower,maintenance,modtime) VALUES (?,?,?,?,?,?,0,now())");
+	my $supd = $dbh->prepare("UPDATE status SET state=?,pstate=?,se1=?,se2=?,lpower=?,maintenance=?,modtime=now() WHERE id=?");
+	my $supd2 = $dbh->prepare("UPDATE status SET state=?,pstate=?,se1=?,se2=?,lpower=?,maintenance=?,tmok=?,modtime=now() WHERE id=?");
+	my $ins1 = $dbh->prepare("INSERT INTO monitor (sid,the_date,dt,date,counter,mv1,mc1,mf,mps,mss,se1ai,se2ai) VALUES (?,?,?,?,?,?,?,?,?,?,?,?) RETURNING ise");
+	my $ins2 = $dbh->prepare("INSERT INTO monitor (sid,the_date,dt,date,counter,mv1,mv2,mv3,mc1,mc2,mc3,mf,ma1,ma2,ma3,mps,mp1,mp2,mp3,mqs,mq1,mq2,mq3,mss,ms1,ms2,ms3,mks,mk1,mk2,mk3,se1ai,se1ae,se1ri,se1re,se2ai,se2ae,se2ri,se2re) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING ise");
 	my $maintenance_done = 0;
 
 	# вот тут
@@ -222,7 +275,7 @@ sub collector {
 			($addr, $mv1,$mc1,$mf,$mps,$mss,$se1ai,$se2ai) = split(";",$Data);
 			if($addr && $addr eq $counter->{addr}) {
 				map { $_ = ($_=~/null/i) ? 0 : $_; } ($mv1,$mc1,$mf,$mps,$mss,$se1ai,$se2ai);
-				$ins1->execute($tm,$time,$counter->{id},$mv1,$mc1,$mf,$mps,$mss,$se1ai,$se2ai)	or die;
+				$ins1->execute($sid,$the_date,$tm,$time,$counter->{id},$mv1,$mc1,$mf,$mps,$mss,$se1ai,$se2ai)	or die;
 				$lpower = $ins1->fetch()->[0];
 				$ins1->finish;
 #			$dbh->do("insert into monitor (dt,date,counter,mv1,mc1,mf,mps,mss,se1ai,se2ai) values ('$tm',$time,$counter->{id},$mv1,$mc1,$mf,$mps,$mss,$se1ai,$se2ai)")	or die;
@@ -249,7 +302,7 @@ sub collector {
 			($addr,$mv1,$mv2,$mv3,$mc1,$mc2,$mc3,$mf,$ma1,$ma2,$ma3,$mps,$mp1,$mp2,$mp3,$mqs,$mq1,$mq2,$mq3,$mss,$ms1,$ms2,$ms3,$mks,$mk1,$mk2,$mk3,$se1ai,$se1ae,$se1ri,$se1re,$se2ai,$se2ae,$se2ri,$se2re) = split(";",$Data);
 			if($addr && $addr eq $counter->{addr}) {
 				map { $_ = ($_=~/null/i) ? 0 : $_; } ($mv1,$mv2,$mv3,$mc1,$mc2,$mc3,$mf,$ma1,$ma2,$ma3,$mps,$mp1,$mp2,$mp3,$mqs,$mq1,$mq2,$mq3,$mss,$ms1,$ms2,$ms3,$mks,$mk1,$mk2,$mk3,$se1ai,$se1ae,$se1ri,$se1re,$se2ai,$se2ae,$se2ri,$se2re);
-				$ins2->execute($tm,$time,$counter->{id},$mv1,$mv2,$mv3,$mc1,$mc2,$mc3,$mf,$ma1,$ma2,$ma3,$mps,$mp1,$mp2,$mp3,$mqs,$mq1,$mq2,$mq3,$mss,$ms1,$ms2,$ms3,$mks,$mk1,$mk2,$mk3,$se1ai,$se1ae,$se1ri,$se1re,$se2ai,$se2ae,$se2ri,$se2re)	or die;
+				$ins2->execute($sid,$the_date,$tm,$time,$counter->{id},$mv1,$mv2,$mv3,$mc1,$mc2,$mc3,$mf,$ma1,$ma2,$ma3,$mps,$mp1,$mp2,$mp3,$mqs,$mq1,$mq2,$mq3,$mss,$ms1,$ms2,$ms3,$mks,$mk1,$mk2,$mk3,$se1ai,$se1ae,$se1ri,$se1re,$se2ai,$se2ae,$se2ri,$se2re)	or die;
 				$lpower = $ins2->fetch()->[0];
 				$ins2->finish;
 			} else {

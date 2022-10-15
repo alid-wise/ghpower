@@ -45,7 +45,7 @@ if($h) {
 }
 
 my $Data;
-my $sth = $dbh->prepare("select dt AS tm,se1ai,se2ai,ise,ise>? AS over, (mp3 is not null) as tf from monitor where counter=? and dt <= ? and dt > ? order by dt desc");
+my $sth = $dbh->prepare("SELECT dt AS tm,se1ai,se2ai,ise,ise>? AS over, (mp3 IS NOT NULL) AS tf,loss FROM monitor WHERE counter=? AND dt <= ? AND dt > ? ORDER BY dt DESC");
 $sth->execute($Info->{plimit},$id,$next2,$date);
 my $TF = 0;
 while(my $row = $sth->fetchrow_hashref) {
@@ -74,7 +74,7 @@ while(my $row = $sth->fetchrow_hashref) {
 <td valign="top">
 %if($Data) {
 <table border="1">
-<tr><th>Время</th><th>&nbsp;Тариф-1&nbsp;</th><th>&nbsp;Тариф-2&nbsp;</th><th>&nbsp;Ср.потр.&nbsp;</th></tr>
+<tr><th>Время</th><th>&nbsp;Тариф-1&nbsp;</th><th>&nbsp;Тариф-2&nbsp;</th><th>&nbsp;Ср.потр.&nbsp;</th><% $Info->{mgid}? "<th>Потери</th>":"" %></tr>
 %foreach my $row (@$Data) {
 <tr>
 <td><b><% $row->{tm} %></b></td>
@@ -82,6 +82,9 @@ while(my $row = $sth->fetchrow_hashref) {
 <td align="right"><%$row->{se2ai}%></td>
 %my $mark = ($row->{over}) ? "class=redbold":(($row->{ise} > 0.75 * $Info->{plimit}) ? "class=yellowbold":"");
 <td align="right"><div <%$mark%> ><%$row->{ise}%></div></td>
+%if($Info->{mgid}) {
+<td align="right"><%$row->{loss}%>%</td>
+%}
 </tr>
 %}
 </table>

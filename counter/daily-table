@@ -157,9 +157,6 @@ foreach my $date (@Dates) {
 	print " Counters: $total Inserted: $inserted Updated: $updated\n"	if($verb);
 }
 
-
-
-
 $dbh->commit;
 $dbh->disconnect;
 

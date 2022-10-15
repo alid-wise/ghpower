@@ -149,9 +149,13 @@ create table alerts (
 );
 
 -- данные
-create table monitor (
+CREATE SEQUENCE monitor_sid_seq;
+
+CREATE TABLE monitor (
 	dt timestamp without time zone,
 	date integer not null,
+	the_date date,
+	sid integer,		-- id сессии
 	counter integer not null,
 	mv1 decimal,	-- текущее напряжение ф1
 	mv2 decimal,	-- текущее напряжение ф2
@@ -187,12 +191,14 @@ create table monitor (
 	se2ae decimal, -- накопленная энергия Т2 A-export
 	se2ri decimal, -- накопленная энергия Т2 R-import
 	se2re decimal, -- накопленная энергия Т2 R-export
-	ise decimal		-- интегральная мощность
+	ise decimal,   -- интегральная мощность
+	loss decimal   -- текущие потери (в %) - только для балансовых счётчиков
 );
 CREATE INDEX monitor_date_i ON monitor (date);
 CREATE INDEX monitor_dt_i ON monitor (dt);
 CREATE INDEX monitor_counter_i ON monitor (counter);
 create index monitor_rdt_i on monitor (counter) where extract(hour from dt)=0 and extract(minute from dt)=0;
+CREATE INDEX monitor_sid ON monitor (sid);
 create VIEW m_monitor as SELECT to_timestamp(monitor."date"::double precision) as tm,* from monitor;
 CREATE VIEW m_power AS select to_char(to_timestamp(monitor.date::double precision),'DD.MM.YYYY HH24:MI:SS') AS date,to_char(to_timestamp(monitor.date::double precision),'DD.MM.YYYY') AS dt,to_char(to_timestamp(monitor.date::double precision),'HH24:MI:SS') AS tm,monitor.counter AS counter,to_char(monitor.mp1,'999999') AS p1,to_char(monitor.mp2,'999999') AS p2,to_char(monitor.mp3,'999999') AS p3,to_char(monitor.mps,'999999') AS p,to_char(monitor.ise*1000,'999999') AS pi from monitor;
 
@@ -314,6 +320,21 @@ CREATE TABLE daily (
 );
 create INDEX daily_cid_i ON daily (cid);
 create INDEX daily_date_i ON daily (date ASC);
+
+-- Потери
+CREATE TABLE losses (
+	id serial not null,
+	the_date date,
+	mgroup integer,
+	mgcounter_id integer,
+	mg_se1 numeric,
+	mg_se2 numeric,
+	line_se1 numeric,
+	line_se2 numeric,
+	loss1 numeric,
+	loss2 numeric,
+	loss numeric
+);
 
 --
 -- Платежи
