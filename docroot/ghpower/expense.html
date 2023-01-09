@@ -190,10 +190,10 @@ if($id) {
 %	}
 %		push @owners,$name; }
 <td><% join ",", @owners %></td>
-<td align="right"><%$MExpenses->{$item->{id}}->{exp1}%></td>
-<td align="right"><%$MExpenses->{$item->{id}}->{exp2}%></td>
-<td align="right"><%$MExpenses->{$item->{id}}->{se1}%></td>
-<td align="right"><%$MExpenses->{$item->{id}}->{se2}%></td>
+<td align="right" title='Расход Т1 за <% "$fmonth.$fyear" %>'><%$MExpenses->{$item->{id}}->{exp1}%></td>
+<td align="right" title='Расход Т2 за <% "$fmonth.$fyear" %>'><%$MExpenses->{$item->{id}}->{exp2}%></td>
+<td align="right" title='Показания Т1 на 1.<% "$fmonth.$fyear" %>'><%$MExpenses->{$item->{id}}->{se1}%></td>
+<td align="right" title='Показания Т2 на 1.<% "$fmonth.$fyear" %>'><%$MExpenses->{$item->{id}}->{se2}%></td>
 
 </tr>
 %	$i++;

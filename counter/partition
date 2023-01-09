@@ -147,9 +147,9 @@ for(my $year=int($syear);$year<=int($eyear);$year++){
 		print "$sql\n"	if($verb);
 		$dbh->do($sql);
 
-		$sql = "create index ".$table."_rdt_i on ".$table." (counter) where extract(hour from dt)=0 and extract(minute from dt)=0";
-		print "$sql\n"  if($verb);
-		$dbh->do($sql);
+#		$sql = "create index ".$table."_rdt_i on ".$table." (counter) where extract(hour from dt)=0 and extract(minute from dt)=0";
+#		print "$sql\n"  if($verb);
+#		$dbh->do($sql);
 
 		$sql = "CREATE INDEX ".$table."_sid_i ON ".$table." (sid)";
 		print "$sql\n"	if($verb);

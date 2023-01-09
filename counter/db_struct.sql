@@ -152,7 +152,7 @@ create table alerts (
 CREATE SEQUENCE monitor_sid_seq;
 
 CREATE TABLE monitor (
-	dt timestamp without time zone,
+	dt timestamp with time zone,
 	date integer not null,
 	the_date date,
 	sid integer,		-- id сессии
@@ -333,8 +333,12 @@ CREATE TABLE losses (
 	line_se2 numeric,
 	loss1 numeric,
 	loss2 numeric,
-	loss numeric
+	loss numeric,
+    primary key (id)
 );
+CREATE INDEX losses_the_date_i ON losses (the_date);
+
+
 
 --
 -- Платежи

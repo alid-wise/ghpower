@@ -103,6 +103,8 @@ while(my $row = $sth->fetchrow_hashref) {
 <tr><td align="right">Номер столба:</td><td><%$Info->{tower}%></td></tr>
 <tr><td align="right">Лимит мощности:</td><td><%$Info->{plimit}%></td></tr>
 <tr><td align="right">Доп.информация:</td><td><%$Info->{memo}%></td></tr>
+<!-- FIXME -->
+<tr><td align="right">Анализ:</td><td><a href="/mon/d/jvPYhsVMz/selected-counter?orgId=1&var-counterid=<%$Info->{id}%>" target=_blank>подробные графики</a></td></tr>
 </table>
 <br>
 <img src="graph/<%$Info->{mgroup}%>/<%$id%>-day.png">
