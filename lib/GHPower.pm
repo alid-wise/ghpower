@@ -611,33 +611,40 @@ sub getorg {
   return $Data;
 }
 
-# Информация из LDAP - адреса для рассылки
+# Адреса для рассылки (У которых проставлен флаг в списке счётчиков или в списке участков)
 sub get_Domain_subscr_emails {
   my $self = shift;
   my $dn = shift;
+  my $monly = shift;  # Только члены СНТ
   return undef  unless $dn;
 
   my $P = $self->get_Domain($dn);
   my @emails;
+  my $member;
   # Сначала ищем среди управляющих
   foreach my $manager (sort { $a->{cn} cmp $b->{cn} } @{$P->{managers}}) {
     next  unless($manager->{active});
+    $member++   if($manager->{member});
     foreach(sort { $a cmp $b } ref $manager->{email} eq 'ARRAY' ? @{$manager->{email}} : ($manager->{email} || ())) {
       push @emails, $_  if($_);
     }
   }
   # Если нет адресов, то смотрим владельцев
-  unless(@emails) {
-    foreach my $owner (sort { $a->{cn} cmp $b->{cn} } @{$P->{owners}}) {
-      next  unless($owner->{active});
-      foreach(sort { $a cmp $b } ref $owner->{email} eq 'ARRAY' ? @{$owner->{email}} : ($owner->{email} || ())) {
-        push @emails, $_  if($_);
+  foreach my $owner (sort { $a->{cn} cmp $b->{cn} } @{$P->{owners}}) {
+    next  unless($owner->{active});
+    $member++   if($owner->{member});
+    unless(@emails) {
+     foreach(sort { $a cmp $b } ref $owner->{email} eq 'ARRAY' ? @{$owner->{email}} : ($owner->{email} || ())) {
+      push @emails, $_  if($_);
       }
     }
   }
+  if($monly) {
+    return @emails  if($member);
+    undef @emails;
+  }
   return @emails;
 }
-
 
 
 1;

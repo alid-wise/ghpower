@@ -424,6 +424,7 @@ CREATE TABLE feeds (
 	name varchar,
 	outnum varchar, -- исходящий номер
 	posted timestamp without time zone,
+	maillist_id integer DEFAULT 0,	-- 0-полный список, 1-только члены СНТ
 	subj character varying,
 	msg character varying,
 	status smallint,
