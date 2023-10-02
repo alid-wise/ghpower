@@ -349,7 +349,7 @@ sub get_data {
 			print $types{$type}." [$type]: ".join(' ',@{$Data->{$type}})."\n"	if $self->{verb};
 		}
 	}
-	map {$_ = $_/10} @{$Data->{mk}};	# коэффициент мощности
+	map {$_ = $_/10; $_=1 if($_>1);} @{$Data->{mk}};	# коэффициент мощности
 
 	%ts = (
 		mf => '08 16 40',	# частота

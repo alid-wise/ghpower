@@ -7,10 +7,14 @@
 	$filter => undef
 	$filter2 => undef
 	$showdel => undef
+	$hideall => undef
 </%args>
 <%init>
 #use Data::Dumper;
 #use POSIX;
+
+# уровень доступа
+$hideall=1	if($auth->{gid} > 2);
 
 map { $_ =~ s/\D//g; } ( $verb, $id, $filter, $filter2);
 map { $_ = 1 if($_ > 1) } ( $verb);
@@ -33,7 +37,7 @@ my $LastCounter = $m->comp("lib.msn:lastcounter", dbh=>$dbh, id=>0, nocache=>1);
 
 my ($List, $Usr, $Parcels);
 # Группы
-$sth = $dbh->prepare("select * from mgroup");
+$sth = $dbh->prepare("select * from mgroup".($hideall ? " WHERE hidden=false":""));
 $sth->execute();
 while(my $r = $sth->fetchrow_hashref) {
 	$List->{$r->{id}} = $r;
@@ -134,7 +138,7 @@ if($ARGS{submit} && $auth->{gid} eq 1) {
 
 if(!$ARGS{"add_new"} && !$id && !$OK) {
 	# Счетчики полный список
-	my $L = $m->comp("lib.msn:cflistload", dbh=>$dbh, nocache=>1, showdel=>$showdel);
+	my $L = $m->comp("lib.msn:cflistload", dbh=>$dbh, nocache=>1, showdel=>$showdel, hidehidden=>$hideall);
 	foreach(keys %$L) { $List->{$_}->{items} = $L->{$_}->{items}; }
 }
 </%init>
@@ -172,7 +176,13 @@ $(document).ready(function() {
 <td><select name="mgroup" <% ($auth->{gid} >1) ? "disabled":"" %>>
 <option></option>
 %	foreach my $gid (sort {$List->{$a}->{name} cmp $List->{$b}->{name}} keys %$List) {
+%		if($auth->{gid} > 1) {
+%			if($Usr->{mgroup} eq $gid) {
+<option value="" selected><%$List->{$gid}->{name}%></option>
+%			}
+%		} else {
 <option value="<%$gid%>" <% ((!$ARGS{submit} ? $Usr->{mgroup} : $ARGS{mgroup}) eq $gid)? "selected":"" %>><%$List->{$gid}->{name}%></option>
+%		}
 %	}
 </select></td>
 </tr>
@@ -193,7 +203,13 @@ $(document).ready(function() {
 <td><select name="model" <% ($auth->{gid} >1) ? "disabled":"" %>>
 <option></option>
 %	foreach my $cid (sort {$Ctypes->{$a}->{name} cmp $Ctypes->{$b}->{name}} keys %$Ctypes) {
+%		if($auth->{gid} > 1) {
+%			if($Usr->{model} eq $cid) {
+<option value="" selected><%$Ctypes->{$cid}->{name}%></option>
+%			}
+%		} else {
 <option value="<%$cid%>" <% ((!$ARGS{submit} ? $Usr->{model} : $ARGS{model}) eq $cid)? "selected":"" %>><%$Ctypes->{$cid}->{name}%></option>
+%		}
 %	}
 </select></td>
 </tr>
@@ -204,7 +220,13 @@ $(document).ready(function() {
 <select name="parcel_id" <% ($auth->{gid} >1) ? "disabled":"" %>>
 <option></option>
 %	foreach my $parcel (@$Parcels) {
+%		if($auth->{gid} > 1) {
+%			if($Usr->{parcel_id} eq $parcel->{id}) {
+<option value="" selected><%$parcel->{street_sname}%>-<%$parcel->{number}%></option>
+%			}
+%		} else {
 <option value="<%$parcel->{id}%>" <% ((!$ARGS{submit} ? $Usr->{parcel_id} : $ARGS{parcel_id}) eq $parcel->{id})? "selected":"" %>><%$parcel->{street_sname}%>-<%$parcel->{number}%></option>
+%		}
 %	}
 </select></td>
 </select>
@@ -215,7 +237,13 @@ $(document).ready(function() {
 <td><select name="tower_id" <% ($auth->{gid} >1) ? "disabled":"" %>>
 <option></option>
 %	foreach my $sid (sort {$Towers->{$a}->{name} <=> $Towers->{$b}->{name}} keys %$Towers) {
+%		if($auth->{gid} > 1) {
+%			if($Usr->{"tower_id"} eq $sid) {
+<option value="" selected><%$Towers->{$sid}->{name}%></option>
+%			}
+%		} else {
 <option value="<%$sid%>" <% ((!$ARGS{submit} ? $Usr->{"tower_id"} : $ARGS{"tower_id"}) eq $sid)? "selected":"" %>><%$Towers->{$sid}->{name}%></option>
+%		}
 %	}
 </select></td>
 </tr>
@@ -238,7 +266,13 @@ $(document).ready(function() {
 <td><select name="balance_mgroup" <% ($auth->{gid} >1) ? "disabled":"" %>>
 <option value="0"></option>
 %	foreach my $gid (sort {$List->{$a}->{name} cmp $List->{$b}->{name}} keys %$List) {
+%		if($auth->{gid} > 1) {
+%			if($Usr->{balance_mgroup} eq $gid) {
+<option value="" selected><%$List->{$gid}->{name}%></option>
+%			}
+%		} else {
 <option value="<%$gid%>" <% ((!$ARGS{submit} ? $Usr->{balance_mgroup} : $ARGS{balance_mgroup}) eq $gid)? "selected":"" %>><%$List->{$gid}->{name}%></option>
+%		}
 %	}
 </select></td>
 </tr>
@@ -249,7 +283,7 @@ $(document).ready(function() {
 </tr>
 <tr>
 <td>Подписка:</td>
-<td><input type="checkbox" name="subscr" <% $ARGS{subscr} || (!$ARGS{submit} ? $Usr->{subscr} : "") ? "checked":""%><% ($auth->{gid} >1) ? "disabled":"" %>>&nbsp;&nbsp;отправлять владельцу информацию о статусе</td>
+<td><input type="checkbox" name="subscr" <% $ARGS{subscr} || (!$ARGS{submit} ? $Usr->{subscr} : "") ? "checked":""%><% ($auth->{gid} >1) ? " disabled":"" %>>&nbsp;&nbsp;отправлять владельцу информацию о статусе</td>
 </tr>
 <td><div style=color:<% $Err{tmode} ? "red":"black"%>>Тарифный план:</div></td>
 <td><select name="tmode" <% ($auth->{gid} >1) ? "disabled":"" %>>
@@ -309,9 +343,9 @@ $(document).ready(function() {
 <ul class="breadcrumb">
 	<li><a href="/">Home</a> <span class="divider">/</span></li>
 	<li class="active">Список счетчиков<span class="divider">/</span></li>
-	<li><a href="expense.html">Расходы</a>
 
-%if($auth->{gid} < 3) {
+%if($auth->{gid} < 3 && !$hideall) {
+	<li><a href="expense.html">Расходы</a>
 	<span class="divider">/</span></li>
 	<li><a href="pays.html">Платежи</a><span class="divider">/</span></li>
 	<li><a href="tarifs.html">Тарифы</a></li>
@@ -341,15 +375,18 @@ $(document).ready(function() {
 
 <h2>Текущие показания счетчиков</h2>
 <p><div id="lastime"><% $m->comp("lib.msn:lastime", dbh=>$dbh)->{lastime} %></div></p>
+
+%unless($hideall) {
 <!-- FIXME -->
 <p><a href="/mon/d/rCCxzAlnk/analiz-poter?orgId=1" target=_blank>Анализ потерь</a></p>
 
-%if($auth->{gid} eq 1) {
+%	if($auth->{gid} eq 1) {
 <p>gid: [<%$filter%>]</p>
 
 <form method="POST">
 <p><input class="btn" type="submit" name="add_new" value="Добавить счетчик">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
 </form>
+%	}
 %}
 %my @mgids;
 <table border="1" class="table-condensed" id="fullist">
@@ -358,10 +395,25 @@ $(document).ready(function() {
 %	next unless $List->{$mgid}->{items};
 %	push @mgids,$mgid;
 <tr>
-<td><input type="checkbox" name="mgid_<%$mgid%>" <% ($ARGS{"mgid_".$mgid} || $List->{mgid}->{active}) ? "checked":""%> disabled></td>
-<td><b><% $List->{$mgid}->{name}%></b></td>
-<td colspan="10"><% $List->{$mgid}->{memo}%></td>
+<th><input type="checkbox" name="mgid_<%$mgid%>" <% ($ARGS{"mgid_".$mgid} || $List->{mgid}->{active}) ? "checked":""%> disabled></th>
+<th><% $List->{$mgid}->{name}%></th>
+<th colspan="10"><% $List->{$mgid}->{memo}%></th>
 </tr>
+
+%if($hideall) {
+<tr>
+	<th></th>
+	<th>адрес (номер)</th>
+	<th>участок</th>
+	<th>столб</th>
+	<th>T1</th>
+	<th>T2</th>
+	<th>огр.</th>
+	<th>мощность</th>
+	<th>статус</thd>
+</tr>
+%}
+
 %	my $i=1;
 %	foreach my $item (sort { $a->{street_name} cmp $b->{street_name} || $a->{domain} <=> $b->{domain} || $a->{name} cmp $b->{name}} @{$List->{$mgid}->{items}}) {
 %		if($filter2) {
@@ -371,7 +423,8 @@ $(document).ready(function() {
 %		next	if($item->{active} < 0 && !$showdel);
 <tr id="<%$item->{id}%>">
 <td align="center"><%$i%>.</td>
-<td align="right"><a href="?id=<%$item->{id}%>"><%$item->{addr} ? $item->{addr} : "---"%></a> (<font color=<% ($LastCounter->{$item->{id}}->{tmok}) ? "green":"red" %>><%$item->{sn}%></div>)</td>
+%my $delmark = (($item->{active}<0)? '<s>':'');
+<td align="right"><a href="?id=<%$item->{id}%>"><%$item->{addr} ? $item->{addr} : "---"%></a> (<font color=<% ($LastCounter->{$item->{id}}->{tmok}) ? "green":"red" %>><%$delmark%><%$item->{sn}%></div>)</td>
 %	my $parcel;
 %	if($item->{street_name}) {
 %		$parcel = $item->{street_name};
@@ -379,6 +432,7 @@ $(document).ready(function() {
 %		$parcel .= '.-';
 %	} $parcel .= $item->{domain};
 <td><% $parcel || $item->{name} %></td>
+%	unless($hideall) {
 %	my @owners;
 %	foreach(@{$item->{Dom}->{owners}}) {
 %		my ($lname,$fname,$mname) = split(" ",$_->{cn}[0]);
@@ -391,6 +445,7 @@ $(document).ready(function() {
 %	}
 %		push @owners,$name; }
 <td><% join ", ", @owners %></td>
+%	}
 <td><%$Towers->{$item->{tower_id}}->{name}%></td>
 <td id="t1_<%$item->{id}%>" align="right"><%$LastCounter->{$item->{id}}->{t1}%></td>
 <td id="t2_<%$item->{id}%>" align="right"><%$LastCounter->{$item->{id}}->{t2}%></td>
@@ -400,18 +455,20 @@ $(document).ready(function() {
 <td align="right"><a href="energy.html?id=<%$item->{id}%><%$filter ? "&filter=$filter":""%>"><div id="p_<%$item->{id}%>" <%$mark%>><%$LastCounter->{$item->{id}}->{lpower} ? $LastCounter->{$item->{id}}->{lpower} : "_"%></div></a></td>
 
 <td bgcolor="<% defined $item->{state} ? ($item->{state} ? "red":"green") : "yellow" %>"><input type="checkbox" name="id_<%$item->{id}%>" <% ($ARGS{"id_".$item->{id}} || $item->{active}) ? "checked":""%> disabled title="используется"></td>
-<td>
-%if($auth->{gid} eq 1) {
-<a  data-content="<%$item->{id}%>" data-backdrop="true" data-toggle="modal" data-target="#PingModal">ping</a>
-%}
-</td>
+
+%if($auth->{gid} eq 1 && !$hideall) {
+<td><a  data-content="<%$item->{id}%>" data-backdrop="true" data-toggle="modal" data-target="#PingModal">ping</a></td>
 <td><input type="checkbox" name="subscr_<%$item->{id}%>" <% ($ARGS{"subscr_".$item->{id}} || $item->{subscr}) ? "checked":""%> disabled id="cansub_<%$item->{id}%>" title="рассылка"></td>
+%}
 </tr>
 %	$i++;
 %	}
+%	unless($hideall) {
 <tr><td colspan=8 align=right>Сумма:</td><td align=right><div id="mgid_<%$mgid%>" class="bold"><% $m->comp("lib.msn:grsum", dbh=>$dbh, gid=>$mgid)->{lpsum} %></div></td><td colspan=3></td></tr>
+%	}
 %}
 </table>
+<p>&nbsp</p>
 
 %if($ajax) {
 %# Динамическое обновление

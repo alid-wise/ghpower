@@ -1,5 +1,6 @@
 <%args>
 	$dbh
+	$auth
 	$id => undef
 	$date => undef
 </%args>
@@ -63,7 +64,9 @@ while(my $row = $sth->fetchrow_hashref) {
 <tr><td align="right">Участок:</td><td><% $Info->{street_name} ? $Info->{street_name}.", ".$Info->{domain} : $Info->{name} %></td></tr>
 </table>
 </td>
+%if($auth->{gid} <3) {
 <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="stored.html?id=<%$id%>">Показания счетчика по дням</a>&nbsp;&nbsp;&nbsp;<a href="expense.html?id=<%$id%>">Расход по месяцам</a></td>
+%}
 </tr></table>
 %if($Info->{mgid}) {
 <p>Это балансный счетчик</p>
@@ -104,7 +107,9 @@ while(my $row = $sth->fetchrow_hashref) {
 <tr><td align="right">Лимит мощности:</td><td><%$Info->{plimit}%></td></tr>
 <tr><td align="right">Доп.информация:</td><td><%$Info->{memo}%></td></tr>
 <!-- FIXME -->
+%if($auth->{gid} eq "1") {
 <tr><td align="right">Анализ:</td><td><a href="/mon/d/jvPYhsVMz/selected-counter?orgId=1&var-counterid=<%$Info->{id}%>" target=_blank>подробные графики</a></td></tr>
+%}
 </table>
 <br>
 <img src="graph/<%$Info->{mgroup}%>/<%$id%>-day.png">

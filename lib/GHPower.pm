@@ -117,10 +117,11 @@ sub Counter_info {
 sub Counters_list {
   my $self = shift;
   my $showdel = shift;
+  my $hidehidden = shift;
 
   my $ret = undef;
-  my $usr = $self->{dbh}->prepare("select lname,fname,mname from persons where id=?");
-  my $sth = $self->{dbh}->prepare("select A.id,A.name,A.addr,A.mgroup,A.passwd,A.sn,A.model,A.setdate,A.memo,A.active,A.modtime,A.passwd2,A.ktrans,A.tower_id,A.year,A.plimit,A.plimiter,A.subscr,B.id as status_id,B.state,B.pstate,B.se1,B.se2,B.modtime as status_modtime,A.parcel_id,P.number as domain,S.name as street_name,S.sname as street_sname,P.owner from counters A left outer join status B on B.cid=A.id left outer join parcels P on A.parcel_id=P.id left outer join street S on P.street_id=S.id".((!$showdel) ? " where not (A.active < 0)":""));
+  my $usr = $self->{dbh}->prepare("SELECT lname,fname,mname FROM persons WHERE id=?");
+  my $sth = $self->{dbh}->prepare("SELECT A.id,A.name,A.addr,A.mgroup,A.passwd,A.sn,A.model,A.setdate,A.memo,A.active,A.modtime,A.passwd2,A.ktrans,A.tower_id,A.year,A.plimit,A.plimiter,A.subscr,B.id AS status_id,B.state,B.pstate,B.se1,B.se2,B.modtime AS status_modtime,A.parcel_id,P.number AS domain,S.name AS street_name,S.sname AS street_sname,P.owner FROM counters A LEFT OUTER JOIN status B ON B.cid=A.id LEFT OUTER JOIN parcels P ON A.parcel_id=P.id LEFT OUTER JOIN street S ON P.street_id=S.id WHERE A.mgroup IN (SELECT id FROM mgroup".($hidehidden ? " WHERE hidden=false":"").")".((!$showdel) ? " AND NOT (A.active < 0)":""));
   $sth->execute();
   while(my $r = $sth->fetchrow_hashref) {
 #    if($r->{dn} &&  ($r->{dn} =~ m/ou=([^,]+),\s*ou=([^,]+)/)) {  # Можно получить дополнительную информацию в LDAP

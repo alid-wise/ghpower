@@ -23,7 +23,9 @@
 	<ul class="nav nav-sidebar">
 %#		<li class="active"><a href="<%  %>">Основной сайт<span class="sr-only">(current)</span></a></li>
 		<li><a href="ghpower/index.html">Список счетчиков</a></li>
+%if($auth->{gid} < 3) {
 		<li><a href="ghpower/expense.html">Расходы</a></li>
+%}
 	</ul>
 %if($auth->{gid} < 3) {
 	<ul class="nav nav-sidebar">

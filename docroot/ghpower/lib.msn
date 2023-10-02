@@ -96,6 +96,7 @@ return $ghpower->Global;
 	$dbh
 	$nocache => 0
 	$showdel => 0
+	$hidehidden => 0
 </%args>
 <%init>
 	unless($nocache) {
@@ -109,7 +110,7 @@ return $ghpower->Global;
 		return $rv	if($cached);
 	}
 	my $ghpower = GHPower->new($dbh);
-	return $ghpower->Counters_list($showdel);
+	return $ghpower->Counters_list($showdel,$hidehidden);
 </%init>
 </%method>
 
