@@ -389,7 +389,7 @@ $(document).ready(function() {
 %	}
 %}
 %my @mgids;
-<table border="1" class="table-condensed" id="fullist">
+<table border="1" id="fullist">
 %foreach my $mgid (sort {$List->{$a}->{rank} <=> $List->{$b}->{rank}} keys %$List) {
 %	next if $filter &&  !($mgid == $filter);
 %	next unless $List->{$mgid}->{items};

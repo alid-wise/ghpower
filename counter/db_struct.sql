@@ -64,6 +64,7 @@
 -- группы мониторинга (лучи)
 create table mgroup (
 	id integer not null,
+	hidden boolean default false,
 	active integer,
 	name varchar,
 	if_id integer,
