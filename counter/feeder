@@ -145,7 +145,7 @@ if($template_id) {
 	($SUBJ, $BODY) = ($subj, $body);
 }
 
-my $sth = $dbh->prepare("select A.id,A.sn,A.ktrans,A.parcel_id AS dn,C.modtime as tm,C.se1 as t1,C.se2 as t2 from counters A inner join status C on A.id=C.cid where A.active=1 and A.subscr=1".($cid ? " AND A.id=$cid":""));
+my $sth = $dbh->prepare("select A.id,A.sn,A.ktrans,A.parcel_id AS dn,C.modtime as tm,C.se1 as t1,C.se2 as t2 from counters A inner join status C on A.id=C.cid where A.active=1 and A.subscr=1 AND C.se1 IS NOT NULL AND C.se2 IS NOT NULL".($cid ? " AND A.id=$cid":""));
 my $log = $dbh->prepare("INSERT INTO feed_log (id,auth,cid,dn,target,msg,status,err,posted,parts,cost) VALUES (?,?,?,?,?,?,?,?,now(),?,?)");
 my $seq = $dbh->prepare("SELECT nextval('feed_log_id_seq'::regclass)");
 

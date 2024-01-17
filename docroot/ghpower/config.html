@@ -75,8 +75,8 @@ if($type == 1) {	# Доступ
 						$sth = $dbh->prepare("UPDATE auth SET name=?, login=?, password=?, email=?, gid=?, memo=?, auth=?, modtime=now() WHERE id=?");
 						$sth->execute($cname,$login,$cpass,$email,$gid,$ARGS{memo},$auth->{id},$id);
 					} else {
-						$sth = $dbh->prepare("UPDATE auth SET name=?, login=?, email=?, gid=?, memo=?, auth=?, modtime=now() WHERE id=?");
-						$sth->execute($cname,$login,$email,$gid,$ARGS{memo},$auth->{id},$id);
+						$sth = $dbh->prepare("UPDATE auth SET name=?, login=?, email=?, gid=?, memo=?, auth=?, blocked=?, modtime=now() WHERE id=?");
+						$sth->execute($cname,$login,$email,$gid,$ARGS{memo},$auth->{id},($ARGS{blocked} ? 1:0),$id);
 					}
 					undef $id;
 					$OK++;
@@ -104,9 +104,9 @@ if($type == 1) {	# Доступ
 		}
 	} else {
 		if($id) {	# Редактирование записи
-			$sth = $dbh->prepare("SELECT name,login,email,gid,memo,modtime FROM auth WHERE id=? LIMIT 1");
+			$sth = $dbh->prepare("SELECT name,login,email,gid,memo,modtime,blocked FROM auth WHERE id=? LIMIT 1");
 			$sth->execute($id);
-			($Usr->{cname}, $Usr->{login}, $Usr->{email}, $Usr->{gid}, $Usr->{memo}, $Usr->{modtime}) = $sth->fetchrow_array;
+			($Usr->{cname}, $Usr->{login}, $Usr->{email}, $Usr->{gid}, $Usr->{memo}, $Usr->{modtime}, $Usr->{blocked}) = $sth->fetchrow_array;
 			$sth->finish;
 		}
 	}
@@ -134,7 +134,7 @@ if($type == 1) {	# Доступ
 	</tr>
 	<tr>
 		<td><div style=color:'.($Err{password} ? "red":"black").'>Пароль:</div></td>
-		<td><input type="password" name="password" value="'.($ARGS{password} || $Usr->{password} || '').'" class="input-xlarge"></td>
+		<td><input type="password" name="password" value="'.($ARGS{password} || $Usr->{password} || '').'" class="input-xlarge"> Блок.: <input type="checkbox" name="blocked" '.(($ARGS{blocked} || $Usr->{blocked}) ? "checked":"").'></td>
 	</tr>
 	<tr>
 		<td>Комментарий:</td>
@@ -143,10 +143,10 @@ if($type == 1) {	# Доступ
 	</tr>';
 	$FORM_EDIT = $FORM_NEW;
 
-	$sth = $dbh->prepare("SELECT A.id,A.name,A.login,A.email,B.name AS gname FROM auth A INNER JOIN auth_grp B ON A.gid=B.id WHERE A.active=1 ORDER BY A.name");
+	$sth = $dbh->prepare("SELECT A.id,A.name,A.login,A.email,B.name AS gname,A.blocked FROM auth A INNER JOIN auth_grp B ON A.gid=B.id WHERE A.active=1 ORDER BY A.name");
 	$sth->execute();
 	while(my $r = $sth->fetchrow_hashref) {
-		my @a = ('<a href="?type='.$type.'&id='.$r->{id}.'">'.$r->{name}.'</a>', $r->{email}, $r->{login}, $r->{gname});
+		my @a = ('<a href="?type='.$type.'&id='.$r->{id}.'">'.$r->{name}.'</a>', $r->{email}, '<div style=color:'.($r->{blocked} ? "red":"black").'>'.$r->{login}.'</div>', $r->{gname});
 		push @$List, \@a;
 	}
 }

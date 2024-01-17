@@ -589,6 +589,7 @@ CREATE TABLE auth (
 	gid integer default 0,
 	memo character varying,
 	auth integer default 0,
+	blocked integer default 0,
 	modtime timestamp without time zone default now(),
 	primary key (id)
 );
