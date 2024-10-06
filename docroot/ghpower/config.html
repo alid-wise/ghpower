@@ -732,29 +732,52 @@ elsif($type == 6) {	# Персоны
 #	$FILTER .= ' onclick=alert(this.checked);document.location.href="?showdel=">';
 
 
-	$sth = $dbh->prepare("SELECT id,active,fname,mname,lname,CASE WHEN membership is not null AND membership_end is null THEN '+' END AS member,memo,contract FROM persons ".($ARGS{showdel} ? "":"WHERE active=1")." ORDER BY lname, fname, mname");
-	my $own = $dbh->prepare("select S.sname || '-' || P.number from parcels P inner join street S ON P.street_id=S.id where ? = ANY (owner)");
-	my $mng = $dbh->prepare("select S.sname || '-' || P.number from parcels P inner join street S ON P.street_id=S.id where ? = ANY (manager)");
+	# 2024-10-06 Optimized
+	$sth = $dbh->prepare("WITH S AS (SELECT id,sname FROM street) SELECT P.id,P.active,P.fname,P.mname,P.lname,CASE WHEN P.membership is not null AND P.membership_end is null THEN '+' END AS member,P.memo,P.contract,CASE WHEN O.number IS NOT NULL THEN ((SELECT sname FROM S WHERE id=O.street_id) || '-' || O.number) END AS owner,CASE WHEN M.number IS NOT NULL THEN ((SELECT sname FROM S WHERE id=M.street_id) || '-' || M.number) END AS manager FROM persons P LEFT OUTER JOIN parcels O ON P.id = ANY (O.owner) LEFT OUTER JOIN parcels M ON P.id = ANY (M.manager) ".($ARGS{showdel} ? "":"WHERE P.active=1")." ORDER BY P.lname, P.fname, P.mname");
 	$sth->execute();
+	my $U;
 	while(my $r = $sth->fetchrow_hashref) {
-		$own->execute($r->{id});
-		my @owned;
-		while(my $s = $own->fetchrow_arrayref) {
-			push @owned, $s->[0];
-		}
-		$own->finish;
-
-		$mng->execute($r->{id});
-		my @mngd;
-		while(my $s = $mng->fetchrow_arrayref) {
-			push @mngd, $s->[0];
-		}
-		$mng->finish;
-
-		my @a = ('<a href="?type='.$type.'&id='.$r->{id}.'" style=text-decoration:'.($r->{active} ? 'none':'line-through').'
->'.($r->{lname} || '-').'</a>', $r->{fname}, $r->{mname}, $r->{member}, join(", ", @owned), join(", ", @mngd), $r->{contract}, $r->{memo});
-		push @$List, \@a;
+		$U->{$r->{'id'}}->{active} = $r->{active};
+		$U->{$r->{'id'}}->{member} = $r->{member};
+		$U->{$r->{'id'}}->{lname} = $r->{lname};
+		$U->{$r->{'id'}}->{fname} = $r->{fname};
+		$U->{$r->{'id'}}->{mname} = $r->{mname};
+		$U->{$r->{'id'}}->{contract} = $r->{contract};
+		$U->{$r->{'id'}}->{memo} = $r->{memo};
+		$U->{$r->{'id'}}->{owner} = $U->{$r->{'id'}}->{owner} ? join ", ", ($U->{$r->{'id'}}->{owner},$r->{owner}) : $r->{owner};
+		$U->{$r->{'id'}}->{manager} = $U->{$r->{'id'}}->{manager} ? join ", ", ($U->{$r->{'id'}}->{manager},$r->{manager}) : $r->{manager};
 	}
+	$sth->finish;
+	foreach my $uid (sort {$U->{$a}->{lname} cmp $U->{$b}->{lname}} keys %{$U}) {
+		my @a = ('<a href="?type='.$type.'&id='.$uid.'" style=text-decoration:'.($U->{$uid}->{active} ? 'none':'line-through').'>'.($U->{$uid}->{lname} || '-').'</a>', $U->{$uid}->{fname}, $U->{$uid}->{mname}, $U->{$uid}->{member}, $U->{$uid}->{owner}, $U->{$uid}->{manager}, $U->{$uid}->{contract}, $U->{$uid}->{memo});
+		push @$List, \@a;
+}
+
+# Old version
+#	$sth = $dbh->prepare("SELECT id,active,fname,mname,lname,CASE WHEN membership is not null AND membership_end is null THEN '+' END AS member,memo,contract FROM persons ".($ARGS{showdel} ? "":"WHERE active=1")." ORDER BY lname, fname, mname");
+#	my $own = $dbh->prepare("select S.sname || '-' || P.number from parcels P inner join street S ON P.street_id=S.id where ? = ANY (owner)");
+#	my $mng = $dbh->prepare("select S.sname || '-' || P.number from parcels P inner join street S ON P.street_id=S.id where ? = ANY (manager)");
+#	$sth->execute();
+#	while(my $r = $sth->fetchrow_hashref) {
+#		$own->execute($r->{id});
+#		my @owned;
+#		while(my $s = $own->fetchrow_arrayref) {
+#			push @owned, $s->[0];
+#		}
+#		$own->finish;
+#
+#		$mng->execute($r->{id});
+#		my @mngd;
+#		while(my $s = $mng->fetchrow_arrayref) {
+#			push @mngd, $s->[0];
+#		}
+#		$mng->finish;
+#
+#		my @a = ('<a href="?type='.$type.'&id='.$r->{id}.'" style=text-decoration:'.($r->{active} ? 'none':'line-through').'
+#>'.($r->{lname} || '-').'</a>', $r->{fname}, $r->{mname}, $r->{member}, join(", ", @owned), join(", ", @mngd), $r->{contract}, $r->{memo});
+#		push @$List, \@a;
+#	}
+
 }
 else {
 	

@@ -35,7 +35,7 @@ my $Ctypes = $m->comp("lib.msn:listload", dbh=>$dbh, name=>'counter_type', nocac
 # Текущие показания счетчиков
 my $LastCounter = $m->comp("lib.msn:lastcounter", dbh=>$dbh, id=>0, nocache=>1);
 
-my ($List, $Usr, $Parcels);
+my ($List, $Usr, $Parcels, $Alarms);
 # Группы
 $sth = $dbh->prepare("select * from mgroup".($hideall ? " WHERE hidden=false":""));
 $sth->execute();
@@ -374,7 +374,7 @@ $(document).ready(function() {
 </form>
 
 <h2>Текущие показания счетчиков</h2>
-<p><div id="lastime"><% $m->comp("lib.msn:lastime", dbh=>$dbh)->{lastime} %></div></p>
+<p><div id="lastime"><b><% $m->comp("lib.msn:lastime", dbh=>$dbh)->{lastime} %></b></div></p>
 
 %unless($hideall) {
 <!-- FIXME -->
@@ -593,12 +593,10 @@ $(document).ready(function() {
 
 %} # полный список
 
-
-
-
 %#<pre>
-%use Data::Dumper;
+%#use Data::Dumper;
 %#<% Dumper $List %>
+%#<% Dumper $Alarms %>
 %#<% Dumper $Usr %>
 %#<% Dumper %ARGS %>
 %#<% Dumper $LastCounter %>
