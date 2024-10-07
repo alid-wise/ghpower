@@ -120,22 +120,12 @@ sub Counters_list {
   my $hidehidden = shift;
 
   my $ret = undef;
-  my $usr = $self->{dbh}->prepare("SELECT lname,fname,mname FROM persons WHERE id=?");
-  my $sth = $self->{dbh}->prepare("SELECT A.id,A.name,A.addr,A.mgroup,A.passwd,A.sn,A.model,A.setdate,A.memo,A.active,A.modtime,A.passwd2,A.ktrans,A.tower_id,A.year,A.plimit,A.plimiter,A.subscr,B.id AS status_id,B.state,B.pstate,B.se1,B.se2,B.modtime AS status_modtime,A.parcel_id,P.number AS domain,S.name AS street_name,S.sname AS street_sname,P.owner FROM counters A LEFT OUTER JOIN status B ON B.cid=A.id LEFT OUTER JOIN parcels P ON A.parcel_id=P.id LEFT OUTER JOIN street S ON P.street_id=S.id WHERE A.mgroup IN (SELECT id FROM mgroup".($hidehidden ? " WHERE hidden=false":"").")".((!$showdel) ? " AND NOT (A.active < 0)":""));
+  my $sth = $self->{dbh}->prepare("SELECT A.id,A.name,A.addr,A.mgroup,A.passwd,A.sn,A.model,A.setdate,A.memo,A.active,A.modtime,A.passwd2,A.ktrans,A.tower_id,A.year,A.plimit,A.plimiter,A.subscr,B.id AS status_id,B.state,B.pstate,B.se1,B.se2,B.modtime AS status_modtime,A.parcel_id,P.number AS domain,S.name AS street_name,S.sname AS street_sname,P.owner,(SELECT array_agg(J.lname ||' '|| J.fname ||' '|| J.mname) FROM persons J WHERE id=ANY(P.owner)) AS owners_array FROM counters A LEFT OUTER JOIN status B ON B.cid=A.id LEFT OUTER JOIN parcels P ON A.parcel_id=P.id LEFT OUTER JOIN street S ON P.street_id=S.id  WHERE A.mgroup IN (SELECT id FROM mgroup".($hidehidden ? " WHERE hidden=false":"").")".((!$showdel) ? " AND NOT (A.active < 0)":""));
   $sth->execute();
   while(my $r = $sth->fetchrow_hashref) {
-#    if($r->{dn} &&  ($r->{dn} =~ m/ou=([^,]+),\s*ou=([^,]+)/)) {  # Можно получить дополнительную информацию в LDAP
-#      $r->{domain} = $1;
-#      $r->{street_name} = $2;
-#      my $ghldap = new GHPowerLDAP;
-#      $r->{Dom} = $ghldap->get_Domain($r->{dn});
-#    }
-    foreach my $uid (@{$r->{owner}}) {
-      $usr->execute($uid);
-      my ($lname,$fname,$mname) = $usr->fetchrow_array;
-      $usr->finish;
+    foreach my $owner_name (@{$r->{owners_array}}) {
       my $h;
-      push @{$h->{cn}}, "$lname $fname $mname";
+      push @{$h->{cn}}, $owner_name;
       push @{$r->{Dom}->{owners}}, $h;
     }
     push @{$ret->{$r->{mgroup}}->{items}}, $r;

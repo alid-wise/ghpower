@@ -1,0 +1,27 @@
+#!/usr/local/bin/perl
+$|=1;
+use WWW::Telegram::BotAPI;
+use Data::Dumper;
+
+
+#
+# Отправка сообщения в telegram
+# 2024-09-17 alid
+#
+
+my (@args, %opts);
+foreach(@ARGV){
+	if(/^\-(\S)(\S*)/) { $opts{$1} = $2; } else {  push @args, $_; }
+}
+my @to = (split ",", $opts{t});
+my $bot_token = $opts{b};
+my ($msg) = @args;
+die "Usage: $0 -bBOT_TOKEN -tUSER_ID1,USER_ID2 \"Message\"\n"	unless(@to && $bot_token);
+
+my $api=WWW::Telegram::BotAPI->new(token=>"$bot_token");
+foreach my $user_id (@to) {
+	$api->sendMessage({chat_id=>$user_id, text=>$msg});
+}
+
+
+
