@@ -1,0 +1,20 @@
+<%args>
+	$dbh
+	$auth
+	$uid => undef
+</%args>
+<%init>
+	use JSON;
+	$uid =~ s/\-//g;
+	$uid =~ s/\W//g;
+
+	my $Data;
+	if(length($uid) == 32) {
+		my $sth = $dbh->prepare("SELECT M.dt, C.sn, C.id, C.ktrans, M.mv1, M.mv2, M.mv3, M.mc1, M.mc2, M.mc3, M.mf, M.ma1, M.ma2, M.ma3, M.mps, M.mp1, M.mp2, M.mp3, M.mqs, M.mq1, M.mq2, M.mq3, M.mss, M.ms1, M.ms2, M.ms3, M.mks, M.mk1, M.mk2, M.mk3, M.se1ai, M.se1ae, M.se1ri, M.se1re, M.se2ai, M.se2ae, M.se2ri, M.se2re, M.ise FROM ONLY monitor M INNER JOIN counters C ON M.counter=C.id AND C.uid=? ORDER BY date DESC LIMIT 1");
+		$sth->execute($uid);
+		my ($data) = $sth->fetchrow_hashref;
+		$sth->finish;
+		$Data = to_json($data);
+	}
+</%init>
+<%$Data%>

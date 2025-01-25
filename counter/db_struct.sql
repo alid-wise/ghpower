@@ -99,8 +99,10 @@ create table counters (
 	plimiter integer DEFAULT 0,	-- установлен ограничитель мощности
 	subscr integer default 0,	-- подписка владельца на алерты
 	tmode integer default 2,	-- тариф (1- одноставочный, 2- двухставочный)
+	uid uuid not null default gen_random_uuid(),
 	primary key (id)
 );
+CREATE INDEX counters_uid_i ON counters(uid);
 
 -- модели счетчиков
 create sequence counter_type_seq;
