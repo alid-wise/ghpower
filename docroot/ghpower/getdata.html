@@ -16,5 +16,8 @@
 		$sth->finish;
 		$Data = to_json($data);
 	}
+	$m->clear_buffer;
+	$m->out($Data);
+	$m->abort;
 </%init>
 <%$Data%>
