@@ -67,7 +67,7 @@ if($id == 1) {
 
 elsif($id == 2) {
 	$report_name = 'Полный список участков';
-	@fields = ('Проезд','Участок','Площадь','Владелец','E-mail владельца','Телефон владельца','Доверенное лицо','E-mail доверенного','Телефон доверенного');
+	@fields = ('Лиц.сч.','Проезд','Участок','Площадь','Владелец','E-mail владельца','Телефон владельца','Доверенное лицо','E-mail доверенного','Телефон доверенного');
 
 	my $ghpower = GHPower->new($dbh);
 	my $List = $ghpower->Domains_Struct;
@@ -75,7 +75,9 @@ elsif($id == 2) {
 		my $Dom = $List->{$street};
 		foreach my $house (sort {$a <=> $b} keys %{$Dom}) {
 			my $P = $Dom->{$house};
-			my @A = ({class=>'text-info',data=>$street},
+			my @A = (
+				{class=>'text-right',data=>$P->{laccount}},
+				{class=>'text-info',data=>$street},
 				{class=>'text-right',data=>$house},
 				{class=>'text-right',data=>$P->{square}},
 			);
@@ -128,7 +130,7 @@ elsif($id == 3) {	# Можно использовать как шаблон дл
 	} else {
 
 		my (undef,$tmpname) = tempfile();
-		system("export MY=$ENV{MY}; \$MY/counter/fullist_estored $date > $tmpname");
+		system("export MY=$ENV{MY}; \$MY/counter/fullist_estored -p2 $date > $tmpname");
 		my $D = XMLin($tmpname, ForceArray => [ ]);
 		unlink($tmpname);
 
@@ -248,6 +250,41 @@ elsif($id == 5) {
 		pop @$Data 	unless($sshow);
 	}
 } # id=5
+elsif($id == 6) {
+
+	unless($date) {
+		$report_name = 'Показания счетчиков - лучи';
+		$FORM = "<form method=POST>";
+		$FORM .= '<table border=1><tr><td>Дата:</td>';
+		my $dt = ParseDate("yesterday");
+		my ($y,$m,$d,undef) = ($dt =~ m/(\d{4})(\d{2})(\d{2})/);
+		$FORM .= '<td><input type="text" name="date" value="'."$d.$m.$y".'" onfocus="this.select();_Calendar.lcs(this)" onclick="event.cancelBubble=true;this.select();_Calendar.lcs(this)"  class="form-control"></td>';
+		$FORM .= '<td align="right"><input type="submit" name="submit" value="OK"></td>';
+		$FORM .= '</tr>';
+		$FORM .= '</table></form>';
+	} else {
+
+		my (undef,$tmpname) = tempfile();
+		system("export MY=$ENV{MY}; \$MY/counter/fullist_estored -p1 $date > $tmpname");
+		my $D = XMLin($tmpname, ForceArray => [ ]);
+		unlink($tmpname);
+
+		$report_name = $D->{header};
+		# Названия полей
+		foreach my $field (sort { $D->{fields}->{field}->{$a}->{order} <=> $D->{fields}->{field}->{$b}->{order} } keys %{$D->{fields}->{field}}) {
+			push @fields, $D->{fields}->{field}->{$field}->{label};
+		}
+		# Строка таблицы по списку полей
+		foreach my $item (sort { $a->{number} cmp $b->{number} } @{$D->{items}->{item}}) {
+			my @A;
+			foreach my $field (sort { $D->{fields}->{field}->{$a}->{order} <=> $D->{fields}->{field}->{$b}->{order} } keys %{$D->{fields}->{field}}) {
+				my $style = $D->{fields}->{field}->{$field}->{style} || '';
+				push @A, {( class=>$style, data => (ref $item->{$field} eq 'HASH')? '':$item->{$field} )};
+			}
+			push @$Data, \@A;
+		}
+	}
+} # id=6
 
 #use Data::Dumper;
 </%init>
@@ -309,6 +346,7 @@ elsif($id == 5) {
 <li><a href="?id=5">Список членов СНТ (бланк)</a></li>
 <li><a href="?id=1">Членские взносы</a></li>
 <li><a href="?id=3">Показания счетчиков</a></li>
+<li><a href="?id=6">Показания счетчиков - лучи</a></li>
 </ul>
 </div>
 %}

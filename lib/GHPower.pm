@@ -563,7 +563,7 @@ sub get_Domain {
   my $self = shift;
   my $id = shift;
   return undef  unless $id;
-  my $sth = $self->{dbh}->prepare("SELECT A.id,A.active,A.street_id,S.name as street_name,S.sname as street_sname,S.ord AS s_ord,A.number,A.square,A.owner,A.manager,A.maillist,A.memo,A.proof,A.proof_date FROM parcels A inner join street S on A.street_id=S.id where A.id=?");
+  my $sth = $self->{dbh}->prepare("SELECT A.id,A.active,A.street_id,S.name as street_name,S.sname as street_sname,S.ord AS s_ord,A.number,A.square,A.owner,A.manager,A.maillist,A.memo,A.proof,A.proof_date,A.laccount FROM parcels A inner join street S on A.street_id=S.id where A.id=?");
   $sth->execute($id);
   my $Data = $sth->fetchrow_hashref;
   $sth->finish;

@@ -84,6 +84,7 @@ my (@args, %opts);
 foreach(@ARGV){
 	if(/^\-(\S)(\S*)/) { $opts{$1} = $2; } else {  push @args, $_; }
 }
+my $parent = $opts{p} || 0;
 my ($date) = (@args);
 $date =~ s/\s.*$//;
 $date = UnixDate("yesterday","%Y-%m-%d")	unless($date);
@@ -95,25 +96,30 @@ my $database = $opts{D} || 'ghpower';
 
 my $dbh = DBI->connect("dbi:Pg:dbname=$database;host=$pghost;port=$pgport","","", { RaiseError => 1, AutoCommit => 1});
 #my $sth = $dbh->prepare("SELECT C.id,C.mgroup,C.sn,C.dn,substring(C.dn from ',ou=(.+)\$') as street,substring(C.dn from 'ou=(.+),') as house,D.se1,D.se2,D.mode FROM counters C INNER JOIN daily D ON C.id=D.cid WHERE C.dn<>'' AND C.active=1 AND D.date=? order by street,house");
-my $sth = $dbh->prepare("SELECT C.id,C.mgroup,C.sn,C.dn,S.name as street,P.number as house,D.se1,D.se2,D.mode FROM counters C INNER JOIN daily D ON C.id=D.cid INNER JOIN parcels P ON C.parcel_id=P.id INNER JOIN street S ON P.street_id=S.id WHERE C.parcel_id>0 AND C.active=1 AND D.date=? order by street,house");
+#my $sth = $dbh->prepare("SELECT C.id,C.mgroup,C.sn,C.dn,S.name as street,P.number as house,D.se1,D.se2,D.mode FROM counters C INNER JOIN daily D ON C.id=D.cid INNER JOIN parcels P ON C.parcel_id=P.id INNER JOIN street S ON P.street_id=S.id WHERE C.parcel_id>0 AND C.active=1 AND D.date=? order by street,house");
+my $sth = $dbh->prepare("SELECT C.id,C.mgroup,C.sn,C.dn,S.name as street,COALESCE(P.number,C.name,' ') as house,D.se1,D.se2,D.mode FROM counters C INNER JOIN daily D ON C.id=D.cid LEFT OUTER JOIN parcels P ON C.parcel_id=P.id LEFT OUTER JOIN street S ON P.street_id=S.id WHERE  C.active=1 AND D.date=? AND C.mgroup IN (SELECT id FROM mgroup WHERE parent=?) order by street,house");
 #my $ghpower = GHPower->new($dbh);
 #my $List = $ghpower->Domains_Struct;
 
 my $XML = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
 $XML .= "<document>\n";
-$XML .= "<header>Показания счетчиков на ".pdate()."</header>\n";
+$XML .= "<header>Показания счетчиков (уровень $parent) на ".pdate()."</header>\n";
 $XML .= "<fields>\n";
+if($parent > 1) {
 $XML .= "<field><name>street</name><order>1</order><label>Проезд</label><style>text-left</style></field>\n";
 $XML .= "<field><name>number</name><order>2</order><label>Участок</label><style>text-center</style></field>\n";
+} else {
+$XML .= "<field><name>number</name><order>2</order><label>Название</label><style>text-left</style></field>\n";
+}
 $XML .= "<field><name>serial</name><order>3</order><label>Номер счётчика</label><style>text-right</style></field>\n";
 $XML .= "<field><name>se1</name><order>4</order><label>Т1</label><style>text-right</style></field>\n";
 $XML .= "<field><name>se2</name><order>5</order><label>Т2</label><style>text-right</style></field>\n";
 $XML .= "</fields>\n";
 $XML .= "<items>\n";
 
-$sth->execute($date);
+$sth->execute($date, $parent);
 while(my $r = $sth->fetchrow_hashref) {
-	next	if($r->{house} =~ m/^\D/);	# Номер должен начинаться с цифры
+#	next	if($r->{house} =~ m/^\D/);	# Номер должен начинаться с цифры
 	$XML .= "<item>\n";
 	$XML .= "<street>$r->{street}</street>\n";
 	$XML .= "<number>$r->{house}</number>\n";

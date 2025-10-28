@@ -71,6 +71,7 @@ create table mgroup (
 	memo varchar,
 	rank integer,
 	bid integer,
+	parent integer,
 	modtime timestamp without time zone DEFAULT now(),
 	primary key (id)
 );
