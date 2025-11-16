@@ -97,7 +97,7 @@ my $database = $opts{D} || 'ghpower';
 my $dbh = DBI->connect("dbi:Pg:dbname=$database;host=$pghost;port=$pgport","","", { RaiseError => 1, AutoCommit => 1});
 #my $sth = $dbh->prepare("SELECT C.id,C.mgroup,C.sn,C.dn,substring(C.dn from ',ou=(.+)\$') as street,substring(C.dn from 'ou=(.+),') as house,D.se1,D.se2,D.mode FROM counters C INNER JOIN daily D ON C.id=D.cid WHERE C.dn<>'' AND C.active=1 AND D.date=? order by street,house");
 #my $sth = $dbh->prepare("SELECT C.id,C.mgroup,C.sn,C.dn,S.name as street,P.number as house,D.se1,D.se2,D.mode FROM counters C INNER JOIN daily D ON C.id=D.cid INNER JOIN parcels P ON C.parcel_id=P.id INNER JOIN street S ON P.street_id=S.id WHERE C.parcel_id>0 AND C.active=1 AND D.date=? order by street,house");
-my $sth = $dbh->prepare("SELECT C.id,C.mgroup,C.sn,C.dn,S.name as street,COALESCE(P.number,C.name,' ') as house,D.se1,D.se2,D.mode FROM counters C INNER JOIN daily D ON C.id=D.cid LEFT OUTER JOIN parcels P ON C.parcel_id=P.id LEFT OUTER JOIN street S ON P.street_id=S.id WHERE  C.active=1 AND D.date=? AND C.mgroup IN (SELECT id FROM mgroup WHERE parent=?) order by street,house");
+my $sth = $dbh->prepare("SELECT C.id,C.mgroup,C.sn,C.dn,S.name as street,COALESCE(P.number,C.name,' ') as house,D.se1,D.se2,D.mode,C.ktrans FROM counters C INNER JOIN daily D ON C.id=D.cid LEFT OUTER JOIN parcels P ON C.parcel_id=P.id LEFT OUTER JOIN street S ON P.street_id=S.id WHERE  C.active=1 AND D.date=? AND C.mgroup IN (SELECT id FROM mgroup WHERE parent=?) order by street,house");
 #my $ghpower = GHPower->new($dbh);
 #my $List = $ghpower->Domains_Struct;
 
@@ -114,6 +114,7 @@ $XML .= "<field><name>number</name><order>2</order><label>Название</labe
 $XML .= "<field><name>serial</name><order>3</order><label>Номер счётчика</label><style>text-right</style></field>\n";
 $XML .= "<field><name>se1</name><order>4</order><label>Т1</label><style>text-right</style></field>\n";
 $XML .= "<field><name>se2</name><order>5</order><label>Т2</label><style>text-right</style></field>\n";
+$XML .= "<field><name>ktrans</name><order>6</order><label>K</label><style>text-right</style></field>\n";
 $XML .= "</fields>\n";
 $XML .= "<items>\n";
 
@@ -131,6 +132,7 @@ while(my $r = $sth->fetchrow_hashref) {
 		$XML .= "<se1>".$r->{se1}."</se1>\n";
 		$XML .= "<se2>".$r->{se2}."</se2>\n";
 	}
+	$XML .= "<ktrans>".$r->{ktrans}."</ktrans>\n";
 	$XML .= "</item>\n";
 }
 $XML .= "</items>\n";
