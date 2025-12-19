@@ -75,6 +75,12 @@ create table mgroup (
 	modtime timestamp without time zone DEFAULT now(),
 	primary key (id)
 );
+CREATE TRIGGER mgroup_update_modtime_t
+BEFORE UPDATE ON mgroup
+FOR EACH ROW
+EXECUTE FUNCTION update_modtime();
+
+
 -- счетчики
 create sequence counters_id_seq;
 create table counters (
@@ -105,6 +111,11 @@ create table counters (
 );
 CREATE INDEX counters_uid_i ON counters(uid);
 
+CREATE TRIGGER counters_update_modtime_t
+BEFORE UPDATE ON counters
+FOR EACH ROW
+EXECUTE FUNCTION update_modtime();
+
 -- модели счетчиков
 create sequence counter_type_seq;
 create table counter_type (
@@ -115,6 +126,12 @@ create table counter_type (
 	modtime timestamp without time zone DEFAULT now(),
 	primary key (id)
 );
+CREATE TRIGGER counter_type_update_modtime_t
+BEFORE UPDATE ON counter_type
+FOR EACH ROW
+EXECUTE FUNCTION update_modtime();
+
+
 INSERT INTO counter_type (name,type) VALUES ('Меркурий 230 ART-01 PQRSIN','M230');
 INSERT INTO counter_type (name,type) VALUES ('Меркурий-203.2T RBO','M203');
 
@@ -140,6 +157,12 @@ create table status (
 	tmok integer DEFAULT 0,
 	primary key (id)
 );
+CREATE TRIGGER status_update_modtime_t
+BEFORE UPDATE ON status
+FOR EACH ROW
+EXECUTE FUNCTION update_modtime();
+
+
 -- лог алертов
 create table alerts (
  id serial not null,
@@ -288,7 +311,10 @@ CREATE INDEX mexpenses_year_i ON mexpenses (year);
 CREATE INDEX mexpenses_month_i ON mexpenses (month);
 CREATE INDEX mexpenses_counter_i ON mexpenses (cid);
 
-
+CREATE TRIGGER mexpenses_update_modtime_t
+BEFORE UPDATE ON mexpenses
+FOR EACH ROW
+EXECUTE FUNCTION update_modtime();
 
 --
 -- столбы
@@ -305,6 +331,11 @@ CREATE TABLE towers (
     modtime timestamp without time zone DEFAULT now() NOT NULL,
     primary key (id)
 );
+CREATE TRIGGER towers_update_modtime_t
+BEFORE UPDATE ON towers
+FOR EACH ROW
+EXECUTE FUNCTION update_modtime();
+
 
 --
 -- Показания счетчиков по дням
@@ -396,6 +427,11 @@ CREATE TABLE tariff (
     modtime timestamp without time zone DEFAULT now() NOT NULL,
     primary key (id)
 );
+CREATE TRIGGER tariff_update_modtime_t
+BEFORE UPDATE ON tariff
+FOR EACH ROW
+EXECUTE FUNCTION update_modtime();
+
 
 -- лог рассылки
 CREATE SEQUENCE feed_log_id_seq;
@@ -420,6 +456,12 @@ CREATE INDEX feed_log_dn_i ON feed_log (dn);
 CREATE INDEX feed_log_cid_i ON feed_log (cid);
 CREATE INDEX feed_log_comp_i ON feed_log (comp);
 
+CREATE TRIGGER feed_log_list_update_modtime_t
+BEFORE UPDATE ON feed_log
+FOR EACH ROW
+EXECUTE FUNCTION update_modtime();
+
+
 -- ручные рассылки
 CREATE TABLE feeds (
 	id character(32) NOT NULL,
@@ -437,6 +479,12 @@ CREATE TABLE feeds (
 );
 CREATE INDEX feeds_posted_i ON feeds (posted);
 
+CREATE TRIGGER feeds_update_modtime_t
+BEFORE UPDATE ON feeds
+FOR EACH ROW
+EXECUTE FUNCTION update_modtime();
+
+
 -- очередь сообщений
 CREATE TABLE feeds_queue (
 	id serial NOT NULL,
@@ -448,6 +496,11 @@ CREATE TABLE feeds_queue (
 	modtime timestamp without time zone DEFAULT now(),
 	primary key (id)
 );
+CREATE TRIGGER feeds_queue_update_modtime_t
+BEFORE UPDATE ON feeds_queue
+FOR EACH ROW
+EXECUTE FUNCTION update_modtime();
+
 
 -- Шаблоны для рассылки
 CREATE TABLE feeds_template (
@@ -543,6 +596,11 @@ CREATE TABLE outnum (
 	subj varchar,
 	primary key (id)
 );
+CREATE TRIGGER outnum_update_modtime_t
+BEFORE UPDATE ON outnum
+FOR EACH ROW
+EXECUTE FUNCTION update_modtime();
+
 CREATE TABLE outnum_w (id varchar);
 INSERT INTO outnum_w VALUES ('0/0'); -- С самого начала. Либо, если номера уже есть, сюда надо последний номер.
 
@@ -598,6 +656,11 @@ CREATE TABLE auth (
 );
 insert into auth (name,login,password,active,gid) values ( '[Embedded Admin]','admin',crypt('ghpower',gen_salt('bf')),1,1);
 
+CREATE TRIGGER auth_update_modtime_t
+BEFORE UPDATE ON auth
+FOR EACH ROW
+EXECUTE FUNCTION update_modtime();
+
 
 -- Реквизиты организации
 CREATE TABLE details (
@@ -650,6 +713,11 @@ CREATE TABLE parcels (
 	modtime timestamp without time zone default now(),
 	primary key (id)
 );
+CREATE TRIGGER parcels_update_modtime_t
+BEFORE UPDATE ON parcels
+FOR EACH ROW
+EXECUTE FUNCTION update_modtime();
+
 
 -- Персоны
 CREATE TABLE persons (
@@ -675,8 +743,43 @@ CREATE TABLE persons (
 	modtime timestamp without time zone default now(),
 	primary key (id)
 );
+CREATE TRIGGER persons_update_modtime_t
+BEFORE UPDATE ON persons
+FOR EACH ROW
+EXECUTE FUNCTION update_modtime();
 
 
+----------------------------------------------------------
+-- 2025-12-19 Учёт счётчиков
+CREATE TYPE counter_status AS ENUM ('free','inuse','broken','repair','unknow');
+CREATE TYPE counter_tested AS ENUM ('ok','bad','notest');
+CREATE TABLE counter_list (
+	sn integer not null Primary Key,
+	model integer not null, -- coynter_type
+	status counter_status,
+	release integer, -- year Год выпуска счётчика
+	last_check_date date, -- дата последней поверки
+	memo character varying,
+	modtime timestamp without time zone Default now(),
+	tested counter_tested,
+	passport boolean default False
+);
+
+CREATE OR REPLACE FUNCTION update_modtime()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.modtime := NOW();  -- Или CURRENT_TIMESTAMP
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER counter_list_update_modtime_t
+BEFORE UPDATE ON counter_list
+FOR EACH ROW
+EXECUTE FUNCTION update_modtime();
+
+
+-----------------------------------------
 create role www;
 alter role www login;
 grant CONNECT ON DATABASE ghpower TO www;
