@@ -693,6 +693,11 @@ CREATE TABLE street (
 	modtime timestamp without time zone default now(),
 	primary key (id)
 );
+CREATE TRIGGER street_update_modtime_t
+BEFORE UPDATE ON street
+FOR EACH ROW
+EXECUTE FUNCTION update_modtime();
+
 
 -- Участки
 CREATE TABLE parcels (
