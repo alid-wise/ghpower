@@ -56,7 +56,7 @@ if($opts{M} && $opts{M} eq 'a') {
 } elsif($opts{M} && $opts{M} eq 'F') {
 	$mode = '-F';
 }
-my $action230 = "$ENV{MY}counter/adjtime $mode";
+my $action230 = "$ENV{MY}counter/adjtime230 $mode";
 my $action203 = "$ENV{MY}counter/adjtime203 $mode";
 
 my $dbh = DBI->connect("dbi:Pg:dbname=$database","","",{AutoCommit => 0})	or die;

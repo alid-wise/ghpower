@@ -205,6 +205,17 @@ sub sclose {
 	return $res;
 }
 
+sub get_status {
+	my $self = shift;
+	my $cmd = '08 0A';
+	my $status = $self->sopen(1);
+	return $status	unless($status=~/ok/);
+	$self->_send($cmd);
+	my ($cnt,@data);
+	($status,$cnt,@data) = $self->_recv();
+	return ($status,$cnt,@data);
+}
+
 # Counter's Clock
 #сек, мин, час, день, число, месяц, год, зима(1)/лето(0)
 sub get_time {

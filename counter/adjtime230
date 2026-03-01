@@ -105,6 +105,8 @@ elsif($diff) {	# Показать ошибку часов
 
 } else {	# Только считать время
 	print $unit->get_time()."\n";
+	my ($status,$cnt,@data) =$unit->get_status();
+	print "Status: ($status,$cnt,@data)\n";
 }
 $unit->quit();
 
